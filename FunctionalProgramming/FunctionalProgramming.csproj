@@ -48,6 +48,7 @@
     <Compile Include="Monad\Maybe.cs" />
     <Compile Include="Monad\Parsing\Parser.cs" />
     <Compile Include="Monad\Parsing\ParseResult.cs" />
+    <Compile Include="Monad\Parsing\Repititions.cs" />
     <Compile Include="Monad\Reader.cs" />
     <Compile Include="Monad\Try.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
