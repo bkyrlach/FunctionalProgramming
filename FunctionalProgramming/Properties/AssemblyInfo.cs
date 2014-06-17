@@ -6,11 +6,11 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("FunctionalProgramming")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Functional programming and category theory classes and utilities.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Toshiba")]
+[assembly: AssemblyCompany("RacoWireless")]
 [assembly: AssemblyProduct("FunctionalProgramming")]
-[assembly: AssemblyCopyright("Copyright © Toshiba 2014")]
+[assembly: AssemblyCopyright("Copyright © RacoWireless 2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
