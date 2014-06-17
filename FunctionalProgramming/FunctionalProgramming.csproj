@@ -44,6 +44,7 @@
     <Compile Include="Basics\MatchException.cs" />
     <Compile Include="Basics\Unit.cs" />
     <Compile Include="Helpers\FuncExtensions.cs" />
+    <Compile Include="Helpers\Replacements.cs" />
     <Compile Include="Monad\Either.cs" />
     <Compile Include="Monad\Io.cs" />
     <Compile Include="Monad\Maybe.cs" />
