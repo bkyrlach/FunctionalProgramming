@@ -1,11 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
+using BF = FunctionalProgramming.Basics.BasicFunctions;
 
 namespace FunctionalProgramming.Monad
 {
+    public interface IMaybe<out TValue>
+    {
+        TResult Match<TResult>(Func<TValue, TResult> just, Func<TResult> nothing);
+    }
+
     /// <summary>
     /// Extension methods for monadic operations on Maybe&gt;T&lt;
     /// </summary>
@@ -18,21 +21,28 @@ namespace FunctionalProgramming.Monad
 
         public static IMaybe<TValue> Nothing<TValue>()
         {
-            return Just<TValue>.Nothing;
+            return new Nadda<TValue>();
         }
+
+        public static IMaybe<T> Where<T>(this IMaybe<T> m, Func<T, Boolean> predicate)
+        {
+            return m.Match(
+                just: value => BF.If(predicate(value), () => value.ToMaybe(), Nothing<T>),
+                nothing: Nothing<T>);
+        } 
 
         public static IMaybe<TResult> Select<TValue, TResult>(this IMaybe<TValue> m, Func<TValue, TResult> f)
         {
             return m.Match(
                 just: value => new Just<TResult>(f(value)),
-                none: Nothing<TResult>);
+                nothing: Nothing<TResult>);
         }
 
         public static IMaybe<TResult> SelectMany<TValue, TResult>(this IMaybe<TValue> m, Func<TValue, IMaybe<TResult>> f)
         {
             return m.Match(
                 just: f,
-                none: Nothing<TResult>);
+                nothing: Nothing<TResult>);
         }
 
         /// <summary>
@@ -56,39 +66,38 @@ namespace FunctionalProgramming.Monad
         {
             return m.Match(
                 just: arg => arg,
-                none: defaultValue);
+                nothing: defaultValue);
+        }
+
+        public static T GetOrError<T>(this IMaybe<T> m, Func<Exception> errorToThrow)
+        {
+            return m.Match(
+                just: arg => arg,
+                nothing: () => { throw errorToThrow(); });
         }
 
         private class Just<TValue> : IMaybe<TValue>
         {
-            private sealed class N : IMaybe<TValue>
-            {
-                public TResult Match<TResult>(Func<TValue, TResult> just, Func<TResult> none)
-                {
-                    return none();
-                }
-            }
-
-            private static readonly N n = new N();
-
-            public static IMaybe<TValue> Nothing { get { return n; } }
-
-            public TValue Value { get; private set; }
+            private readonly TValue _value;
 
             public Just(TValue value)
             {
-                Value = value;
+                _value = value;
             }
 
             public TResult Match<TResult>(Func<TValue, TResult> just, Func<TResult> none)
             {
-                return just(Value);
+                return just(_value);
+            }
+        }
+
+        private class Nadda<TValue> : IMaybe<TValue>
+        {
+            public TResult Match<TResult>(Func<TValue, TResult> just, Func<TResult> nothing)
+            {
+                return nothing();
             }
         }
     }
 
-    public interface IMaybe<out TValue>
-    {
-        TResult Match<TResult>(Func<TValue, TResult> just, Func<TResult> none);
-    }
 }
