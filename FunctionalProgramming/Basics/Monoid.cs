@@ -11,6 +11,12 @@ namespace FunctionalProgramming.Basics
 
     public class EnumerableMonoid<T> : IMonoid<IEnumerable<T>>
     {
+        public static IMonoid<IEnumerable<T>> Only = new EnumerableMonoid<T>(); 
+
+        private EnumerableMonoid()
+        {
+        }
+
         public IEnumerable<T> MZero { get { return Enumerable.Empty<T>(); } }
 
         public IEnumerable<T> MAppend(IEnumerable<T> t1, IEnumerable<T> t2)
