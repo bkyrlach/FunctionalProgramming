@@ -11,6 +11,17 @@ namespace FunctionalProgramming.Monad
 
     public static class ValidationExtensions
     {
+
+        public static Validation<TFailure, TSuccess> AsFailure<TFailure, TSuccess>(this TFailure error)
+        {
+            return new Failure<TFailure, TSuccess>(error);
+        }
+
+        public static Validation<TFailure, TSuccess> AsSuccess<TFailure, TSuccess>(this TSuccess val)
+        {
+            return new Success<TFailure, TSuccess>(val);
+        }
+
         public static Validation<TFailure, TResult> Select<TFailure, TSuccess, TResult>(
             this Validation<TFailure, TSuccess> m, Func<TSuccess, TResult> f)
         {
