@@ -40,6 +40,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Basics\BasicFunctions.cs" />
+    <Compile Include="Basics\DictionaryExtensions.cs" />
     <Compile Include="Basics\EnumerableExtensions.cs" />
     <Compile Include="Basics\MatchException.cs" />
     <Compile Include="Basics\Monoid.cs" />
