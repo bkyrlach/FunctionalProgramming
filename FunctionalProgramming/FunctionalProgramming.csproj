@@ -50,6 +50,7 @@
     <Compile Include="Helpers\Replacements.cs" />
     <Compile Include="Monad\Either.cs" />
     <Compile Include="Monad\Io.cs" />
+    <Compile Include="Monad\Lens.cs" />
     <Compile Include="Monad\Maybe.cs" />
     <Compile Include="Monad\Parsing\Parser.cs" />
     <Compile Include="Monad\Parsing\ParseResult.cs" />
