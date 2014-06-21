@@ -45,6 +45,8 @@
     <Compile Include="Basics\Monoid.cs" />
     <Compile Include="Basics\Unit.cs" />
     <Compile Include="Helpers\FuncExtensions.cs" />
+    <Compile Include="Helpers\GuidHelpers.cs" />
+    <Compile Include="Helpers\IntHelpers.cs" />
     <Compile Include="Helpers\Replacements.cs" />
     <Compile Include="Monad\Either.cs" />
     <Compile Include="Monad\Io.cs" />
