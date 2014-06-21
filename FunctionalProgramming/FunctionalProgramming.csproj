@@ -56,6 +56,7 @@
     <Compile Include="Monad\Parsing\ParseResult.cs" />
     <Compile Include="Monad\Parsing\Repititions.cs" />
     <Compile Include="Monad\Reader.cs" />
+    <Compile Include="Monad\State.cs" />
     <Compile Include="Monad\Try.cs" />
     <Compile Include="Monad\Validation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

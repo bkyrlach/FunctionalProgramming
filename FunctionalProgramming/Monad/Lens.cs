@@ -23,6 +23,11 @@ namespace FunctionalProgramming.Monad
             return _mutator(e, value);
         }
 
+        public TEntity Mod(TEntity e, Func<TProperty, TProperty> updater)
+        {
+            return _mutator(e, updater(_accessor(e)));
+        }
+
         public Lens<TEntity, TChildProperty> Combine<TChildProperty>(Lens<TProperty, TChildProperty> otherLens)
         {
             return new Lens<TEntity, TChildProperty>((e, cpv) => Set(e, otherLens.Set(_accessor(e), cpv)), e => otherLens.Get(_accessor(e)));
