@@ -65,5 +65,11 @@ namespace FunctionalProgramming.Monad
         {
             return m.Bind(f);
         }
+
+        public static State<TState, TSelect> SelectMany<TState, TValue, TResult, TSelect>(this State<TState, TValue> m,
+            Func<TValue, State<TState, TResult>> f, Func<TValue, TResult, TSelect> selector)
+        {
+            return m.Bind(a => f(a).Bind(b => new State<TState, TSelect>(s => Tuple.Create(s, selector(a, b)))));
+        }
     }
 }
