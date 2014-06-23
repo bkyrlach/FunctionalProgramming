@@ -49,6 +49,7 @@
     <Compile Include="Helpers\GuidHelpers.cs" />
     <Compile Include="Helpers\IntHelpers.cs" />
     <Compile Include="Helpers\Replacements.cs" />
+    <Compile Include="Monad\ConsList.cs" />
     <Compile Include="Monad\Either.cs" />
     <Compile Include="Monad\Io.cs" />
     <Compile Include="Monad\Lens.cs" />
@@ -58,6 +59,8 @@
     <Compile Include="Monad\Parsing\Repititions.cs" />
     <Compile Include="Monad\Reader.cs" />
     <Compile Include="Monad\State.cs" />
+    <Compile Include="Monad\Stream.cs" />
+    <Compile Include="Monad\Trampoline.cs" />
     <Compile Include="Monad\Try.cs" />
     <Compile Include="Monad\Validation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

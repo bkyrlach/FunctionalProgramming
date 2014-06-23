@@ -18,7 +18,7 @@ namespace FunctionalProgramming.Monad.Parsing
         /// <param name="success">A lambda that computes a 'T off of a successful parse result</param>
         /// <param name="failure">A lambda that computes a 'T off of a failed parse result</param>
         /// <returns>The value computed by the lambda corresponding to the specific type matched on</returns>
-        T Match<T>(Func<TResult, IEnumerable<TInput>, T> success, Func<string, IEnumerable<TInput>, T> failure);
+        T Match<T>(Func<TResult, IStream<TInput>, T> success, Func<string, IStream<TInput>, T> failure);
     }
 
     /// <summary>
@@ -29,15 +29,15 @@ namespace FunctionalProgramming.Monad.Parsing
     public class SuccessResult<TInput, TResult> : IParseResult<TInput, TResult>
     {
         private readonly TResult _t;
-        private readonly IEnumerable<TInput> _rest;
+        private readonly IStream<TInput> _rest;
 
-        public SuccessResult(TResult t, IEnumerable<TInput> rest)
+        public SuccessResult(TResult t, IStream<TInput> rest)
         {
             _t = t;
             _rest = rest;
         }
 
-        public T Match<T>(Func<TResult, IEnumerable<TInput>, T> success, Func<string, IEnumerable<TInput>, T> failure)
+        public T Match<T>(Func<TResult, IStream<TInput>, T> success, Func<string, IStream<TInput>, T> failure)
         {
             return success(_t, _rest);
         }
@@ -56,15 +56,15 @@ namespace FunctionalProgramming.Monad.Parsing
     public class FailureResult<TInput, TResult> : IParseResult<TInput, TResult>
     {
         private readonly string _error;
-        private readonly IEnumerable<TInput> _rest;
+        private readonly IStream<TInput> _rest;
 
-        public FailureResult(string error, IEnumerable<TInput> rest)
+        public FailureResult(string error, IStream<TInput> rest)
         {
             _error = error;
             _rest = rest;
         }
 
-        public T Match<T>(Func<TResult, IEnumerable<TInput>, T> success, Func<string, IEnumerable<TInput>, T> failure)
+        public T Match<T>(Func<TResult, IStream<TInput>, T> success, Func<string, IStream<TInput>, T> failure)
         {
             return failure(_error, _rest);
         }

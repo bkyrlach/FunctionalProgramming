@@ -25,6 +25,11 @@ namespace FunctionalProgramming.Basics
                 () => Enumerable.Empty<T>().ToMaybe());
         }
 
+        public static IMaybe<IEnumerable<T2>> Traverse<T1, T2>(this IEnumerable<T1> xs, Func<T1, IMaybe<T2>> f)
+        {
+            return xs.Select(f).Sequence();
+        }
+
         /// <summary>
         /// Sequence takes a list of computations of type Io 'T, and builds from them a computation which will
         /// run each in turn and produce a list of the results.
@@ -59,33 +64,6 @@ namespace FunctionalProgramming.Basics
                 yield return new Tuple<T, int>(x, i);
                 i++;
             }
-        }
-
-        public static IEnumerable<T> LiftEnumerable<T>(this T t)
-        {
-            return new[] { t };
-        }
-
-        public static IMaybe<T> HeadOption<T>(this IEnumerable<T> xs)
-        {
-            return xs.FirstOrDefault().ToMaybe();
-        }
-
-        public static IMaybe<IEnumerable<T>> TailOption<T>(this IEnumerable<T> xs)
-        {
-            return xs.Any() ? xs.Skip(1).ToMaybe() : MaybeExtensions.Nothing<IEnumerable<T>>();
-        }
-
-        public static IEnumerable<T> Cons<T>(this T t, IEnumerable<T> xs)
-        {
-            return t.LiftEnumerable().Concat(xs);
-        }
-
-        public static T2 Match<T1, T2>(this IEnumerable<T1> xs, Func<T1, IEnumerable<T1>, T2> cons, Func<T2> nil)
-        {
-            return (from h in xs.HeadOption()
-                    from t in xs.TailOption()
-                    select cons(h, t)).GetOrElse(nil);
         }
 
         public static string MkString(this IEnumerable<char> chars)
