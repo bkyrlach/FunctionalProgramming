@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace FunctionalProgramming.Monad
 {
@@ -27,6 +29,14 @@ namespace FunctionalProgramming.Monad
         public static IConsList<T> LiftList<T>(this T t)
         {
             return t.Cons(Nil<T>());
+        }
+
+        public static TResult FoldL<TValue, TResult>(this IConsList<TValue> xs, TResult initial,
+            Func<TResult, TValue, TResult> f)
+        {
+            return xs.Match(
+                cons: (h, t) => FoldL(t, f(initial, h), f),
+                nil: () => initial);
         }
         
         private class NonEmptyList<T> : IConsList<T>
