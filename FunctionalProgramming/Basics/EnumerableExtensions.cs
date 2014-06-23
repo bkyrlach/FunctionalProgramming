@@ -66,6 +66,11 @@ namespace FunctionalProgramming.Basics
             }
         }
 
+        public static IEnumerable<T> LifEnumerable<T>(this T t)
+        {
+            return new[] {t};
+        } 
+
         public static string MkString(this IEnumerable<char> chars)
         {
             return chars.Aggregate("", (str, c) => str + c.ToString());
