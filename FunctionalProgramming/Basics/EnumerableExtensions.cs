@@ -66,7 +66,7 @@ namespace FunctionalProgramming.Basics
             }
         }
 
-        public static IEnumerable<T> LifEnumerable<T>(this T t)
+        public static IEnumerable<T> LiftEnumerable<T>(this T t)
         {
             return new[] {t};
         } 

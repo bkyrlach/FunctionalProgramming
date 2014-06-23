@@ -66,7 +66,7 @@ namespace FunctionalProgramming.Monad
         public static IEnumerable<T> AsEnumerable<T>(this IConsList<T> xs)
         {
             return xs.Match(
-                cons: (h, t) => h.LifEnumerable().Concat(t.AsEnumerable()),
+                cons: (h, t) => h.LiftEnumerable().Concat(t.AsEnumerable()),
                 nil: Enumerable.Empty<T>);
         }
 
