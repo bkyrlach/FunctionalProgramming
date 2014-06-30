@@ -1,7 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using FunctionalProgramming.Basics;
+﻿using FunctionalProgramming.Basics;
+using System;
 using F = FunctionalProgramming.Basics.BasicFunctions;
 
 namespace FunctionalProgramming.Monad.Parsing

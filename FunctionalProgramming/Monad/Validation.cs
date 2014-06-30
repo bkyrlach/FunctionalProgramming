@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad
@@ -11,15 +12,24 @@ namespace FunctionalProgramming.Monad
 
     public static class ValidationExtensions
     {
-
         public static Validation<TFailure, TSuccess> AsFailure<TFailure, TSuccess>(this TFailure error)
         {
             return new Failure<TFailure, TSuccess>(error);
         }
 
+        public static Validation<IEnumerable<TFailure>, TSuccess> AsFailureList<TFailure, TSuccess>(this TFailure error)
+        {
+            return new Failure<IEnumerable<TFailure>, TSuccess>(error.LiftEnumerable());
+        }
+
         public static Validation<TFailure, TSuccess> AsSuccess<TFailure, TSuccess>(this TSuccess val)
         {
             return new Success<TFailure, TSuccess>(val);
+        }
+
+        public static Validation<IEnumerable<TFailure>, TSuccess> AsSuccessWithFailureList<TFailure, TSuccess>(this TSuccess val)
+        {
+            return new Success<IEnumerable<TFailure>, TSuccess>(val);
         }
 
         public static Validation<TFailure, TResult> Select<TFailure, TSuccess, TResult>(

@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections;
+﻿using FunctionalProgramming.Basics;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad
 {
