@@ -47,7 +47,7 @@ namespace FunctionalProgramming.Basics
                                 ioTs.Skip(1)
                                     .Sequence()
                                     .SelectMany(ts => Io<IEnumerable<T>>.Apply(() => (new[] {t}).Concat(ts)))),
-                () => Io<IEnumerable<T>>.Apply(Enumerable.Empty<T>));
+                () => Io<IEnumerable<T>>.Apply(() => Enumerable.Empty<T>()));
         }
 
         /// <summary>
