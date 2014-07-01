@@ -1,4 +1,5 @@
 ﻿using System;
+using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad
 {
@@ -21,10 +22,24 @@ namespace FunctionalProgramming.Monad
         }
 
         /// <summary>
+        /// "Factory" function that wraps effectual code which does not yield a value 
+        /// at the end of the universe.
+        /// </summary>
+        /// <param name="a">Effectual code that doesn't yield a value</param>
+        /// <returns>Lifted Unit into IO</returns>
+        public static Io<Unit> Apply(Action a)
+        {
+            return new Io<Unit>(() =>
+            {
+                a();
+                return Unit.Only;
+            });
+        }
+
+        /// <summary>
         /// This function represents an eventual lazy value resulting from effectual code.
         /// </summary>
         private readonly Func<T> _f;
-
 
         private Io(Func<T> f)
         {

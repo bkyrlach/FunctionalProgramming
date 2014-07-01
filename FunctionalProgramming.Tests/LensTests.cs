@@ -1,9 +1,6 @@
-﻿using System;
-using System.Configuration;
-using System.Security.Cryptography;
-using FunctionalProgramming.Monad;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+﻿using FunctionalProgramming.Monad;
 using NUnit.Framework;
+using System;
 using Assert = NUnit.Framework.Assert;
 
 namespace FunctionalProgramming.Tests
