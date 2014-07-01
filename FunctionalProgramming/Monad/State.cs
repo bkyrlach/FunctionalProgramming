@@ -17,6 +17,11 @@ namespace FunctionalProgramming.Monad
             return _run(s).Item2;
         }
 
+        public Tuple<TState, TValue> Run(TState s)
+        {
+            return _run(s);
+        }
+
         public State<TState, TResult> FMap<TResult>(Func<TValue, TResult> f)
         {
             return new State<TState, TResult>(s =>

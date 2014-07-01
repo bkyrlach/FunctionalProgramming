@@ -1,4 +1,5 @@
 ﻿using System;
+using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad
 {
@@ -18,6 +19,11 @@ namespace FunctionalProgramming.Monad
             return _accessor(e);
         }
 
+        public State<TEntity, TProperty> GetS()
+        {
+            return _accessor.Get();
+        }
+
         public TEntity Set(TEntity e, TProperty value)
         {
             return _mutator(e, value);
@@ -28,7 +34,12 @@ namespace FunctionalProgramming.Monad
             return _mutator(e, updater(_accessor(e)));
         }
 
-        public Lens<TEntity, TChildProperty> Combine<TChildProperty>(Lens<TProperty, TChildProperty> otherLens)
+        public State<TEntity, TProperty> ModS(Func<TProperty, TProperty> updater)
+        {
+            return new State<TEntity, TProperty>(e => Tuple.Create(_mutator(e, updater(_accessor(e))), updater(_accessor(e))));
+        } 
+
+        public Lens<TEntity, TChildProperty> AndThen<TChildProperty>(Lens<TProperty, TChildProperty> otherLens)
         {
             return new Lens<TEntity, TChildProperty>((e, cpv) => Set(e, otherLens.Set(_accessor(e), cpv)), e => otherLens.Get(_accessor(e)));
         } 
