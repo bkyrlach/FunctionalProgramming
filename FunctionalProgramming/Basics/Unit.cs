@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace FunctionalProgramming.Basics
+﻿namespace FunctionalProgramming.Basics
 {
     /// <summary>
     /// This class represents the Unit value from typed lambda calculus. It is used to represent the return value or input
@@ -12,6 +6,9 @@ namespace FunctionalProgramming.Basics
     /// </summary>
     public sealed class Unit
     {
+        /// <summary>
+        /// There can only be on inhabitant of the type Unit
+        /// </summary>
         public static readonly Unit Only = new Unit();
 
         private Unit()

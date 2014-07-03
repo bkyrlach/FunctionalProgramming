@@ -27,8 +27,19 @@ namespace FunctionalProgramming.Monad.Parsing
         /// <param name="r">A repitition pattern</param>
         /// <returns>A parser that will match r repititions of the input sequence</returns>
         IParser<TInput, IConsList<TOutput>> Repeat(Repititions r);
-
-        IParser<TInput, IConsList<TOutput>> Repeat<T>(Repititions r, IParser<TInput, T> delimiter);  
+        
+        /// <summary>
+        /// Lifts a parser 'TInput => 'TOutput to the parser 'TInput => IEnumerable 'TOutput
+        /// where the input seqeunce is delimited
+        /// 
+        /// Note that the delimter values are discarded
+        /// </summary>
+        /// <typeparam name="T">The type of value parsed by the delimiter parser</typeparam>
+        /// <param name="r">A value indicating how to repeat</param>
+        /// <param name="delimiter">A parser that matches the delimeter</param>
+        /// <returns>A parser that will match r repititions of the delimited input sequence</returns>
+        //TODO Needs to be implemented
+        //IParser<TInput, IConsList<TOutput>> Repeat<T>(Repititions r, IParser<TInput, T> delimiter);  
 
         /// <summary>
         /// Combines this parser with another parser such that this ~ otherParser, the resultant parser
@@ -74,6 +85,13 @@ namespace FunctionalProgramming.Monad.Parsing
         /// <returns>A parser that doesn't consume the matched input</returns>
         IParser<TInput, TOutput> WithoutConsuming();
 
+        /// <summary>
+        /// Combines this parser with another parser such that the value produced by this parser is then parsed
+        /// by the other parser, only succeeding if the other parser also succeeds
+        /// </summary>
+        /// <typeparam name="T">The output type of the other parser</typeparam>
+        /// <param name="otherParser">The parser to use to attempt to parse the output of this parser</param>
+        /// <returns>A parser that will attempt to parse the output with another parser</returns>
         IParser<TInput, T> ParseResultWith<T>(IParser<TOutput, T> otherParser);
     }
 

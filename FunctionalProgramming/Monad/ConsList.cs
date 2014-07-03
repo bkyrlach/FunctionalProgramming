@@ -5,10 +5,25 @@ using System.Linq;
 
 namespace FunctionalProgramming.Monad
 {
+    /// <summary>
+    /// An immutable, singly-linked, structural sharing cons list
+    /// </summary>
+    /// <typeparam name="T">The type of elements in this sequence</typeparam>
     public interface IConsList<out T>
     {
+        /// <summary>
+        /// A property that gives you the head of the list, or Nothing if the list is empty
+        /// </summary>
         IMaybe<T> Head { get; }
+
+        /// <summary>
+        /// 
+        /// </summary>
         IMaybe<IConsList<T>> Tail { get; } 
+
+        /// <summary>
+        /// Indicates if the sequence contains any elements
+        /// </summary>
         bool Any { get; }
         int Count { get; }
 
@@ -114,8 +129,6 @@ namespace FunctionalProgramming.Monad
 
         private class EmptyList<T> : IConsList<T>
         {
-            public EmptyList() { }
-
             public IMaybe<T> Head
             {
                 get { return MaybeExtensions.Nothing<T>(); }

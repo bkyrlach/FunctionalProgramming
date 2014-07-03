@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Xml;
 using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad
@@ -42,6 +43,11 @@ namespace FunctionalProgramming.Monad
         public Lens<TEntity, TChildProperty> AndThen<TChildProperty>(Lens<TProperty, TChildProperty> otherLens)
         {
             return new Lens<TEntity, TChildProperty>((e, cpv) => Set(e, otherLens.Set(_accessor(e), cpv)), e => otherLens.Get(_accessor(e)));
-        } 
+        }
+
+        public Lens<TParent, TProperty> Compose<TParent>(Lens<TParent, TEntity> otherLens)
+        {
+            return new Lens<TParent, TProperty>((pe, p) => otherLens.Set(pe, Set(otherLens.Get(pe), p)), pe => Get(otherLens.Get(pe)));
+        }
     }
 }

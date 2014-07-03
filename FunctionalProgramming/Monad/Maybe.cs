@@ -85,9 +85,14 @@ namespace FunctionalProgramming.Monad
                 _value = value;
             }
 
-            public TResult Match<TResult>(Func<TValue, TResult> just, Func<TResult> none)
+            public TResult Match<TResult>(Func<TValue, TResult> just, Func<TResult> nothing)
             {
                 return just(_value);
+            }
+
+            public override string ToString()
+            {
+                return string.Format("Just({0})", _value);
             }
         }
 
@@ -96,6 +101,11 @@ namespace FunctionalProgramming.Monad
             public TResult Match<TResult>(Func<TValue, TResult> just, Func<TResult> nothing)
             {
                 return nothing();
+            }
+
+            public override string ToString()
+            {
+                return "Nothing";
             }
         }
     }

@@ -1,105 +1,126 @@
 ﻿using System;
-using System.Security.Cryptography.X509Certificates;
+using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel.Design;
+using System.Linq;
+using System.Runtime.Remoting.Messaging;
+using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad;
 
 namespace FunctionalProgramming.Test.ConsoleApp
 {
-    class OOTurtle
+    abstract class Comparison
     {
-        public string Name { get; set; }
-        public OOPosition Position { get; set; }
+        public abstract T Match<T>(Func<T> isGreater, Func<T> isLess, Func<T> isEqual);
+    }
 
-        public override string ToString()
+    sealed class LessThan : Comparison
+    {
+        public static readonly LessThan Only = new LessThan();
+
+        private LessThan()
         {
-            return string.Format("OOTurtle(Name={0},Position={1})", Name, Position);
+            
+        }
+        public override T Match<T>(Func<T> isGreater, Func<T> isLess, Func<T> isEqual)
+        {
+            return isGreater();
         }
     }
 
-    class OOPosition
+    sealed class GreaterThan : Comparison
     {
-        public int X { get; set; }
-        public int Y { get; set; }
+        public static readonly GreaterThan Only = new GreaterThan();
 
-        public override string ToString()
+        private GreaterThan()
         {
-            return string.Format("(X={0},Y={1})", X, Y);
+            
+        }
+        public override T Match<T>(Func<T> isGreater, Func<T> isLess, Func<T> isEqual)
+        {
+            return isLess();
         }
     }
 
-    class Turtle
+    sealed class EqualTo : Comparison
     {
-        public readonly string Name;
-        public readonly Position Position;
+        public static readonly EqualTo Only = new EqualTo();
 
-        public Turtle(string name, Position position)
+        private EqualTo()
         {
-            Name = name;
-            Position = position;
+            
         }
-
-        public Turtle Copy(string name = null, Position position = null)
+        public override T Match<T>(Func<T> isGreater, Func<T> isLess, Func<T> isEqual)
         {
-            return new Turtle(name ?? Name, position ?? Position);
-        }
-
-        public override string ToString()
-        {
-            return string.Format("Turtle(Name={0},Position={1})", Name, Position);
+            return isEqual();
         }
     }
 
-    class Position
+    public class SomeResult
+    {        
+        public string ValueIWant { get; set; }        
+    }
+
+    public class SomeBadResult
     {
-        public readonly int X;
-        public readonly int Y;
-
-        public Position(int x, int y)
-        {
-            X = x;
-            Y = y;
-        }
-
-        public Position Copy(int? x = null, int? y = null)
-        {
-            return new Position(x.HasValue ? x.Value : X, y.HasValue ? y.Value : Y);
-        }
-
-        public override string ToString()
-        {
-            return string.Format("(X={0},Y={1})", X, Y);
-        }
+        public IEnumerable<string> Errors { get; set; } 
     }
 
     class Program
     {
-        private static readonly Lens<Turtle, string> TurtleName = new Lens<Turtle, string>((t, s) => t.Copy(name: s), t => t.Name);
-        private static readonly Lens<Turtle, Position> TurtlePos = new Lens<Turtle, Position>((t, p) => t.Copy(position: p), t => t.Position);
-        private static readonly Lens<Position, int> PosX = new Lens<Position, int>((p, x) => p.Copy(x: x), p => p.X);
-        private static readonly Lens<Position, int> PosY = new Lens<Position, int>((p, y) => p.Copy(y: y), p => p.Y);
-        private static readonly Lens<Turtle, int> TurtleX = TurtlePos.AndThen(PosX);
-        private static readonly Lens<Turtle, int> TurtleY = TurtlePos.AndThen(PosY);
-
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
+            String a = null;
+            String b = "bob";
 
+            Console.WriteLine(a.ToMaybe().Where(x => x.Length > 3).GetOrElse(() => "ben is cool"));
+            Console.WriteLine(b.ToMaybe().Where(x => x.Length > 3).GetOrElse(() => "ben is cool"));
+
+            int c = 20;
+            int d = 10;
+
+            Console.WriteLine(DivideIfEven(c).SelectMany(DivideIfEven).SelectMany(DivideIfEven));
+            Console.WriteLine(DivideIfEven(d).SelectMany(DivideIfEven).SelectMany(DivideIfEven));
+
+            var firstNames = new[] {"Ben", "Rob", null };
+            var lastNames = new[] {null, "Chipman", "Schmitz"};
+
+            firstNames.Zip(lastNames, GetFullName).Select(name => name.GetOrElse(() => "Unknown")).ToList().ForEach(Console.WriteLine);
+
+            IEither<int, string> test1 = c.AsLeft<int, string>();
+            IEither<int, string> test2 = b.AsRight<int, string>();
+
+            test1.Select(x => x + "abc");
+            test2.Select(x => x + "abc");
+
+            test1.Match(
+                left: n => n.ToString(),
+                right: s => s);
+
+            IEither<string, int> test3 = test1.Swap();
+            IEither<string, double> test4 = test1.SelectEither(n => n.ToString(), double.Parse);
+
+            var lol = new[] {new[] {1}, new[] {2}, new[] {3}};
+
+            SumList(lol, EnumerableMonoid<int>.Only).ToList().ForEach(Console.WriteLine);
         }
 
-        static void MoveTurtleOO(OOTurtle t, int deltaX, int deltaY)
+        static T SumList<T>(IEnumerable<T> ts, IMonoid<T> m)
         {
-            t.Position.X = t.Position.X + deltaX;
-            t.Position.Y = t.Position.Y + deltaY;
+            return ts.Aggregate(m.MZero, m.MAppend);
         }
 
-        static Turtle MoveTurtleCopy(Turtle t, int deltaX, int deltaY)
+        static IMaybe<int> DivideIfEven(int n)
         {
-            return t.Copy(position: t.Position.Copy(x: t.Position.X + deltaX, y: t.Position.Y + deltaY));
-        }
+            return n%2 == 0 ? (n/2).ToMaybe() : MaybeExtensions.Nothing<int>();
+        } 
 
-        static Turtle MoveTurtle(Turtle t, int deltaX, int deltaY)
+        static IMaybe<string> GetFullName(string firstName, string lastName)
         {
-            return (from x in TurtleX.ModS(x => x + deltaX)
-                    from y in TurtleY.ModS(y => y + deltaY)
-                    select Tuple.Create(x, y)).Run(t).Item1;
+            return from fn in firstName.ToMaybe()
+                   from ln in lastName.ToMaybe()
+                   select ln + ", " + fn;
         }
     }
+
 }

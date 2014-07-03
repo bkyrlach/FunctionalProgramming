@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using FunctionalProgramming.Monad;
 
@@ -25,6 +26,17 @@ namespace FunctionalProgramming.Basics
                 () => Enumerable.Empty<T>().ToMaybe());
         }
 
+        /// <summary>
+        /// Traverse maps each value in a sequence to a computation, and then sequences those computations
+        /// 
+        /// Note that due to C#s lack of higher kinded types, this must be specified for every type of computation
+        /// This is the traverse for IMaybe computations
+        /// </summary>
+        /// <typeparam name="T1">The type of values in the sequence</typeparam>
+        /// <typeparam name="T2">The type of value that the computation will yield</typeparam>
+        /// <param name="xs">The sequence of values</param>
+        /// <param name="f">The function that lifts values from 'T1 to computations that yield 'T2</param>
+        /// <returns>A computation that yields a sequence of values of type T2</returns>
         public static IMaybe<IEnumerable<T2>> Traverse<T1, T2>(this IEnumerable<T1> xs, Func<T1, IMaybe<T2>> f)
         {
             return xs.Select(f).Sequence();
@@ -66,14 +78,26 @@ namespace FunctionalProgramming.Basics
             }
         }
 
+        /// <summary>
+        /// Helper function that lifts a value to the category IEnumerable
+        /// </summary>
+        /// <typeparam name="T">The type of value to lift</typeparam>
+        /// <param name="t">The value to lift</param>
+        /// <returns>The value lifted to the category IEnumerable</returns>
         public static IEnumerable<T> LiftEnumerable<T>(this T t)
         {
             return new[] {t};
         } 
 
+        /// <summary>
+        /// Helper function that is the dual of the implicit conversion string -> IEnumerable 'char
+        /// </summary>
+        /// <param name="chars">A sequence of chars to represent as a string</param>
+        /// <returns>A string that is the result of concatenating the characters together</returns>
         public static string MkString(this IEnumerable<char> chars)
         {
-            return chars.Aggregate("", (str, c) => str + c.ToString());
+            //TODO This should use a string monoid
+            return chars.Aggregate(string.Empty, (str, c) => str + c.ToString(CultureInfo.InvariantCulture));
         }
     }
 }
