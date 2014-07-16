@@ -106,6 +106,12 @@ namespace FunctionalProgramming.Monad
                 get { return 1 + _tail.Count; }
             }
 
+            public override string ToString()
+            {
+                return string.Format("List({0})",
+                    this.AsEnumerable().Select(o => o.ToString()).Aggregate((str, s) => str + ", " + s));
+            }
+
             public TResult Match<TResult>(Func<T, IConsList<T>, TResult> cons, Func<TResult> nil)
             {
                 return cons(_head, _tail);
@@ -134,6 +140,11 @@ namespace FunctionalProgramming.Monad
             public int Count
             {
                 get { return 0; }
+            }
+
+            public override string ToString()
+            {
+                return "Nil";
             }
 
             public TResult Match<TResult>(Func<T, IConsList<T>, TResult> cons, Func<TResult> nil)

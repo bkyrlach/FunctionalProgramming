@@ -266,57 +266,73 @@ namespace FunctionalProgramming.Monad.Parsing
 
         private IParseResult<TInput, IConsList<TOutput>> Apply(IStream<TInput> reader, Repititions r)
         {
-            return r.Match(
-                zeroOrMoreReps: () => _parser.Apply(reader).Match(
-                    success:
-                        (v, rest) =>
-                            Apply(rest, r)
-                                .Match(
-                                    success:
-                                        (vs, remaining) =>
-                                            new SuccessResult<TInput, IConsList<TOutput>>(v.Cons(vs), remaining),
-                                    failure:
-                                        (error, remaining) =>
-                                            new SuccessResult<TInput, IConsList<TOutput>>(v.LiftList(),
-                                                remaining)),
-                    failure:
-                        (e, rest) => new SuccessResult<TInput, IConsList<TOutput>>(ConsListExtensions.Nil<TOutput>(), rest)),
-                oneOrMoreReps: () => _parser.Apply(reader).Match<IParseResult<TInput, IConsList<TOutput>>>(
-                    success:
-                        (v, rest) =>
-                            Apply(rest, r)
-                                .Match(
-                                    success:
-                                        (vs, remaining) =>
-                                            new SuccessResult<TInput, IConsList<TOutput>>(v.Cons(vs), remaining),
-                                    failure:
-                                        (e, remaining) =>
-                                            new SuccessResult<TInput, IConsList<TOutput>>(v.LiftList(),
-                                                remaining)),
-                    failure:
-                        (e, rest) =>
-                            new FailureResult<TInput, IConsList<TOutput>>(
-                                string.Format("Expected one or more of ({0}) but got {1} instead", _parser.ToString(), e),
-                                rest)),
-                nReps:
-                    n =>
-                        F.If(n <= 0,
-                            () => new SuccessResult<TInput, IConsList<TOutput>>(ConsListExtensions.Nil<TOutput>(), reader),
-                            () => _parser.Apply(reader).Match(
-                                success: (v, rest) => Apply(rest, new NRepititions(n - 1))
-                                    .Match<IParseResult<TInput, IConsList<TOutput>>>(
+            return reader.Any
+                ? r.Match(
+                    zeroOrMoreReps: () => _parser.Apply(reader).Match(
+                        success:
+                            (v, rest) =>
+                                Apply(rest, r)
+                                    .Match(
+                                        success:
+                                            (vs, remaining) =>
+                                                new SuccessResult<TInput, IConsList<TOutput>>(v.Cons(vs), remaining),
+                                        failure:
+                                            (error, remaining) =>
+                                                new SuccessResult<TInput, IConsList<TOutput>>(v.LiftList(),
+                                                    remaining)),
+                        failure:
+                            (e, rest) =>
+                                new SuccessResult<TInput, IConsList<TOutput>>(ConsListExtensions.Nil<TOutput>(), rest)),
+                    oneOrMoreReps: () => _parser.Apply(reader).Match<IParseResult<TInput, IConsList<TOutput>>>(
+                        success:
+                            (v, rest) =>
+                                Apply(rest, r)
+                                    .Match(
                                         success:
                                             (vs, remaining) =>
                                                 new SuccessResult<TInput, IConsList<TOutput>>(v.Cons(vs), remaining),
                                         failure:
                                             (e, remaining) =>
-                                                new FailureResult<TInput, IConsList<TOutput>>(e, remaining)),
-                                failure:
-                                    (e, rest) =>
-                                        new FailureResult<TInput, IConsList<TOutput>>(
-                                            string.Format("Expected {0} or more of ({1}) but got {2} instead", n,
-                                                _parser.ToString(), e),
-                                            rest))));
+                                                new SuccessResult<TInput, IConsList<TOutput>>(v.LiftList(),
+                                                    remaining)),
+                        failure:
+                            (e, rest) =>
+                                new FailureResult<TInput, IConsList<TOutput>>(
+                                    string.Format("Expected one or more of ({0}) but got {1} instead",
+                                        _parser.ToString(), e),
+                                    rest)),
+                    nReps:
+                        n =>
+                            F.If(n <= 0,
+                                () =>
+                                    new SuccessResult<TInput, IConsList<TOutput>>(ConsListExtensions.Nil<TOutput>(),
+                                        reader),
+                                () => _parser.Apply(reader).Match(
+                                    success: (v, rest) => Apply(rest, new NRepititions(n - 1))
+                                        .Match<IParseResult<TInput, IConsList<TOutput>>>(
+                                            success:
+                                                (vs, remaining) =>
+                                                    new SuccessResult<TInput, IConsList<TOutput>>(v.Cons(vs), remaining),
+                                            failure:
+                                                (e, remaining) =>
+                                                    new FailureResult<TInput, IConsList<TOutput>>(e, remaining)),
+                                    failure:
+                                        (e, rest) =>
+                                            new FailureResult<TInput, IConsList<TOutput>>(
+                                                string.Format("Expected {0} or more of ({1}) but got {2} instead", n,
+                                                    _parser.ToString(), e),
+                                                rest))))
+                : r.Match(
+                    zeroOrMoreReps:
+                        () => new SuccessResult<TInput, IConsList<TOutput>>(ConsListExtensions.Nil<TOutput>(), reader),
+                    oneOrMoreReps: () => new FailureResult<TInput, IConsList<TOutput>>("Not enough reps", reader),
+                    nReps:
+                        n =>
+                            n < 1
+                                ? (IParseResult<TInput, IConsList<TOutput>>)new SuccessResult<TInput, IConsList<TOutput>>(ConsListExtensions.Nil<TOutput>(),
+                                    reader)
+                                : new FailureResult<TInput, IConsList<TOutput>>("Not enough reps", reader));
+
         }
     }
 
