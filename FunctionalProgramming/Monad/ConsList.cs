@@ -1,4 +1,5 @@
-﻿using FunctionalProgramming.Basics;
+﻿using System.Security.Cryptography.X509Certificates;
+using FunctionalProgramming.Basics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,6 +29,8 @@ namespace FunctionalProgramming.Monad
         int Count { get; }
 
         TResult Match<TResult>(Func<T, IConsList<T>, TResult> cons, Func<TResult> nil);
+
+        IEnumerable<T> AsEnumerable();
     }
     
     public static class ConsListExtensions
@@ -76,12 +79,15 @@ namespace FunctionalProgramming.Monad
             return xs.SelectMany(a => f(a).SelectMany(b => selector(a, b).LiftList()));
         }
 
-        public static IEnumerable<T> AsEnumerable<T>(this IConsList<T> xs)
+        public static IEnumerable<int> Infinity()
         {
-            return xs.Match(
-                cons: (h, t) => h.LiftEnumerable().Concat(t.AsEnumerable()),
-                nil: Enumerable.Empty<T>);
-        }
+            var i = 0;
+            while (true)
+            {
+                i++;
+                yield return i;
+            }
+        } 
 
         public static TResult FoldL<TValue, TResult>(this IConsList<TValue> xs, TResult initial,
             Func<TResult, TValue, TResult> f)
@@ -121,9 +127,30 @@ namespace FunctionalProgramming.Monad
                 get { return 1 + _tail.Count; }
             }
 
+            public IEnumerable<T> AsEnumerable()
+            {
+                var next = _head;
+                var tail = _tail;
+                while (tail != null)
+                {
+                    yield return next;
+                    next = tail.Head.Match(
+                        h => h,
+                        () => default(T));
+                    tail = tail.Tail.Match(
+                        t => t,
+                        () => null);
+                }
+            }
+
             public TResult Match<TResult>(Func<T, IConsList<T>, TResult> cons, Func<TResult> nil)
             {
                 return cons(_head, _tail);
+            }
+
+            public override string ToString()
+            {
+                return AsEnumerable().Select(x => x.ToString()).Aggregate((str, s) => string.Format("{0},{1}", str, s));
             }
         }
 
@@ -152,6 +179,16 @@ namespace FunctionalProgramming.Monad
             public TResult Match<TResult>(Func<T, IConsList<T>, TResult> cons, Func<TResult> nil)
             {
                 return nil();
+            }
+
+            public IEnumerable<T> AsEnumerable()
+            {
+                return Enumerable.Empty<T>();
+            }
+
+            public override string ToString()
+            {
+                return "Nil";
             }
         }
     }

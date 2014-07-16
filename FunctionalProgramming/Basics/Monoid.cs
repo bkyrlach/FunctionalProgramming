@@ -23,11 +23,45 @@ namespace FunctionalProgramming.Basics
         T MAppend(T t1, T t2);
     }
 
+    public sealed class StringMonoid : IMonoid<string>
+    {
+        public static IMonoid<string> Only = new StringMonoid();
+
+        private StringMonoid()
+        {
+            
+        }
+
+        public string MZero { get { return string.Empty; } }
+
+        public string MAppend(string s1, string s2)
+        {
+            return s1 + s2;
+        }
+    }
+
+    public sealed class IntMonoid : IMonoid<int>
+    {
+        public static IMonoid<int> Only = new IntMonoid();
+
+        private IntMonoid()
+        {
+            
+        }
+
+        public int MZero { get { return 0; } }
+
+        public int MAppend(int a, int b)
+        {
+            return a + b;
+        }
+    }
+
     /// <summary>
     /// A monoid for sequences whereby MZero is an empty sequence and MAppend is concatenation
     /// </summary>
     /// <typeparam name="T">The type of elements in the sequence</typeparam>
-    public class EnumerableMonoid<T> : IMonoid<IEnumerable<T>>
+    public sealed class EnumerableMonoid<T> : IMonoid<IEnumerable<T>>
     {
         /// <summary>
         /// As this represents a mathematical capability and not a value, there should not be more than

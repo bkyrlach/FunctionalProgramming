@@ -17,9 +17,17 @@ namespace FunctionalProgramming.Monad
     {
         public static IStream<T> AsStream<T>(this IEnumerable<T> xs)
         {
-            return BF.If<IStream<T>>(xs.Any(),
-                () => new NonEmptyStream<T>(xs.First(), new Lazy<IStream<T>>(xs.Skip(1).AsStream)),
-                () => new EmptyStream<T>());
+            var retval = Empty<T>();
+            var input = xs.Reverse().ToList();
+            foreach (var x in input)
+            {
+                retval = x.Cons(retval);
+            }            
+            return retval;  //xs.Reverse().Aggregate(, (stream, n) => n.Cons(stream));
+            //xs.Reverse().ToList().ForEach(x => );
+            //return input.Any()
+            //    ? (IStream<T>) new NonEmptyStream<T>(input.First(), new Lazy<IStream<T>>(() => input.Skip(1).AsStream()))
+            //    : new EmptyStream<T>();
         }
 
         public static IStream<T> Cons<T>(this T head, IStream<T> tail)
@@ -39,9 +47,9 @@ namespace FunctionalProgramming.Monad
 
         public static IStream<T> Drop<T>(this IStream<T> xs, int n)
         {
-            return BF.If(n <= 0,
-                () => xs,
-                () => xs.Tail.Select(ys => ys.Drop(n - 1)).GetOrElse(Empty<T>));
+            return n <= 0
+                ? xs
+                : xs.Tail.Select(ys => ys.Drop(n - 1)).GetOrElse(Empty<T>);
         }
 
         private class NonEmptyStream<T> : IStream<T>

@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("FunctionalProgramming.Test.Consol")]
+[assembly: AssemblyTitle("FunctionalProgramming.Examples")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Toshiba")]
-[assembly: AssemblyProduct("FunctionalProgramming.Test.Consol")]
+[assembly: AssemblyProduct("FunctionalProgramming.Examples")]
 [assembly: AssemblyCopyright("Copyright © Toshiba 2014")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("267be230-ac86-4f31-a134-7f9ed34fddeb")]
+[assembly: Guid("da005d94-4c91-4e5f-b936-85b5d3aa5d2f")]
 
 // Version information for an assembly consists of the following four values:
 //
