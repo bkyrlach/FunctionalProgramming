@@ -85,6 +85,11 @@ namespace FunctionalProgramming.Monad
                 _value = value;
             }
 
+            public override string ToString()
+            {
+                return string.Format("Just({0})", _value);
+            }
+
             public TResult Match<TResult>(Func<TValue, TResult> just, Func<TResult> none)
             {
                 return just(_value);
@@ -93,6 +98,11 @@ namespace FunctionalProgramming.Monad
 
         private class Nadda<TValue> : IMaybe<TValue>
         {
+            public override string ToString()
+            {
+                return "Nothing";
+            }
+
             public TResult Match<TResult>(Func<TValue, TResult> just, Func<TResult> nothing)
             {
                 return nothing();
