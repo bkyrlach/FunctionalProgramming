@@ -8,7 +8,7 @@ namespace FunctionalProgramming.Monad
     public interface IStream<out T>
     {
         IMaybe<T> Head { get; }
-        IMaybe<IStream<T>> Tail { get; } 
+        IMaybe<IStream<T>> Tail { get; }
         bool Any { get; }
         TResult Match<TResult>(Func<T, IStream<T>, TResult> cons, Func<TResult> nil);
     }
@@ -17,9 +17,7 @@ namespace FunctionalProgramming.Monad
     {
         public static IStream<T> AsStream<T>(this IEnumerable<T> xs)
         {
-            return BF.If<IStream<T>>(xs.Any(),
-                () => new NonEmptyStream<T>(xs.First(), new Lazy<IStream<T>>(xs.Skip(1).AsStream)),
-                () => new EmptyStream<T>());
+            return xs.Reverse().Aggregate((IStream<T>)new EmptyStream<T>(), (s, t) => t.Cons(s));
         }
 
         public static IStream<T> Cons<T>(this T head, IStream<T> tail)
@@ -82,7 +80,7 @@ namespace FunctionalProgramming.Monad
             public EmptyStream()
             {
 
-            } 
+            }
 
             public TResult Match<TResult>(Func<T, IStream<T>, TResult> cons, Func<TResult> nil)
             {
