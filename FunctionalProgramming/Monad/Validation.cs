@@ -117,11 +117,12 @@ namespace FunctionalProgramming.Monad
             private readonly TSuccess _val;
 
             public override bool IsSuccess { get { return true; } }
+            public TSuccess Value { get { return _val; } }
 
             public Success(TSuccess val)
             {
                 _val = val;
-            } 
+            }
 
             public override T Match<T>(Func<TSuccess, T> success, Func<TFailure, T> failure)
             {
@@ -134,6 +135,7 @@ namespace FunctionalProgramming.Monad
             private readonly TFailure _err;
 
             public override bool IsSuccess { get { return false; } }
+            public TFailure Value { get { return _err; } }
 
             public Failure(TFailure err)
             {
