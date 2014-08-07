@@ -59,6 +59,7 @@
     <Compile Include="Monad\Reader.cs" />
     <Compile Include="Monad\State.cs" />
     <Compile Include="Monad\Stream.cs" />
+    <Compile Include="Monad\TaskExtensions.cs" />
     <Compile Include="Monad\Trampoline.cs" />
     <Compile Include="Monad\Try.cs" />
     <Compile Include="Monad\Validation.cs" />

@@ -6,6 +6,7 @@ namespace FunctionalProgramming.Monad
 {
     public interface IMaybe<out TValue>
     {
+        bool IsEmpty { get; }
         TResult Match<TResult>(Func<TValue, TResult> just, Func<TResult> nothing);
     }
 
@@ -27,7 +28,7 @@ namespace FunctionalProgramming.Monad
         public static IMaybe<T> Where<T>(this IMaybe<T> m, Func<T, Boolean> predicate)
         {
             return m.Match(
-                just: value => BF.If(predicate(value), () => value.ToMaybe(), Nothing<T>),
+                just: value => predicate(value) ? value.ToMaybe() : Nothing<T>(),
                 nothing: Nothing<T>);
         } 
 
@@ -85,6 +86,8 @@ namespace FunctionalProgramming.Monad
                 _value = value;
             }
 
+            public bool IsEmpty { get { return false; } }
+
             public TResult Match<TResult>(Func<TValue, TResult> just, Func<TResult> nothing)
             {
                 return just(_value);
@@ -98,6 +101,8 @@ namespace FunctionalProgramming.Monad
 
         private class Nadda<TValue> : IMaybe<TValue>
         {
+            public bool IsEmpty { get { return true; } }
+
             public TResult Match<TResult>(Func<TValue, TResult> just, Func<TResult> nothing)
             {
                 return nothing();

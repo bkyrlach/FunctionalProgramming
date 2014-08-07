@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Threading.Tasks;
 using FunctionalProgramming.Monad;
 
 using BF = FunctionalProgramming.Basics.BasicFunctions;
@@ -19,11 +20,9 @@ namespace FunctionalProgramming.Basics
         /// <returns>A single IMaybe computation of type IEnumerable 'T</returns>
         public static IMaybe<IEnumerable<T>> Sequence<T>(this IEnumerable<IMaybe<T>> maybeTs)
         {
-            return BF.If(maybeTs.Any(),
-                () =>
-                    maybeTs.First()
-                        .SelectMany(t => maybeTs.Skip(1).Sequence().SelectMany(ts => ((new[] {t}).Concat(ts)).ToMaybe())),
-                () => Enumerable.Empty<T>().ToMaybe());
+            return maybeTs.Any()
+                ? maybeTs.First().SelectMany(t => maybeTs.Skip(1).Sequence().SelectMany(ts => ((new[] {t}).Concat(ts)).ToMaybe()))
+                : Enumerable.Empty<T>().ToMaybe();
         }
 
         /// <summary>
@@ -51,15 +50,16 @@ namespace FunctionalProgramming.Basics
         /// <returns>A single Io computation of type IEnumerable 'T</returns>
         public static Io<IEnumerable<T>> Sequence<T>(this IEnumerable<Io<T>> ioTs)
         {
-            return BF.If(ioTs.Any(),
-                () =>
-                    ioTs.First()
-                        .SelectMany(
-                            t =>
-                                ioTs.Skip(1)
-                                    .Sequence()
-                                    .SelectMany(ts => Io<IEnumerable<T>>.Apply(() => (new[] {t}).Concat(ts)))),
-                () => Io<IEnumerable<T>>.Apply(() => Enumerable.Empty<T>()));
+            return ioTs.Any() 
+                ? ioTs.First().SelectMany(t => ioTs.Skip(1).Sequence().SelectMany(ts => Io<IEnumerable<T>>.Apply(() => t.LiftEnumerable().Concat(ts))))
+                : Io<IEnumerable<T>>.Apply(() => Enumerable.Empty<T>());
+        }
+
+        public static Task<IEnumerable<T>> Sequence<T>(this IEnumerable<Task<T>> taskTs)
+        {
+            return taskTs.Any()
+                ? taskTs.First().SelectMany(t =>taskTs.Skip(1).Sequence().SelectMany(ts => new Task<IEnumerable<T>>(() => t.LiftEnumerable().Concat(ts))))
+                : new Task<IEnumerable<T>>(Enumerable.Empty<T>);
         }
 
         /// <summary>

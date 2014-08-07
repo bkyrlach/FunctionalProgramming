@@ -19,15 +19,7 @@ namespace FunctionalProgramming.Monad
         {
             var retval = Empty<T>();
             var input = xs.Reverse().ToList();
-            foreach (var x in input)
-            {
-                retval = x.Cons(retval);
-            }            
-            return retval;  //xs.Reverse().Aggregate(, (stream, n) => n.Cons(stream));
-            //xs.Reverse().ToList().ForEach(x => );
-            //return input.Any()
-            //    ? (IStream<T>) new NonEmptyStream<T>(input.First(), new Lazy<IStream<T>>(() => input.Skip(1).AsStream()))
-            //    : new EmptyStream<T>();
+            return input.Aggregate(retval, (current, x) => x.Cons(current));  
         }
 
         public static IStream<T> Cons<T>(this T head, IStream<T> tail)

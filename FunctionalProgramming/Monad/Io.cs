@@ -87,5 +87,11 @@ namespace FunctionalProgramming.Monad
         {
             return Io<TResult>.Apply(() => f(io.UnsafePerformIo()).UnsafePerformIo());
         }
+
+        public static Io<TSelect> SelectMany<TValue, TResult, TSelect>(this Io<TValue> m, Func<TValue, Io<TResult>> f,
+            Func<TValue, TResult, TSelect> selector)
+        {
+            return m.SelectMany(a => f(a).SelectMany(b => Io<TSelect>.Apply(() => selector(a, b))));
+        }
     }
 }

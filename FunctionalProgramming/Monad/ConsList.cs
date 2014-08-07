@@ -1,6 +1,4 @@
-﻿using System.Security.Cryptography.X509Certificates;
-using FunctionalProgramming.Basics;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -55,14 +53,19 @@ namespace FunctionalProgramming.Monad
             return xs.Match(
                 cons: (h, t) => h.Cons(t.Concat(ys)),
                 nil: () => ys);
-        } 
+        }
 
         public static IConsList<TResult> Select<TInitial, TResult>(this IConsList<TInitial> xs,
             Func<TInitial, TResult> f)
         {
+            return SelectTrampoline(xs, f).Run();
+        }
+
+        private static Trampoline<IConsList<T2>> SelectTrampoline<T1, T2>(this IConsList<T1> xs, Func<T1, T2> f)
+        {
             return xs.Match(
-                cons: (h, t) => f(h).Cons(t.Select(f)),
-                nil: Nil<TResult>);
+                cons: (h, t) => new More<IConsList<T2>>(() => t.SelectTrampoline(f)).Select(ts => f(h).Cons(ts)),
+                nil: () => new Done<IConsList<T2>>(Nil<T2>()));
         }
 
         public static IConsList<TResult> SelectMany<TInitial, TResult>(this IConsList<TInitial> xs,
@@ -77,17 +80,7 @@ namespace FunctionalProgramming.Monad
             Func<TInitial, IConsList<TResult>> f, Func<TInitial, TResult, TSelect> selector)
         {
             return xs.SelectMany(a => f(a).SelectMany(b => selector(a, b).LiftList()));
-        }
-
-        public static IEnumerable<int> Infinity()
-        {
-            var i = 0;
-            while (true)
-            {
-                i++;
-                yield return i;
-            }
-        } 
+        }     
 
         public static TResult FoldL<TValue, TResult>(this IConsList<TValue> xs, TResult initial,
             Func<TResult, TValue, TResult> f)
