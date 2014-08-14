@@ -8,13 +8,13 @@ namespace FunctionalProgramming.Monad
     public interface IConsList<out T>
     {
         IMaybe<T> Head { get; }
-        IMaybe<IConsList<T>> Tail { get; } 
+        IMaybe<IConsList<T>> Tail { get; }
         bool Any { get; }
         int Count { get; }
 
         TResult Match<TResult>(Func<T, IConsList<T>, TResult> cons, Func<TResult> nil);
     }
-    
+
     public static class ConsListExtensions
     {
         public static IConsList<T> Cons<T>(this T t, IConsList<T> xs)
@@ -37,7 +37,7 @@ namespace FunctionalProgramming.Monad
             return xs.Match(
                 cons: (h, t) => h.Cons(t.Concat(ys)),
                 nil: () => ys);
-        } 
+        }
 
         public static IConsList<TResult> Select<TInitial, TResult>(this IConsList<TInitial> xs,
             Func<TInitial, TResult> f)
@@ -76,15 +76,22 @@ namespace FunctionalProgramming.Monad
                 nil: () => initial);
         }
 
+        public static IConsList<T> Reverse<T>(this IConsList<T> xs)
+        {
+            return xs.Match(
+                cons: (h, t) => Reverse(t).Concat(h.LiftList()),
+                nil: Nil<T>);
+        }
+
         public static string MkString(this IConsList<char> chars)
         {
             return chars.FoldL(string.Empty, (str, c) => str + c.ToString());
         }
-        
+
         private class NonEmptyList<T> : IConsList<T>
         {
             private readonly T _head;
-            private readonly IConsList<T> _tail; 
+            private readonly IConsList<T> _tail;
 
             public NonEmptyList(T head, IConsList<T> tail)
             {

@@ -14,8 +14,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{6CF8B0
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FunctionalProgramming.Test.ConsoleApp", "FunctionalProgramming.Test.Consol\FunctionalProgramming.Test.ConsoleApp.csproj", "{886F83FA-4218-4F0B-AC9D-075AFAFF1426}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,10 +28,6 @@ Global
 		{98F1F119-E201-46D6-ADF6-6AA636873E7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{98F1F119-E201-46D6-ADF6-6AA636873E7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{98F1F119-E201-46D6-ADF6-6AA636873E7B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{886F83FA-4218-4F0B-AC9D-075AFAFF1426}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{886F83FA-4218-4F0B-AC9D-075AFAFF1426}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{886F83FA-4218-4F0B-AC9D-075AFAFF1426}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{886F83FA-4218-4F0B-AC9D-075AFAFF1426}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
