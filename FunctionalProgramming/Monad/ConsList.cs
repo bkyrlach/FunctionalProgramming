@@ -31,7 +31,7 @@ namespace FunctionalProgramming.Monad
         IEnumerable<T> AsEnumerable();
     }
     
-    public static class ConsListExtensions
+    public static class ConsListOps
     {
         public static IConsList<T> Cons<T>(this T t, IConsList<T> xs)
         {
@@ -53,6 +53,13 @@ namespace FunctionalProgramming.Monad
             return xs.Match(
                 cons: (h, t) => h.Cons(t.Concat(ys)),
                 nil: () => ys);
+        }
+
+        public static IStream<T> ToStream<T>(this IConsList<T> xs)
+        {
+            return xs.Match(
+                nil: StreamExtensions.Empty<T>,
+                cons: (h, t) => h.Cons(t.ToStream()));
         }
 
         public static IConsList<TResult> Select<TInitial, TResult>(this IConsList<TInitial> xs,
@@ -151,12 +158,12 @@ namespace FunctionalProgramming.Monad
         {
             public IMaybe<T> Head
             {
-                get { return MaybeExtensions.Nothing<T>(); }
+                get { return Maybe.Nothing<T>(); }
             }
 
             public IMaybe<IConsList<T>> Tail
             {
-                get { return MaybeExtensions.Nothing<IConsList<T>>(); }
+                get { return Maybe.Nothing<IConsList<T>>(); }
             }
 
             public bool Any

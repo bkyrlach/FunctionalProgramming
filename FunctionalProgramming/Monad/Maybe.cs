@@ -13,7 +13,7 @@ namespace FunctionalProgramming.Monad
     /// <summary>
     /// Extension methods for monadic operations on Maybe&gt;T&lt;
     /// </summary>
-    public static class MaybeExtensions
+    public static class Maybe
     {
         public static IMaybe<TValue> ToMaybe<TValue>(this TValue value)
         {

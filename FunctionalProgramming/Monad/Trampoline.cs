@@ -13,54 +13,45 @@ namespace FunctionalProgramming.Monad
 
         public T Run()
         {
+            var i = 0;
             var step = this;
             var stack = new Queue<Func<T, Trampoline<T>>>();
-            var result = MaybeExtensions.Nothing<T>();
+            var result = Maybe.Nothing<T>();
             while (result.IsEmpty)
             {
-                step.Match(
-                    more: k =>
+                i++;
+                if (step is More<T>)
+                {
+                    var m = (step as More<T>);
+                    step = m._k();
+                }
+                else if (step is Cont<T>)
+                {
+                    var c = (step as Cont<T>);
+                    step = c._t;
+                    stack.Enqueue(c._f);
+                }
+                else if (step is Done<T>)
+                {
+                    var d = (step as Done<T>);
+                    if (stack.Count == 0)
                     {
-                        step = k();
-                        return Unit.Only;
-                    },
-                    cont: (t, f) =>
+                        result = d._t.ToMaybe();
+                    }
+                    else
                     {
-                        step = t;
-                        stack.Enqueue(f);
-                        return Unit.Only;
-                    },
-                    done: t =>
-                    {
-                        if (stack.Count == 0)
-                        {
-                            result = t.ToMaybe();
-                        }
-                        else
-                        {
-                            var c = stack.Dequeue();
-                            step = c(t);
-                        }
-                        return Unit.Only;
-                    });
+                        step = stack.Dequeue()(d._t);
+                    }
+                }
+                
             }
             return result.GetOrError(() => new Exception("Impossibru!"));
-            //var step = this.AsLeft<Trampoline<T>, T>();
-            //while (!step.IsRight)
-            //{
-            //    step = step.Match(
-            //        left: trampoline => trampoline.Match(
-            //            more: k => k().AsLeft<Trampoline<T>, T>(),
-            //            done: t => t.AsRight<Trampoline<T>, T>()),
-            //        right: t => t.AsRight<Trampoline<T>, T>());
-            //}
-            //return step.Match(left: trampoline => { throw new Exception("Impossibru!"); }, right: t => t);
         }
     }
 
     public sealed class More<T> : Trampoline<T>
     {
-        private readonly Func<Trampoline<T>> _k;
+        public readonly Func<Trampoline<T>> _k;
         public More(Func<Trampoline<T>> k)
         {
             _k = k;
@@ -77,8 +68,8 @@ namespace FunctionalProgramming.Monad
 
     public sealed class Cont<T> : Trampoline<T>
     {
-        private readonly Trampoline<T> _t;
-        private readonly Func<T, Trampoline<T>> _f;
+        public readonly Trampoline<T> _t;
+        public readonly Func<T, Trampoline<T>> _f;
 
         public Cont(Trampoline<T> t, Func<T, Trampoline<T>> f)
         {
@@ -97,7 +88,7 @@ namespace FunctionalProgramming.Monad
 
     public sealed class Done<T> : Trampoline<T>
     {
-        private readonly T _t;
+        public readonly T _t;
 
         public Done(T t)
         {
@@ -117,7 +108,7 @@ namespace FunctionalProgramming.Monad
     {
         public static Trampoline<T> Select<T>(this Trampoline<T> m, Func<T, T> f)
         {
-            return m.SelectMany(a => new More<T>(() => new Done<T>(f(a))));
+            return m.SelectMany(a => new Done<T>(f(a)));
         } 
 
         public static Trampoline<T> SelectMany<T>(this Trampoline<T> m,

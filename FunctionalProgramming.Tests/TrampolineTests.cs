@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using FunctionalProgramming.Monad;
 using NUnit.Framework;
-
-using BF = FunctionalProgramming.Basics.BasicFunctions;
 
 namespace FunctionalProgramming.Tests
 {
@@ -46,7 +43,7 @@ namespace FunctionalProgramming.Tests
         private static Trampoline<IConsList<T>> Repeat<T>(T t, int n)
         {
             return n <= 0
-                ? new Done<IConsList<T>>(ConsListExtensions.Nil<T>())
+                ? new Done<IConsList<T>>(ConsListOps.Nil<T>())
                 : new More<IConsList<T>>(() => Repeat(t, n - 1)).Select(ts => t.Cons(ts));
         }
 

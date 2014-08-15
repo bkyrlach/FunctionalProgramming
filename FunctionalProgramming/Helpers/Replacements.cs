@@ -16,7 +16,7 @@ namespace FunctionalProgramming.Helpers
         public static IMaybe<int> SafeParseInt(this string s)
         {
             int parseResult;
-            return int.TryParse(s, out parseResult) ? parseResult.ToMaybe() : MaybeExtensions.Nothing<int>();
+            return int.TryParse(s, out parseResult) ? parseResult.ToMaybe() : Maybe.Nothing<int>();
         }
 
         /// <summary>
@@ -27,7 +27,7 @@ namespace FunctionalProgramming.Helpers
         public static IMaybe<Guid> SafeParseGuid(this string s)
         {
             Guid parseResult;
-            return Guid.TryParse(s, out parseResult) ? parseResult.ToMaybe() : MaybeExtensions.Nothing<Guid>();
+            return Guid.TryParse(s, out parseResult) ? parseResult.ToMaybe() : Maybe.Nothing<Guid>();
         }
     }
 }

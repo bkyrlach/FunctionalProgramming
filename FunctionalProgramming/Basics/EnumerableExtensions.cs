@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Globalization;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using FunctionalProgramming.Monad;
 
@@ -60,6 +62,18 @@ namespace FunctionalProgramming.Basics
             return taskTs.Any()
                 ? taskTs.First().SelectMany(t =>taskTs.Skip(1).Sequence().SelectMany(ts => new Task<IEnumerable<T>>(() => t.LiftEnumerable().Concat(ts))))
                 : new Task<IEnumerable<T>>(Enumerable.Empty<T>);
+        }
+
+        public static State<TState, IEnumerable<T>> Sequence<TState, T>(this IEnumerable<State<TState, T>> stateTs)
+        {
+            return stateTs.Any()
+                ? stateTs.First()
+                    .SelectMany(
+                        t =>
+                            stateTs.Skip(1)
+                                .Sequence()
+                                .SelectMany(ts => t.LiftEnumerable().Concat(ts).Insert<TState, IEnumerable<T>>()))
+                : Enumerable.Empty<T>().Insert<TState, IEnumerable<T>>();
         }
 
         /// <summary>

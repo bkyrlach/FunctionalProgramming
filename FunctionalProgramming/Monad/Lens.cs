@@ -30,6 +30,11 @@ namespace FunctionalProgramming.Monad
             return _mutator(e, value);
         }
 
+        public State<TEntity, Unit> SetS(TProperty value)
+        {
+            return new State<TEntity, Unit>(e => Tuple.Create(_mutator(e, value), Unit.Only));
+        }
+
         public TEntity Mod(TEntity e, Func<TProperty, TProperty> updater)
         {
             return _mutator(e, updater(_accessor(e)));

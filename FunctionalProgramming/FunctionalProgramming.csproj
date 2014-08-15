@@ -42,7 +42,6 @@
     <Compile Include="Basics\BasicFunctions.cs" />
     <Compile Include="Basics\DictionaryExtensions.cs" />
     <Compile Include="Basics\EnumerableExtensions.cs" />
-    <Compile Include="Basics\Foldable.cs" />
     <Compile Include="Basics\MatchException.cs" />
     <Compile Include="Basics\Monoid.cs" />
     <Compile Include="Basics\Unit.cs" />
@@ -59,9 +58,9 @@
     <Compile Include="Monad\Reader.cs" />
     <Compile Include="Monad\State.cs" />
     <Compile Include="Monad\Stream.cs" />
-    <Compile Include="Monad\TaskExtensions.cs" />
+    <Compile Include="Monad\Outlaws\TaskExtensions.cs" />
     <Compile Include="Monad\Trampoline.cs" />
-    <Compile Include="Monad\Try.cs" />
+    <Compile Include="Monad\Outlaws\Try.cs" />
     <Compile Include="Monad\Validation.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

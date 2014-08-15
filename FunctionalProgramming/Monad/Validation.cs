@@ -10,7 +10,7 @@ namespace FunctionalProgramming.Monad
         public abstract T Match<T>(Func<TSuccess, T> success, Func<TFailure, T> failure);
     }
 
-    public static class ValidationExtensions
+    public static class ValidationOps
     {
         public static Validation<TFailure, TSuccess> AsFailure<TFailure, TSuccess>(this TFailure error)
         {

@@ -34,7 +34,7 @@ namespace FunctionalProgramming.Monad
         private sealed class Right<T1, T2> : IEither<T1, T2>
         {
             private readonly bool _isRight;
-            public readonly T2 Value;
+            public readonly T2 Value;            
             public bool IsRight { get { return _isRight; } }
 
             public Right(T2 value)

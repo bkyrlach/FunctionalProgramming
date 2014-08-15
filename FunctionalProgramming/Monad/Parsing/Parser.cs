@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Messaging;
 using System.Security.Permissions;
 using FunctionalProgramming.Basics;
 using System;
@@ -265,7 +266,7 @@ namespace FunctionalProgramming.Monad.Parsing
         {
             return _parser.Apply(reader).Match(
                 success: (output, reader1) => new SuccessResult<TInput, IMaybe<TOutput>>(output.ToMaybe(), reader1),
-                failure: (s, reader1) => new SuccessResult<TInput, IMaybe<TOutput>>(MaybeExtensions.Nothing<TOutput>(), reader));
+                failure: (s, reader1) => new SuccessResult<TInput, IMaybe<TOutput>>(Maybe.Nothing<TOutput>(), reader));
         }
     }
 
@@ -326,7 +327,7 @@ namespace FunctionalProgramming.Monad.Parsing
             }
             else
             {
-                finalResult = new SuccessResult<TInput, IConsList<TOutput>>(resultList.AsEnumerable().Reverse().Aggregate(ConsListExtensions.Nil<TOutput>(), (list, e) => e.Cons(list)), remainder);
+                finalResult = new SuccessResult<TInput, IConsList<TOutput>>(resultList.AsEnumerable().Reverse().Aggregate(ConsListOps.Nil<TOutput>(), (list, e) => e.Cons(list)), remainder);
             }
             return finalResult;
             //return r.Match(
@@ -430,6 +431,25 @@ namespace FunctionalProgramming.Monad.Parsing
         }
     }
 
+    public class BindingParser<TInput, TOutput, TResult> : Parser<TInput, TResult>
+    {
+        private readonly IParser<TInput, TOutput> _parser;
+        private readonly Func<TOutput, IParser<TInput, TResult>> _f;
+
+        public BindingParser(IParser<TInput, TOutput> parser, Func<TOutput, IParser<TInput, TResult>> f)
+        {
+            _parser = parser;
+            _f = f;
+        }
+
+        public override IParseResult<TInput, TResult> Apply(IStream<TInput> reader)
+        {
+            return _parser.Apply(reader).Match(
+                success: (output, stream) => _f(output).Apply(stream),
+                failure: (err, stream) => new FailureResult<TInput, TResult>(err, stream));
+        }
+    }
+
     /// <summary>
     /// This parser combines two parsers such that parser1 | parser2, yielding a parser that will
     /// first attempt to match the input using parser1, and, if failing, will then try to match
@@ -477,6 +497,12 @@ namespace FunctionalProgramming.Monad.Parsing
             Func<TOutput, TResult> f)
         {
             return new MappingParser<TInput, TOutput, TResult>(parser, f);
+        }
+
+        public static IParser<TInput, TResult> SelectMany<TInput, TOutput, TResult>(
+            this IParser<TInput, TOutput> parser, Func<TOutput, IParser<TInput, TResult>> f)
+        {
+            return new BindingParser<TInput, TOutput, TResult>(parser, f);
         }
     }
 }
