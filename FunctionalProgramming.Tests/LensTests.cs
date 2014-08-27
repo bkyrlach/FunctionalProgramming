@@ -50,7 +50,7 @@ namespace FunctionalProgramming.Tests
     }
 
     [TestFixture]
-    public class LensTests
+    class LensTests
     {
         private static readonly Lens<Turtle, string> TurtleName = new Lens<Turtle, string>((t, s) => t.Copy(name: s), t => t.Name);
         private static readonly Lens<Turtle, Position> TurtlePos = new Lens<Turtle, Position>((t, p) => t.Copy(position: p), t => t.Position);
@@ -60,7 +60,7 @@ namespace FunctionalProgramming.Tests
         private static readonly Lens<Turtle, int> TurtleY = TurtlePos.AndThen(PosY);
 
         [Test]
-        public void LensCompositionTet()
+        void LensCompositionTet()
         {
             var moveTurtle = from x in TurtleX.ModS(x => x + 10)
                              from y in TurtleY.ModS(y => y + 10)

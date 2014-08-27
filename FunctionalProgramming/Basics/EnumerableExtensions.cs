@@ -6,7 +6,7 @@ using System.Linq;
 using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using FunctionalProgramming.Monad;
-
+using FunctionalProgramming.Monad.Outlaws;
 using BF = FunctionalProgramming.Basics.BasicFunctions;
 
 namespace FunctionalProgramming.Basics
@@ -74,6 +74,18 @@ namespace FunctionalProgramming.Basics
                                 .Sequence()
                                 .SelectMany(ts => t.LiftEnumerable().Concat(ts).Insert<TState, IEnumerable<T>>()))
                 : Enumerable.Empty<T>().Insert<TState, IEnumerable<T>>();
+        }
+
+        public static Try<IEnumerable<T>> Sequence<T>(this IEnumerable<Try<T>> tryTs)
+        {
+            return tryTs.Any()
+                ? tryTs.First()
+                    .SelectMany(
+                        t =>
+                            tryTs.Skip(1)
+                                .Sequence()
+                                .SelectMany(ts => TryOps.Attempt(() => t.LiftEnumerable().Concat(ts))))
+                : TryOps.Attempt(Enumerable.Empty<T>);
         }
 
         /// <summary>

@@ -93,6 +93,22 @@ namespace FunctionalProgramming.Monad
                 return just(_value);
             }
 
+            public override bool Equals(object obj)
+            {
+                var retval = false;
+                if (obj is Just<TValue>)
+                {
+                    var j = obj as Just<TValue>;
+                    retval = _value.Equals(j._value);
+                }
+                return retval;
+            }
+
+            public override int GetHashCode()
+            {
+                return _value.GetHashCode();
+            }
+
             public override string ToString()
             {
                 return string.Format("Just({0})", _value);
@@ -106,6 +122,16 @@ namespace FunctionalProgramming.Monad
             public TResult Match<TResult>(Func<TValue, TResult> just, Func<TResult> nothing)
             {
                 return nothing();
+            }
+
+            public override bool Equals(object obj)
+            {
+                return obj is Nadda<TValue>;
+            }
+
+            public override int GetHashCode()
+            {
+                return 1;
             }
 
             public override string ToString()

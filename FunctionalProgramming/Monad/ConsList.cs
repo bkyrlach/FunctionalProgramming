@@ -97,6 +97,11 @@ namespace FunctionalProgramming.Monad
                 nil: () => initial);
         }
 
+        public static IConsList<T> ToConsList<T>(this IEnumerable<T> xs)
+        {
+            return xs.Reverse().Aggregate(Nil<T>(), (ts, t) => t.Cons(ts));
+        }
+
         public static string MkString(this IConsList<char> chars)
         {
             return chars.FoldL(string.Empty, (str, c) => str + c.ToString());
@@ -148,6 +153,22 @@ namespace FunctionalProgramming.Monad
                 return cons(_head, _tail);
             }
 
+            public override bool Equals(object obj)
+            {
+                var retval = false;
+                if (obj is NonEmptyList<T>)
+                {
+                    var ol = obj as NonEmptyList<T>;
+                    retval = Head.Equals(ol.Head) && Tail.Equals(ol.Tail);
+                }
+                return retval;
+            }
+
+            public override int GetHashCode()
+            {
+                return FoldL(this, 181, (hash, t) => (hash*503) + t.GetHashCode());
+            }
+
             public override string ToString()
             {
                 return AsEnumerable().Select(x => x.ToString()).Aggregate((str, s) => string.Format("{0},{1}", str, s));
@@ -184,6 +205,16 @@ namespace FunctionalProgramming.Monad
             public IEnumerable<T> AsEnumerable()
             {
                 return Enumerable.Empty<T>();
+            }
+
+            public override bool Equals(object obj)
+            {
+                return (obj is EmptyList<T>);
+            }
+
+            public override int GetHashCode()
+            {
+                return 1;
             }
 
             public override string ToString()
