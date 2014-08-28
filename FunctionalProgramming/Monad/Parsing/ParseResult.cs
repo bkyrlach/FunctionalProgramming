@@ -73,4 +73,23 @@ namespace FunctionalProgramming.Monad.Parsing
             return string.Format("Parsing failed: {0}", _error);
         }
     }
+
+    public static class ParseResultExtensions
+    {
+        public static IParseResult<TInput, TResult> Select<TInput, TOutput, TResult>(
+            this IParseResult<TInput, TOutput> m, Func<TOutput, TResult> f)
+        {
+            return m.Match<IParseResult<TInput, TResult>>(
+                success: (output, stream) => new SuccessResult<TInput, TResult>(f(output), stream),
+                failure: (err, stream) => new FailureResult<TInput, TResult>(err, stream));
+        }
+
+        public static IParseResult<TInput, TResult> SelectMany<TInput, TOutput, TResult>(
+            this IParseResult<TInput, TOutput> m, Func<TOutput, IParseResult<TInput, TResult>> f)
+        {
+            return m.Match<IParseResult<TInput, TResult>>(
+                success: (output, stream) => f(output),
+                failure: (err, stream) => new FailureResult<TInput, TResult>(err, stream));
+        }
+    }
 }

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using BF = FunctionalProgramming.Basics.BasicFunctions;
 
@@ -17,7 +19,9 @@ namespace FunctionalProgramming.Monad
     {
         public static IStream<T> AsStream<T>(this IEnumerable<T> xs)
         {
-            return xs.Reverse().Aggregate((IStream<T>)new EmptyStream<T>(), (s, t) => t.Cons(s));
+            var retval = Empty<T>();
+            var input = xs.Reverse().ToList();
+            return input.Aggregate(retval, (current, x) => x.Cons(current));  
         }
 
         public static IStream<T> Cons<T>(this T head, IStream<T> tail)
@@ -35,11 +39,45 @@ namespace FunctionalProgramming.Monad
             return new EmptyStream<T>();
         }
 
+        public static IStream<T> Take<T>(this IStream<T> xs, int n)
+        {
+            return n <= 0
+                ? Empty<T>()
+                : xs.Match(
+                    cons: (h, t) => h.Cons(t.Take(n - 1)),
+                    nil: Empty<T>);
+        }
+
         public static IStream<T> Drop<T>(this IStream<T> xs, int n)
         {
-            return BF.If(n <= 0,
-                () => xs,
-                () => xs.Tail.Select(ys => ys.Drop(n - 1)).GetOrElse(Empty<T>));
+            return n <= 0
+                ? xs
+                : xs.Tail.Select(ys => ys.Drop(n - 1)).GetOrElse(Empty<T>);
+        }
+
+        public static Tuple<IStream<T>, IStream<T>> SplitAt<T>(this IStream<T> xs, int n)
+        {
+            return Tuple.Create(xs.Take(n), xs.Drop(n));
+        }
+
+        public static TResult FoldL<TInput, TResult>(this IStream<TInput> xs, TResult defaultValue,
+            Func<TResult, TInput, TResult> f)
+        {
+            return xs.Match(
+                cons: (h, t) => t.FoldL(f(defaultValue, h), f),
+                nil: () => defaultValue);
+        }
+
+        public static string MkString(this IStream<char> xs)
+        {
+            return xs.FoldL(string.Empty, (str, c) => str + c.ToString());
+        }
+
+        public static IStream<TResult> Select<TInput, TResult>(this IStream<TInput> m, Func<TInput, TResult> f)
+        {
+            return m.Match(
+                cons: (h, t) => f(h).Cons(t.Select(f)),
+                nil: Empty<TResult>);
         }
 
         private class NonEmptyStream<T> : IStream<T>
@@ -73,14 +111,11 @@ namespace FunctionalProgramming.Monad
 
         private class EmptyStream<T> : IStream<T>
         {
-            public IMaybe<T> Head { get { return MaybeExtensions.Nothing<T>(); } }
-            public IMaybe<IStream<T>> Tail { get { return MaybeExtensions.Nothing<IStream<T>>(); } }
+            public IMaybe<T> Head { get { return Maybe.Nothing<T>(); } }
+            public IMaybe<IStream<T>> Tail { get { return Maybe.Nothing<IStream<T>>(); } }
             public bool Any { get { return false; } }
 
-            public EmptyStream()
-            {
-
-            }
+            public EmptyStream() {} 
 
             public TResult Match<TResult>(Func<T, IStream<T>, TResult> cons, Func<TResult> nil)
             {

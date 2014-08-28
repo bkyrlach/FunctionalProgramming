@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Security.Cryptography.X509Certificates;
 using BF = FunctionalProgramming.Basics.BasicFunctions;
 
 namespace FunctionalProgramming.Monad
@@ -6,40 +7,45 @@ namespace FunctionalProgramming.Monad
     public interface IEither<out T1, out T2>
     {
         bool IsRight { get; }
+
+        T3 Match<T3>(Func<T1, T3> left, Func<T2, T3> right);
     }
 
     public static class EitherExtensions
     {
-        public static T3 Match<T1, T2, T3>(this IEither<T1, T2> e, Func<T1, T3> left, Func<T2, T3> right)
-        {
-            return BF.If(e.IsRight,
-                () => right((e as Right<T1, T2>).Value),
-                () => left((e as Left<T1, T2>).Value));
-        }
-
         private sealed class Left<T1, T2> : IEither<T1, T2>
         {
-            public T1 Value { get; private set; }
-
-            public bool IsRight { get; private set; }
+            private readonly bool _isRight;
+            public readonly T1 Value;
+            public bool IsRight { get { return _isRight; } }
 
             public Left(T1 value)
             {
-                IsRight = false;
+                _isRight = false;
                 Value = value;
             }
 
+            public T3 Match<T3>(Func<T1, T3> left, Func<T2, T3> right)
+            {
+                return left(Value);
+            }
         }
 
         private sealed class Right<T1, T2> : IEither<T1, T2>
         {
-            public T2 Value { get; private set; }
-            public bool IsRight { get; private set; }
+            private readonly bool _isRight;
+            public readonly T2 Value;            
+            public bool IsRight { get { return _isRight; } }
 
             public Right(T2 value)
             {
-                IsRight = true;
+                _isRight = true;
                 Value = value;
+            }
+
+            public T3 Match<T3>(Func<T1, T3> left, Func<T2, T3> right)
+            {
+                return right(Value);
             }
         }
 
@@ -53,11 +59,26 @@ namespace FunctionalProgramming.Monad
             return new Right<T1, T2>(right);
         }
 
+        public static IEither<T2, T1> Swap<T1, T2>(this IEither<T1, T2> e)
+        {
+            return e.Match(
+                left: l => l.AsRight<T2, T1>(),
+                right: r => r.AsLeft<T2, T1>());
+        }
+
         public static IEither<T1, T3> Select<T1, T2, T3>(this IEither<T1, T2> m, Func<T2, T3> f)
         {
             return m.Match(
                 left: l => l.AsLeft<T1, T3>(),
                 right: r => f(r).AsRight<T1, T3>());
+        }
+
+        public static IEither<T3, T4> SelectEither<T1, T2, T3, T4>(this IEither<T1, T2> m, Func<T1, T3> left,
+            Func<T2, T4> right)
+        {
+            return m.Match(
+                left: l => left(l).AsLeft<T3, T4>(),
+                right: r => right(r).AsRight<T3, T4>());
         }
 
         public static IEither<T1, T3> SelectMany<T1, T2, T3>(this IEither<T1, T2> m, Func<T2, IEither<T1, T3>> f)

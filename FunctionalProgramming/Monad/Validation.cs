@@ -10,7 +10,7 @@ namespace FunctionalProgramming.Monad
         public abstract T Match<T>(Func<TSuccess, T> success, Func<TFailure, T> failure);
     }
 
-    public static class ValidationExtensions
+    public static class ValidationOps
     {
         public static Validation<TFailure, TSuccess> AsFailure<TFailure, TSuccess>(this TFailure error)
         {
@@ -30,6 +30,15 @@ namespace FunctionalProgramming.Monad
         public static Validation<IEnumerable<TFailure>, TSuccess> AsSuccessWithFailureList<TFailure, TSuccess>(this TSuccess val)
         {
             return new Success<IEnumerable<TFailure>, TSuccess>(val);
+        }
+
+        public static Validation<TFailure2, TSuccess2> SelectEither<TFailure1, TFailure2, TSuccess1, TSuccess2>(
+            this Validation<TFailure1, TSuccess1> v, Func<TFailure1, TFailure2> failureFunc,
+            Func<TSuccess1, TSuccess2> successFunc)
+        {
+            return v.Match(
+                success: s => successFunc(s).AsSuccess<TFailure2, TSuccess2>(),
+                failure: f => failureFunc(f).AsFailure<TFailure2, TSuccess2>());
         }
 
         public static Validation<TFailure, TResult> Select<TFailure, TSuccess, TResult>(

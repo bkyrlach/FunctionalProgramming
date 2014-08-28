@@ -1,21 +1,37 @@
-﻿using FunctionalProgramming.Basics;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace FunctionalProgramming.Monad
 {
+    /// <summary>
+    /// An immutable, singly-linked, structural sharing cons list
+    /// </summary>
+    /// <typeparam name="T">The type of elements in this sequence</typeparam>
     public interface IConsList<out T>
     {
+        /// <summary>
+        /// A property that gives you the head of the list, or Nothing if the list is empty
+        /// </summary>
         IMaybe<T> Head { get; }
+
+        /// <summary>
+        /// 
+        /// </summary>
         IMaybe<IConsList<T>> Tail { get; }
+
+        /// <summary>
+        /// Indicates if the sequence contains any elements
+        /// </summary>
         bool Any { get; }
         int Count { get; }
 
         TResult Match<TResult>(Func<T, IConsList<T>, TResult> cons, Func<TResult> nil);
+
+        IEnumerable<T> AsEnumerable();
     }
 
-    public static class ConsListExtensions
+    public static class ConsListOps
     {
         public static IConsList<T> Cons<T>(this T t, IConsList<T> xs)
         {
@@ -39,12 +55,24 @@ namespace FunctionalProgramming.Monad
                 nil: () => ys);
         }
 
+        public static IStream<T> ToStream<T>(this IConsList<T> xs)
+        {
+            return xs.Match(
+                nil: StreamExtensions.Empty<T>,
+                cons: (h, t) => h.Cons(t.ToStream()));
+        }
+
         public static IConsList<TResult> Select<TInitial, TResult>(this IConsList<TInitial> xs,
             Func<TInitial, TResult> f)
         {
+            return SelectTrampoline(xs, f).Run();
+        }
+
+        private static Trampoline<IConsList<T2>> SelectTrampoline<T1, T2>(this IConsList<T1> xs, Func<T1, T2> f)
+        {
             return xs.Match(
-                cons: (h, t) => f(h).Cons(t.Select(f)),
-                nil: Nil<TResult>);
+                cons: (h, t) => new More<IConsList<T2>>(() => t.SelectTrampoline(f)).Select(ts => f(h).Cons(ts)),
+                nil: () => new Done<IConsList<T2>>(Nil<T2>()));
         }
 
         public static IConsList<TResult> SelectMany<TInitial, TResult>(this IConsList<TInitial> xs,
@@ -59,14 +87,7 @@ namespace FunctionalProgramming.Monad
             Func<TInitial, IConsList<TResult>> f, Func<TInitial, TResult, TSelect> selector)
         {
             return xs.SelectMany(a => f(a).SelectMany(b => selector(a, b).LiftList()));
-        }
-
-        public static IEnumerable<T> AsEnumerable<T>(this IConsList<T> xs)
-        {
-            return xs.Match(
-                cons: (h, t) => h.LiftEnumerable().Concat(t.AsEnumerable()),
-                nil: Enumerable.Empty<T>);
-        }
+        }     
 
         public static TResult FoldL<TValue, TResult>(this IConsList<TValue> xs, TResult initial,
             Func<TResult, TValue, TResult> f)
@@ -82,6 +103,13 @@ namespace FunctionalProgramming.Monad
                 cons: (h, t) => Reverse(t).Concat(h.LiftList()),
                 nil: Nil<T>);
         }
+        
+        public static IConsList<T> ToConsList<T>(this IEnumerable<T> xs)
+        {
+            return xs.Reverse().Aggregate(Nil<T>(), (ts, t) => t.Cons(ts));
+        }
+
+
 
         public static string MkString(this IConsList<char> chars)
         {
@@ -113,30 +141,59 @@ namespace FunctionalProgramming.Monad
                 get { return 1 + _tail.Count; }
             }
 
-            public override string ToString()
+            public IEnumerable<T> AsEnumerable()
             {
-                return string.Format("List({0})",
-                    this.AsEnumerable().Select(o => o.ToString()).Aggregate((str, s) => str + ", " + s));
+                var next = _head;
+                var tail = _tail;
+                while (tail != null)
+                {
+                    yield return next;
+                    next = tail.Head.Match(
+                        h => h,
+                        () => default(T));
+                    tail = tail.Tail.Match(
+                        t => t,
+                        () => null);
+                }
             }
 
             public TResult Match<TResult>(Func<T, IConsList<T>, TResult> cons, Func<TResult> nil)
             {
                 return cons(_head, _tail);
             }
+
+            public override bool Equals(object obj)
+            {
+                var retval = false;
+                if (obj is NonEmptyList<T>)
+                {
+                    var ol = obj as NonEmptyList<T>;
+                    retval = Head.Equals(ol.Head) && Tail.Equals(ol.Tail);
+                }
+                return retval;
+            }
+
+            public override int GetHashCode()
+            {
+                return FoldL(this, 181, (hash, t) => (hash*503) + t.GetHashCode());
+            }
+
+            public override string ToString()
+            {
+                return AsEnumerable().Select(x => x.ToString()).Aggregate((str, s) => string.Format("{0},{1}", str, s));
+            }
         }
 
         private class EmptyList<T> : IConsList<T>
         {
-            public EmptyList() { }
-
             public IMaybe<T> Head
             {
-                get { return MaybeExtensions.Nothing<T>(); }
+                get { return Maybe.Nothing<T>(); }
             }
 
             public IMaybe<IConsList<T>> Tail
             {
-                get { return MaybeExtensions.Nothing<IConsList<T>>(); }
+                get { return Maybe.Nothing<IConsList<T>>(); }
             }
 
             public bool Any
@@ -149,14 +206,29 @@ namespace FunctionalProgramming.Monad
                 get { return 0; }
             }
 
-            public override string ToString()
-            {
-                return "Nil";
-            }
-
             public TResult Match<TResult>(Func<T, IConsList<T>, TResult> cons, Func<TResult> nil)
             {
                 return nil();
+            }
+
+            public IEnumerable<T> AsEnumerable()
+            {
+                return Enumerable.Empty<T>();
+            }
+
+            public override bool Equals(object obj)
+            {
+                return (obj is EmptyList<T>);
+            }
+
+            public override int GetHashCode()
+            {
+                return 1;
+            }
+
+            public override string ToString()
+            {
+                return "Nil";
             }
         }
     }

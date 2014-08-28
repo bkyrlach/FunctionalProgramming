@@ -1,5 +1,7 @@
-﻿using System.Runtime.InteropServices.WindowsRuntime;
-using System.Text.RegularExpressions;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.Remoting.Messaging;
+using System.Security.Permissions;
 using FunctionalProgramming.Basics;
 using System;
 using F = FunctionalProgramming.Basics.BasicFunctions;
@@ -29,8 +31,19 @@ namespace FunctionalProgramming.Monad.Parsing
         /// <param name="r">A repitition pattern</param>
         /// <returns>A parser that will match r repititions of the input sequence</returns>
         IParser<TInput, IConsList<TOutput>> Repeat(Repititions r);
-
-        IParser<TInput, IConsList<TOutput>> Repeat<T>(Repititions r, IParser<TInput, T> delimiter);
+        
+        /// <summary>
+        /// Lifts a parser 'TInput => 'TOutput to the parser 'TInput => IEnumerable 'TOutput
+        /// where the input seqeunce is delimited
+        /// 
+        /// Note that the delimter values are discarded
+        /// </summary>
+        /// <typeparam name="T">The type of value parsed by the delimiter parser</typeparam>
+        /// <param name="r">A value indicating how to repeat</param>
+        /// <param name="delimiter">A parser that matches the delimeter</param>
+        /// <returns>A parser that will match r repititions of the delimited input sequence</returns>
+        //TODO Needs to be implemented
+        //IParser<TInput, IConsList<TOutput>> Repeat<T>(Repititions r, IParser<TInput, T> delimiter);  
 
         /// <summary>
         /// Combines this parser with another parser such that this ~ otherParser, the resultant parser
@@ -76,6 +89,13 @@ namespace FunctionalProgramming.Monad.Parsing
         /// <returns>A parser that doesn't consume the matched input</returns>
         IParser<TInput, TOutput> WithoutConsuming();
 
+        /// <summary>
+        /// Combines this parser with another parser such that the value produced by this parser is then parsed
+        /// by the other parser, only succeeding if the other parser also succeeds
+        /// </summary>
+        /// <typeparam name="T">The output type of the other parser</typeparam>
+        /// <param name="otherParser">The parser to use to attempt to parse the output of this parser</param>
+        /// <returns>A parser that will attempt to parse the output with another parser</returns>
         IParser<TInput, T> ParseResultWith<T>(IParser<TOutput, T> otherParser);
     }
 
@@ -246,7 +266,7 @@ namespace FunctionalProgramming.Monad.Parsing
         {
             return _parser.Apply(reader).Match(
                 success: (output, reader1) => new SuccessResult<TInput, IMaybe<TOutput>>(output.ToMaybe(), reader1),
-                failure: (s, reader1) => new SuccessResult<TInput, IMaybe<TOutput>>(MaybeExtensions.Nothing<TOutput>(), reader));
+                failure: (s, reader1) => new SuccessResult<TInput, IMaybe<TOutput>>(Maybe.Nothing<TOutput>(), reader));
         }
     }
 
@@ -266,65 +286,66 @@ namespace FunctionalProgramming.Monad.Parsing
             return Apply(reader, _r);
         }
 
-        private IParseResult<TInput, IConsList<TOutput>> Apply(IStream<TInput> reader, Repititions reps)
+        private IParseResult<TInput, IConsList<TOutput>> Apply(IStream<TInput> reader, Repititions r)
         {
-            IConsList<TOutput> results = ConsListExtensions.Nil<TOutput>();
-            var matched = true;
-            var error = MaybeExtensions.Nothing<string>();
-            var count = reps.Match(zeroOrMoreReps: () => -2, oneOrMoreReps: () => -1, nReps: n => n);
-            while (matched && reader.Any)
+            var reps = r.Match(
+                zeroOrMoreReps: () => -1,
+                oneOrMoreReps: () => -2,
+                nReps: n => n);
+            var resultList = new List<TOutput>();
+            var dontStop = true;
+            var remainder = reader;
+            while (reps != 0 && dontStop && remainder.Any)
             {
-                var singleResult = _parser.Apply(reader).Match<IParseResult<TInput, TOutput>>(
-                    success: (v, r) => new SuccessResult<TInput, TOutput>(v, r),
-                    failure: (err, r) => new FailureResult<TInput, TOutput>(err, r));
-                matched = singleResult.Match(
-                    success: (v, r) =>
-                    {
-                        results = v.Cons(results);
-                        reader = r;
-                        return true;
-                    },
-                    failure: (err, r) =>
-                    {
-                        error = err.ToMaybe();
-                        reader = r;
-                        return false;
-                    });
-                if (count > 0 && matched)
+                var result = _parser.Apply(remainder);
+                var parseResult = result.Match(
+                    success: (v, rest) => Tuple.Create(v, rest).AsRight<IStream<TInput>, Tuple<TOutput, IStream<TInput>>>(),
+                    failure: (err, rest) => rest.AsLeft<IStream<TInput>, Tuple<TOutput, IStream<TInput>>>());
+                remainder = parseResult.Match(
+                    right: tuple => tuple.Item2,
+                    left: rest => rest);
+                if (parseResult.IsRight)
                 {
-                    count--;
-                }
-                if (count == 0)
-                {
-                    break;
-                }
-            }
-            results = results.Reverse();
-            IParseResult<TInput, IConsList<TOutput>> retval;
-            if (count <= 0)
-            {
-                retval = new SuccessResult<TInput, IConsList<TOutput>>(results, reader);
-            }
-            else
-            {
-                if (count == -1 && results.Count < 1)
-                {
-                    retval = new FailureResult<TInput, IConsList<TOutput>>(string.Format("Expected one or more of ({0}) but got {1} instead", _parser, error.GetOrElse(() => "Unexpected Error")), reader);
+                    resultList.Add(parseResult.Match(
+                        right: tuple => tuple.Item1,
+                        left: rest => default(TOutput)));
                 }
                 else
                 {
-                    retval =
-                        new FailureResult<TInput, IConsList<TOutput>>(
-                            string.Format("Expected {0} or more of ({1}) but got {2} instead", count, _parser,
-                                error.GetOrElse(() => "Unexpected Error")), reader);
+                    dontStop = false;
+                }
+                if (reps > 0)
+                {
+                    reps = reps - 1;
                 }
             }
-            return retval;
-            //return reader.Any
-            //    ? r.Match(
-            //        zeroOrMoreReps: () => _parser.Apply(reader).Match(
-            //            success: (v, rest) => Apply(rest, r).Match(
+            IParseResult<TInput, IConsList<TOutput>> finalResult;
+
+            if (reps > 0 || (reps == -2 && !resultList.Any()))
+            {
+                finalResult = new FailureResult<TInput, IConsList<TOutput>>("Need good error text", remainder);
+            }
+            else
+            {
+                finalResult = new SuccessResult<TInput, IConsList<TOutput>>(resultList.AsEnumerable().Reverse().Aggregate(ConsListOps.Nil<TOutput>(), (list, e) => e.Cons(list)), remainder);
+            }
+            return finalResult;
+            //return r.Match(
+            //    zeroOrMoreReps: () => _parser.Apply(reader).Match(
+            //        success: (v, rest) => Apply(rest, r).Match(
+            //            success: (vs, remaining) => new SuccessResult<TInput, IConsList<TOutput>>(v.Cons(vs), remaining),
+            //            failure: (error, remaining) => new SuccessResult<TInput, IConsList<TOutput>>(v.LiftList(), remaining)),
+            //        failure: (e, rest) => new SuccessResult<TInput, IConsList<TOutput>>(ConsListExtensions.Nil<TOutput>(), rest)),
+            //    oneOrMoreReps: () => _parser.Apply(reader).Match<IParseResult<TInput, IConsList<TOutput>>>(
+            //        success: (v, rest) => Apply(rest, r).Match(
+            //                        success: (vs, remaining) => new SuccessResult<TInput, IConsList<TOutput>>(v.Cons(vs), remaining),
+            //                        failure: (e, remaining) => new SuccessResult<TInput, IConsList<TOutput>>(v.LiftList(), remaining)),
+            //        failure: (e, rest) => new FailureResult<TInput, IConsList<TOutput>>(string.Format("Expected one or more of ({0}) but got {1} instead", _parser.ToString(), e),rest)),
+            //    nReps: n => n <= 0 ? new SuccessResult<TInput, IConsList<TOutput>>(ConsListExtensions.Nil<TOutput>(), reader) : _parser.Apply(reader).Match(
+            //                    success: (v, rest) => Apply(rest, new NRepititions(n - 1)).Match<IParseResult<TInput, IConsList<TOutput>>>(
             //                            success: (vs, remaining) => new SuccessResult<TInput, IConsList<TOutput>>(v.Cons(vs), remaining),
+            //                            failure: (e, remaining) => new FailureResult<TInput, IConsList<TOutput>>(e, remaining)),
+            //                    failure: (e, rest) => new FailureResult<TInput, IConsList<TOutput>>(string.Format("Expected {0} or more of ({1}) but got {2} instead", n,_parser.ToString(), e),rest)));
             //                            failure: (error, remaining) => new SuccessResult<TInput, IConsList<TOutput>>(v.LiftList(), remaining)),
             //            failure: (e, rest) => new SuccessResult<TInput, IConsList<TOutput>>(ConsListExtensions.Nil<TOutput>(), rest)),
             //        oneOrMoreReps: () => _parser.Apply(reader).Match<IParseResult<TInput, IConsList<TOutput>>>(
@@ -432,6 +453,25 @@ namespace FunctionalProgramming.Monad.Parsing
         }
     }
 
+    public class BindingParser<TInput, TOutput, TResult> : Parser<TInput, TResult>
+    {
+        private readonly IParser<TInput, TOutput> _parser;
+        private readonly Func<TOutput, IParser<TInput, TResult>> _f;
+
+        public BindingParser(IParser<TInput, TOutput> parser, Func<TOutput, IParser<TInput, TResult>> f)
+        {
+            _parser = parser;
+            _f = f;
+        }
+
+        public override IParseResult<TInput, TResult> Apply(IStream<TInput> reader)
+        {
+            return _parser.Apply(reader).Match(
+                success: (output, stream) => _f(output).Apply(stream),
+                failure: (err, stream) => new FailureResult<TInput, TResult>(err, stream));
+        }
+    }
+
     /// <summary>
     /// This parser combines two parsers such that parser1 | parser2, yielding a parser that will
     /// first attempt to match the input using parser1, and, if failing, will then try to match
@@ -479,6 +519,12 @@ namespace FunctionalProgramming.Monad.Parsing
             Func<TOutput, TResult> f)
         {
             return new MappingParser<TInput, TOutput, TResult>(parser, f);
+        }
+
+        public static IParser<TInput, TResult> SelectMany<TInput, TOutput, TResult>(
+            this IParser<TInput, TOutput> parser, Func<TOutput, IParser<TInput, TResult>> f)
+        {
+            return new BindingParser<TInput, TOutput, TResult>(parser, f);
         }
     }
 }

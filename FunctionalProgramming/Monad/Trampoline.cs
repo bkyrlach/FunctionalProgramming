@@ -1,66 +1,104 @@
 ﻿using System;
-using System.Net.Sockets;
+using System.Collections.Generic;
+using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad
 {
-    public abstract class Trampoline<T>
+    public abstract class Trampoline<T> 
     {
-        public abstract bool IsDone { get; }
-
-        public abstract TResult Match<TResult>(Func<Func<Trampoline<T>>, TResult> more, Func<T, TResult> done);
+        public abstract TResult Match<TResult>(
+            Func<Func<Trampoline<T>>, TResult> more,
+            Func<Trampoline<T>, Func<T, Trampoline<T>>, TResult> cont, 
+            Func<T, TResult> done);
 
         public T Run()
         {
+            var i = 0;
             var step = this;
-            var retval = default(T);
-            while (!step.IsDone)
+            var stack = new Queue<Func<T, Trampoline<T>>>();
+            var result = Maybe.Nothing<T>();
+            while (result.IsEmpty)
             {
-                step = step.Match(
-                    more: k => k(),
-                    done: t =>
+                i++;
+                if (step is More<T>)
+                {
+                    var m = (step as More<T>);
+                    step = m._k();
+                }
+                else if (step is Cont<T>)
+                {
+                    var c = (step as Cont<T>);
+                    step = c._t;
+                    stack.Enqueue(c._f);
+                }
+                else if (step is Done<T>)
+                {
+                    var d = (step as Done<T>);
+                    if (stack.Count == 0)
                     {
-                        retval = t;
-                        return new Done<T>(t);
-                    });
+                        result = d._t.ToMaybe();
+                    }
+                    else
+                    {
+                        step = stack.Dequeue()(d._t);
+                    }
+                }
+                
             }
-            return retval;
+            return result.GetOrError(() => new Exception("Impossibru!"));
         }
     }
 
     public sealed class More<T> : Trampoline<T>
     {
-        private readonly Func<Trampoline<T>> _k;
+        public readonly Func<Trampoline<T>> _k;
         public More(Func<Trampoline<T>> k)
         {
             _k = k;
         }
 
-        public override bool IsDone
-        {
-            get { return false; }
-        }
-
-        public override TResult Match<TResult>(Func<Func<Trampoline<T>>, TResult> more, Func<T, TResult> done)
+        public override TResult Match<TResult>(
+            Func<Func<Trampoline<T>>, TResult> more,
+            Func<Trampoline<T>, Func<T, Trampoline<T>>, TResult> cont, 
+            Func<T, TResult> done)
         {
             return more(_k);
         }
     }
 
+    public sealed class Cont<T> : Trampoline<T>
+    {
+        public readonly Trampoline<T> _t;
+        public readonly Func<T, Trampoline<T>> _f;
+
+        public Cont(Trampoline<T> t, Func<T, Trampoline<T>> f)
+        {
+            _t = t;
+            _f = f;
+        }
+
+        public override TResult Match<TResult>(
+            Func<Func<Trampoline<T>>, TResult> more, 
+            Func<Trampoline<T>, Func<T, Trampoline<T>>, TResult> cont, 
+            Func<T, TResult> done)
+        {
+            return cont(_t, _f);
+        }
+    }
+
     public sealed class Done<T> : Trampoline<T>
     {
-        private readonly T _t;
+        public readonly T _t;
 
         public Done(T t)
         {
             _t = t;
         }
 
-        public override bool IsDone
-        {
-            get { return true; }
-        }
-
-        public override TResult Match<TResult>(Func<Func<Trampoline<T>>, TResult> more, Func<T, TResult> done)
+        public override TResult Match<TResult>(
+            Func<Func<Trampoline<T>>, TResult> more,
+            Func<Trampoline<T>, Func<T, Trampoline<T>>, TResult> cont, 
+            Func<T, TResult> done)
         {
             return done(_t);
         }
@@ -68,11 +106,15 @@ namespace FunctionalProgramming.Monad
 
     public static class TrampolineExtensions
     {
-        public static Trampoline<TResult> Select<TValue, TResult>(this Trampoline<TValue> m, Func<TValue, TResult> f)
+        public static Trampoline<T> Select<T>(this Trampoline<T> m, Func<T, T> f)
         {
-            return m.Match<Trampoline<TResult>>(
-                more: k => new More<TResult>(() => k().Select<TValue, TResult>(f)),
-                done: t => new Done<TResult>(f(t)));
+            return m.SelectMany(a => new Done<T>(f(a)));
+        } 
+
+        public static Trampoline<T> SelectMany<T>(this Trampoline<T> m,
+            Func<T, Trampoline<T>> f)
+        {
+            return new Cont<T>(m, f);
         }
     }
 }

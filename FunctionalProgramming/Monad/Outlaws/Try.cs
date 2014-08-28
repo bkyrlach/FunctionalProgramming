@@ -1,15 +1,14 @@
 ﻿using System;
+using FunctionalProgramming.Basics;
 
-using BF = FunctionalProgramming.Basics.BasicFunctions;
-
-namespace FunctionalProgramming.Monad
+namespace FunctionalProgramming.Monad.Outlaws
 {
     public abstract class Try<T>
     {
         public abstract TResult Match<TResult>(Func<T, TResult> success, Func<Exception, TResult> failure);
     }
 
-    public static class TryExtensions
+    public static class TryOps
     {
         private sealed class Success<T> : Try<T>
         {
@@ -72,14 +71,14 @@ namespace FunctionalProgramming.Monad
         public static T GetOrElse<T>(this Try<T> m, Func<T> defaultValue)
         {
             return m.Match(
-                success: BF.Identity,
+                success: BasicFunctions.Identity,
                 failure: ex => defaultValue());
         }
 
         public static T GetOrError<T>(this Try<T> m)
         {
             return m.Match(
-                success: BF.Identity,
+                success: BasicFunctions.Identity,
                 failure: ex => { throw ex; });
         }
 
@@ -87,7 +86,7 @@ namespace FunctionalProgramming.Monad
         {
             return m.Match(
                 success: val => val.ToMaybe(),
-                failure: ex => MaybeExtensions.Nothing<T>());
+                failure: ex => Maybe.Nothing<T>());
         }
     }
 }
