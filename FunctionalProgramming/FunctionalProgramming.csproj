@@ -63,6 +63,7 @@
     <Compile Include="Monad\Trampoline.cs" />
     <Compile Include="Monad\Outlaws\Try.cs" />
     <Compile Include="Monad\Validation.cs" />
+    <Compile Include="Monad\Writer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup />

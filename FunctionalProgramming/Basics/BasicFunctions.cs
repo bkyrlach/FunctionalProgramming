@@ -31,6 +31,5 @@ namespace FunctionalProgramming.Basics
         {
             return t;
         }
-
     }
 }

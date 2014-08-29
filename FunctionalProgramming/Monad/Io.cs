@@ -9,7 +9,6 @@ namespace FunctionalProgramming.Monad
     /// <typeparam name="T">The type of value effectual code will yield at the end of the universe</typeparam>
     public sealed class Io<T>
     {
-
         /// <summary>
         /// "Factory" function that takes a lazy value (represented by a lambda) that wraps effectual code which
         /// yields a value at the end of the universe.
@@ -62,6 +61,11 @@ namespace FunctionalProgramming.Monad
     /// </summary>
     public static class IoExtensions
     {
+        public static Io<T> Join<T>(this Io<Io<T>> m)
+        {
+            return m.SelectMany(BasicFunctions.Identity);
+        }
+
         /// <summary>
         /// Lifts (and applies) a morphism in the category universe to the category Io.
         /// </summary>

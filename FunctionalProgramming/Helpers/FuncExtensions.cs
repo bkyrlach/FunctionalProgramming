@@ -4,6 +4,11 @@ namespace FunctionalProgramming.Helpers
 {
     public static class FuncExtensions
     {
+        public static Func<T, bool> And<T>(this Func<T, bool> f, Func<T, bool> g)
+        {
+            return t => f(t) && g(t);
+        } 
+
         /// <summary>
         /// This method does type safe functional composition
         /// </summary>

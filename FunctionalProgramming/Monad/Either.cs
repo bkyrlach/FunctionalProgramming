@@ -1,13 +1,10 @@
 ﻿using System;
-using System.Security.Cryptography.X509Certificates;
-using BF = FunctionalProgramming.Basics.BasicFunctions;
 
 namespace FunctionalProgramming.Monad
 {
     public interface IEither<out T1, out T2>
     {
         bool IsRight { get; }
-
         T3 Match<T3>(Func<T1, T3> left, Func<T2, T3> right);
     }
 
