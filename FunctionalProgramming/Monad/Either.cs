@@ -86,13 +86,11 @@ namespace FunctionalProgramming.Monad
         }
 
         public static IEither<T1, T4> SelectMany<T1, T2, T3, T4>(this IEither<T1, T2> m, Func<T2, IEither<T1, T3>> f,
-            Func<T2, T3, T4> select)
+            Func<T2, T3, T4> selector)
         {
-            return m.Match(
-                left: l => l.AsLeft<T1, T4>(),
-                right: a => f(a).Match(
-                    left: l => l.AsLeft<T1, T4>(),
-                    right: b => select(a, b).AsRight<T1, T4>()));
+            return from initial in m
+                from result in f(initial)
+                select selector(initial, result);
         }
     }
 }

@@ -30,5 +30,14 @@ namespace FunctionalProgramming.Monad
         {
             return new Reader<TEnvironment, TNewResult>(environment => f(r.Run(environment)).Run(environment));
         }
+
+        public static Reader<TEnvironment, TSelect> SelectMany<TEnvironment, TInitial, TResult, TSelect>(
+            this Reader<TEnvironment, TInitial> m, Func<TInitial, Reader<TEnvironment, TResult>> f,
+            Func<TInitial, TResult, TSelect> selector)
+        {
+            return from initial in m
+                from result in f(initial)
+                select selector(initial, result);
+        }
     }
 }

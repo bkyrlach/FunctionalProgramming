@@ -63,6 +63,15 @@ namespace FunctionalProgramming.Monad
             return new WriterImpl<IEnumerable<TLog>, TResult>(EnumerableMonoid<TLog>.Only.MAppend(logAndValue.Item1, newLogAndValue.Item1), newLogAndValue.Item2);
         }
 
+        public static IWriter<IEnumerable<TLog>, TSelect> SelectMany<TLog, TInitial, TResult, TSelect>(
+            this IWriter<IEnumerable<TLog>, TInitial> m, Func<TInitial, IWriter<IEnumerable<TLog>, TResult>> f,
+            Func<TInitial, TResult, TSelect> selector)
+        {
+            return from initial in m
+                from result in f(initial)
+                select selector(initial, result);
+        }
+
         private class WriterImpl<TLog, TValue> : IWriter<TLog, TValue>
         {
             private readonly TLog _log;

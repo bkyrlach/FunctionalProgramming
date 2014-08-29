@@ -86,7 +86,9 @@ namespace FunctionalProgramming.Monad
         public static IConsList<TSelect> SelectMany<TInitial, TResult, TSelect>(this IConsList<TInitial> xs,
             Func<TInitial, IConsList<TResult>> f, Func<TInitial, TResult, TSelect> selector)
         {
-            return xs.SelectMany(a => f(a).SelectMany(b => selector(a, b).LiftList()));
+            return from initial in xs
+                from result in f(initial)
+                select selector(initial, result);
         }     
 
         public static TResult FoldL<TValue, TResult>(this IConsList<TValue> xs, TResult initial,
@@ -108,8 +110,6 @@ namespace FunctionalProgramming.Monad
         {
             return xs.Reverse().Aggregate(Nil<T>(), (ts, t) => t.Cons(ts));
         }
-
-
 
         public static string MkString(this IConsList<char> chars)
         {
