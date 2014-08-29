@@ -64,6 +64,7 @@
     <Compile Include="Monad\Outlaws\Try.cs" />
     <Compile Include="Monad\Validation.cs" />
     <Compile Include="Monad\Writer.cs" />
+    <Compile Include="Monad\WriterMaybe.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup />
