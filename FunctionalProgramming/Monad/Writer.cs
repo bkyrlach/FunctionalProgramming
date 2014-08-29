@@ -33,6 +33,11 @@ namespace FunctionalProgramming.Monad
             return new WriterImpl<IEnumerable<TLog>, TValue>(f(v).LiftEnumerable(), v);
         }
 
+        public static IWriter<TLog, TValue> NoLog<TLog, TValue>(this TValue v, IMonoid<TLog> m)
+        {
+            return new WriterImpl<TLog, TValue>(m.MZero, v);
+        }
+
         public static IWriter<TLog, TResult> Select<TLog, TInitial, TResult>(this IWriter<TLog, TInitial> m,
             Func<TInitial, TResult> f)
         {
