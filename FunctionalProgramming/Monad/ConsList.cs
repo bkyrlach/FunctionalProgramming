@@ -86,9 +86,7 @@ namespace FunctionalProgramming.Monad
         public static IConsList<TSelect> SelectMany<TInitial, TResult, TSelect>(this IConsList<TInitial> xs,
             Func<TInitial, IConsList<TResult>> f, Func<TInitial, TResult, TSelect> selector)
         {
-            return from initial in xs
-                from result in f(initial)
-                select selector(initial, result);
+            return xs.SelectMany(a => f(a).SelectMany(b => selector(a, b).LiftList()));
         }     
 
         public static TResult FoldL<TValue, TResult>(this IConsList<TValue> xs, TResult initial,

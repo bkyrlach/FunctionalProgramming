@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 
 namespace FunctionalProgramming.Monad
 {
@@ -35,9 +36,7 @@ namespace FunctionalProgramming.Monad
             this Reader<TEnvironment, TInitial> m, Func<TInitial, Reader<TEnvironment, TResult>> f,
             Func<TInitial, TResult, TSelect> selector)
         {
-            return from initial in m
-                from result in f(initial)
-                select selector(initial, result);
+            return m.SelectMany(a => f(a).SelectMany(b => new Reader<TEnvironment, TSelect>(environment => selector(a, b))));
         }
     }
 }

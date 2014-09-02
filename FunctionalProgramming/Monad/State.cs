@@ -73,9 +73,7 @@ namespace FunctionalProgramming.Monad
         public static State<TState, TSelect> SelectMany<TState, TValue, TResult, TSelect>(this State<TState, TValue> m,
             Func<TValue, State<TState, TResult>> f, Func<TValue, TResult, TSelect> selector)
         {
-            return from initial in m
-                from result in f(initial)
-                select selector(initial, result);
+            return m.SelectMany(a => f(a).SelectMany(b => selector(a, b).Insert<TState, TSelect>()));
         }
     }
 }

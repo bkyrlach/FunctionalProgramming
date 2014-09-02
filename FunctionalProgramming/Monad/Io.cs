@@ -100,9 +100,7 @@ namespace FunctionalProgramming.Monad
         public static Io<TSelect> SelectMany<TValue, TResult, TSelect>(this Io<TValue> m, Func<TValue, Io<TResult>> f,
             Func<TValue, TResult, TSelect> selector)
         {
-            return from initial in m
-                   from result in f(initial)
-                   select selector(initial, result);
+            return m.SelectMany(a => f(a).SelectMany(b => Io<TSelect>.Apply(() => selector(a, b))));
         }
     }
 }

@@ -58,9 +58,7 @@ namespace FunctionalProgramming.Monad
         /// </returns>
         public static IMaybe<TSelector> SelectMany<TValue, TResult, TSelector>(this IMaybe<TValue> m, Func<TValue, IMaybe<TResult>> f, Func<TValue, TResult, TSelector> selector)
         {
-            return from initial in m
-                from result in f(initial)
-                select selector(initial, result);
+            return m.SelectMany(a => f(a).SelectMany(b => selector(a, b).ToMaybe()));;
         }
 
         public static T GetOrElse<T>(this IMaybe<T> m, Func<T> defaultValue)

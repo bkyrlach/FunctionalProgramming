@@ -67,9 +67,7 @@ namespace FunctionalProgramming.Monad
             this IWriter<IEnumerable<TLog>, TInitial> m, Func<TInitial, IWriter<IEnumerable<TLog>, TResult>> f,
             Func<TInitial, TResult, TSelect> selector)
         {
-            return from initial in m
-                from result in f(initial)
-                select selector(initial, result);
+            return m.SelectMany(a => f(a).SelectMany(b => selector(a, b).NoLog(EnumerableMonoid<TLog>.Only)));
         }
 
         private class WriterImpl<TLog, TValue> : IWriter<TLog, TValue>
