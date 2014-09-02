@@ -66,6 +66,11 @@ namespace FunctionalProgramming.Monad
             return m.SelectMany(BasicFunctions.Identity);
         }
 
+        public static Io<T2> Join<T1, T2>(this Io<T1> m, Io<T2> o)
+        {
+            return m.SelectMany(u => o);
+        }
+
         /// <summary>
         /// Lifts (and applies) a morphism in the category universe to the category Io.
         /// </summary>
