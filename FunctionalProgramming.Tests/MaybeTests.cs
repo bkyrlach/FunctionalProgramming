@@ -12,15 +12,58 @@ namespace FunctionalProgramming.Tests
                 ? (i/2).ToMaybe()
                 : Maybe.Nothing<int>();
         }
+
+        [Test]
+        public void TestSelectJust()
+        {
+            var result = 5.ToMaybe().Select(n => n == 5).GetOrElse(() => false);
+            Assert.IsTrue(result);
+        }
             
         [Test]
-        public void TestSelectMany()
+        public void TestSelectManyNothingResult()
         {
+            var expected = Maybe.Nothing<int>();
             var result = from a in SafeDivide(10)
                 from b in SafeDivide(a)
                 select b;
 
-            Assert.AreEqual(Maybe.Nothing<int>(), result);
+            Assert.AreEqual(expected, result);
+        }
+
+        [Test]
+        public void TestSelectManyJustResult()
+        {
+            var expected = 5.ToMaybe();
+            var result = from a in SafeDivide(20)
+                         from b in SafeDivide(a)
+                         select b;
+
+            Assert.AreEqual(expected, result);
+        }
+
+        [Test]
+        public void TestEqualityJust()
+        {
+            var expected = 5.ToMaybe();
+            var result = 4.ToMaybe().Select(n => n + 1);
+            Assert.AreEqual(expected, result);
+        }
+
+        [Test]
+        public void TestInequalityJust()
+        {
+            var expected = 4.ToMaybe();
+            var result = 4.ToMaybe().Select(n => n + 1);
+            Assert.AreNotEqual(expected, result);
+        }
+
+        [Test]
+        public void TestJustNothingInequality()
+        {
+            var expected = 4.ToMaybe();
+            var result = Maybe.Nothing<int>();
+            Assert.AreNotEqual(expected, result);
         }
     }
 }

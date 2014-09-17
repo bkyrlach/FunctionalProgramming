@@ -26,7 +26,6 @@ namespace FunctionalProgramming.Tests
         public void TestFMap()
         {
             var task = new Task<int>(() => 5).Select(n => n + 1);
-            task.Start();
             Assert.AreEqual(6, task.Result);
         }
 
@@ -36,7 +35,6 @@ namespace FunctionalProgramming.Tests
             var futureInts = Enumerable.Range(1, 5).Select(DelayedInt);
 
             var task = futureInts.Sequence();
-            task.Start();
             task.Result.ToList().ForEach(Console.WriteLine);
         }
     }

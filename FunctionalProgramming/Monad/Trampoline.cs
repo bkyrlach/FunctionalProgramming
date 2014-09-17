@@ -13,13 +13,11 @@ namespace FunctionalProgramming.Monad
 
         public T Run()
         {
-            var i = 0;
             var step = this;
             var stack = new Queue<Func<T, Trampoline<T>>>();
             var result = Maybe.Nothing<T>();
             while (result.IsEmpty)
             {
-                i++;
                 if (step is More<T>)
                 {
                     var m = (step as More<T>);
@@ -108,7 +106,7 @@ namespace FunctionalProgramming.Monad
     {
         public static Trampoline<T> Select<T>(this Trampoline<T> m, Func<T, T> f)
         {
-            return m.SelectMany(a => new Done<T>(f(a)));
+            return m.SelectMany(a => new More<T>(() => new Done<T>(f(a))));
         } 
 
         public static Trampoline<T> SelectMany<T>(this Trampoline<T> m,

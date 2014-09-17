@@ -1,4 +1,5 @@
 ﻿using System;
+using FunctionalProgramming.Monad;
 
 namespace FunctionalProgramming.Basics
 {
@@ -31,5 +32,17 @@ namespace FunctionalProgramming.Basics
         {
             return t;
         }
+
+        public static Io<Unit> Using(Func<IDisposable> source, Action<IDisposable> body)
+        {
+            return Io<Unit>.Apply(() =>
+            {
+                using (var resource = source())
+                {
+                    body(resource);
+                }
+                return Unit.Only;
+            });
+        } 
     }
 }

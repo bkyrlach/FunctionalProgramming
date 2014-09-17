@@ -23,18 +23,16 @@ namespace FunctionalProgramming.Monad
             return new Nadda<TValue>();
         }
 
-        public static IMaybe<T> Where<T>(this IMaybe<T> m, Func<T, Boolean> predicate)
+        public static IMaybe<T> Where<T>(this IMaybe<T> m, Func<T, Boolean> predicate) 
         {
             return m.Match(
-                just: value => predicate(value) ? value.ToMaybe() : Nothing<T>(),
+                just: value => predicate(value) ? new Just<T>(value) : Nothing<T>(),
                 nothing: Nothing<T>);
         } 
 
         public static IMaybe<TResult> Select<TValue, TResult>(this IMaybe<TValue> m, Func<TValue, TResult> f)
         {
-            return m.Match(
-                just: value => new Just<TResult>(f(value)),
-                nothing: Nothing<TResult>);
+            return m.SelectMany(a => new Just<TResult>(f(a)));
         }
 
         public static IMaybe<TResult> SelectMany<TValue, TResult>(this IMaybe<TValue> m, Func<TValue, IMaybe<TResult>> f)
@@ -58,7 +56,7 @@ namespace FunctionalProgramming.Monad
         /// </returns>
         public static IMaybe<TSelector> SelectMany<TValue, TResult, TSelector>(this IMaybe<TValue> m, Func<TValue, IMaybe<TResult>> f, Func<TValue, TResult, TSelector> selector)
         {
-            return m.SelectMany(a => f(a).SelectMany(b => selector(a, b).ToMaybe()));;
+            return m.SelectMany(a => f(a).SelectMany(b => new Just<TSelector>(selector(a, b)))); ;
         }
 
         public static T GetOrElse<T>(this IMaybe<T> m, Func<T> defaultValue)
