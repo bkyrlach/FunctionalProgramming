@@ -92,5 +92,38 @@ namespace FunctionalProgramming.Monad.Outlaws
                 success: val => val.ToMaybe(),
                 failure: ex => Maybe.Nothing<T>());
         }
+
+        #region BuildApplicative
+        public static Try<Tuple<T1,T2>> BuildApplicative<T1,T2>(this Try<T1> try1, Try<T2> try2)
+        {
+            return try1.SelectMany(t1 => try2.Select(t2 => Tuple.Create(t1, t2)));
+        }
+
+        public static Try<Tuple<T1,T2,T3>> BuildApplicative<T1,T2,T3>(this Try<Tuple<T1,T2>> try1, Try<T3> try2)
+        {
+            return try1.SelectMany(_2 => try2.Select(t3 => Tuple.Create(_2.Item1, _2.Item2, t3)));
+        }
+
+        public static Try<Tuple<T1,T2,T3,T4>> BuildApplicative<T1,T2,T3,T4>(this Try<Tuple<T1,T2,T3>> try1, Try<T4> try2)
+        {
+            return try1.SelectMany(_3 => try2.Select(t4 => Tuple.Create(_3.Item1, _3.Item2, _3.Item3, t4)));
+        }
+
+        public static Try<Tuple<T1,T2,T3,T4,T5>> BuildApplicative<T1,T2,T3,T4,T5>(this Try<Tuple<T1,T2,T3,T4>> try1, Try<T5> try2)
+        {
+            return try1.SelectMany(_4 => try2.Select(t5 => Tuple.Create(_4.Item1, _4.Item2, _4.Item3, _4.Item4, t5)));
+        }
+
+        public static Try<Tuple<T1,T2,T3,T4,T5,T6>> BuildApplicative<T1,T2,T3,T4,T5,T6>(this Try<Tuple<T1,T2,T3,T4,T5>> try1, Try<T6> try2)
+        {
+            return try1.SelectMany(_5 => try2.Select(t6 => Tuple.Create(_5.Item1, _5.Item2, _5.Item3, _5.Item4, _5.Item5, t6)));
+        }
+
+        public static Try<Tuple<T1,T2,T3,T4,T5,T6,T7>> BuildApplicative<T1,T2,T3,T4,T5,T6,T7>(this Try<Tuple<T1,T2,T3,T4,T5,T6>> try1, Try<T7> try2)
+        {
+            return try1.SelectMany(_6 => try2.Select(t7 => Tuple.Create(_6.Item1, _6.Item2, _6.Item3, _6.Item4, _6.Item5, _6.Item6, t7)));
+        }
+
+        #endregion
     }
 }

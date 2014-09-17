@@ -49,6 +49,7 @@ namespace FunctionalProgramming.Monad
                 failure: err => new Failure<TFailure, TResult>(err));
         }
 
+        #region BuildApplicative
         public static Validation<TFailure, Tuple<TSuccess1, TSuccess2>> BuildApplicative<TFailure, TSuccess1, TSuccess2>(
             this Validation<TFailure, TSuccess1> v1, Validation<TFailure, TSuccess2> v2, IMonoid<TFailure> m)
         {
@@ -120,6 +121,7 @@ namespace FunctionalProgramming.Monad
                     success: val2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5, TSuccess6, TSuccess7>>(m.MAppend(err1, m.MZero)),
                     failure: err2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5, TSuccess6, TSuccess7>>(m.MAppend(err1, err2))));
         }
+        #endregion
 
         private class Success<TFailure, TSuccess> : Validation<TFailure, TSuccess>
         {
