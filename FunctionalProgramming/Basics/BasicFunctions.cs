@@ -43,6 +43,28 @@ namespace FunctionalProgramming.Basics
                 }
                 return Unit.Only;
             });
-        } 
+        }
+
+        #region Const
+        public static Func<T1, T2> Const<T1, T2>(T2 t)
+        {
+            return ignored => t;
+        }
+
+        public static Func<T1, T2, T3> Const<T1, T2, T3>(T3 t)
+        {
+            return (ignored1, ignored2) => t;
+        }
+
+        public static Func<T1, T2, T3, T4> Const<T1, T2, T3, T4>(T4 t)
+        {
+            return (ignored1, ignored2, ignored3) => t;
+        }
+
+        public static Func<T1, T2, T3, T4, T5> Const<T1, T2, T3, T4, T5>(T5 t)
+        {
+            return (ignored1, ignored2, ignored3, ignored4) => t;
+        }
+        #endregion
     }
 }
