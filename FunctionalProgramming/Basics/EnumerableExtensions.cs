@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Globalization;
 using System.Linq;
-using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Outlaws;
@@ -22,9 +20,8 @@ namespace FunctionalProgramming.Basics
         /// <returns>A single IMaybe computation of type IEnumerable 'T</returns>
         public static IMaybe<IEnumerable<T>> Sequence<T>(this IEnumerable<IMaybe<T>> maybeTs)
         {
-            return maybeTs.Any()
-                ? maybeTs.First().SelectMany(t => maybeTs.Skip(1).Sequence().SelectMany(ts => ((new[] {t}).Concat(ts)).ToMaybe()))
-                : Enumerable.Empty<T>().ToMaybe();
+            var initial = Enumerable.Empty<T>().ToMaybe();
+            return maybeTs.Aggregate(initial, (current, maybe) => current.SelectMany(ts => maybe.Select(t => t.LiftEnumerable().Concat(ts))));
         }
 
         /// <summary>
@@ -52,40 +49,25 @@ namespace FunctionalProgramming.Basics
         /// <returns>A single Io computation of type IEnumerable 'T</returns>
         public static Io<IEnumerable<T>> Sequence<T>(this IEnumerable<Io<T>> ioTs)
         {
-            return ioTs.Any() 
-                ? ioTs.First().SelectMany(t => ioTs.Skip(1).Sequence().SelectMany(ts => Io<IEnumerable<T>>.Apply(() => t.LiftEnumerable().Concat(ts))))
-                : Io<IEnumerable<T>>.Apply(() => Enumerable.Empty<T>());
+            var initial = Io<IConsList<T>>.Apply(() => ConsListOps.Nil<T>());
+            return ioTs.Aggregate(initial, (current, io) => current.SelectMany(ts => io.Select(t => t.Cons(ts)))).Select(ios => ios.AsEnumerable());
         }
 
         public static Task<IEnumerable<T>> Sequence<T>(this IEnumerable<Task<T>> taskTs)
         {
-            return taskTs.Any()
-                ? taskTs.First().SelectMany(t =>taskTs.Skip(1).Sequence().SelectMany(ts => new Task<IEnumerable<T>>(() => t.LiftEnumerable().Concat(ts))))
-                : new Task<IEnumerable<T>>(Enumerable.Empty<T>);
+            throw new NotImplementedException("Task API currently does bad things when sequenced.");
         }
 
         public static State<TState, IEnumerable<T>> Sequence<TState, T>(this IEnumerable<State<TState, T>> stateTs)
         {
-            return stateTs.Any()
-                ? stateTs.First()
-                    .SelectMany(
-                        t =>
-                            stateTs.Skip(1)
-                                .Sequence()
-                                .SelectMany(ts => t.LiftEnumerable().Concat(ts).Insert<TState, IEnumerable<T>>()))
-                : Enumerable.Empty<T>().Insert<TState, IEnumerable<T>>();
+            var initial = ConsListOps.Nil<T>().Insert<TState, IConsList<T>>();
+            return stateTs.Aggregate(initial, (current, s) => current.SelectMany(ts => s.Select(t => t.Cons(ts)))).Select(states => states.AsEnumerable());
         }
 
         public static Try<IEnumerable<T>> Sequence<T>(this IEnumerable<Try<T>> tryTs)
         {
-            return tryTs.Any()
-                ? tryTs.First()
-                    .SelectMany(
-                        t =>
-                            tryTs.Skip(1)
-                                .Sequence()
-                                .SelectMany(ts => TryOps.Attempt(() => t.LiftEnumerable().Concat(ts))))
-                : TryOps.Attempt(Enumerable.Empty<T>);
+            var initial = TryOps.Attempt(ConsListOps.Nil<T>);
+            return tryTs.Aggregate(initial, (current, aTry) => current.SelectMany(ts => aTry.Select(t => t.Cons(ts)))).Select(trys => trys.AsEnumerable());
         }
 
         /// <summary>
@@ -113,7 +95,7 @@ namespace FunctionalProgramming.Basics
         public static IEnumerable<T> LiftEnumerable<T>(this T t)
         {
             return new[] {t};
-        } 
+        }
 
         /// <summary>
         /// Helper function that is the dual of the implicit conversion string -> IEnumerable 'char
