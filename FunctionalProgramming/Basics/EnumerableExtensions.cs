@@ -20,8 +20,8 @@ namespace FunctionalProgramming.Basics
         /// <returns>A single IMaybe computation of type IEnumerable 'T</returns>
         public static IMaybe<IEnumerable<T>> Sequence<T>(this IEnumerable<IMaybe<T>> maybeTs)
         {
-            var initial = Enumerable.Empty<T>().ToMaybe();
-            return maybeTs.Aggregate(initial, (current, maybe) => current.SelectMany(ts => maybe.Select(t => t.LiftEnumerable().Concat(ts))));
+            var initial = ConsListOps.Nil<T>().ToMaybe();
+            return maybeTs.Aggregate(initial, (current, maybe) => current.SelectMany(ts => maybe.Select(t => t.Cons(ts)))).Select(xs => xs.AsEnumerable());
         }
 
         /// <summary>

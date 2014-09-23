@@ -93,6 +93,20 @@ namespace FunctionalProgramming.Monad.Outlaws
                 failure: ex => Maybe.Nothing<T>());
         }
 
+        public static IEither<Exception, T> AsEither<T>(this Try<T> m)
+        {
+            return m.Match(
+                success: val => val.AsRight<Exception, T>(),
+                failure: ex => ex.AsLeft<Exception, T>());
+        }
+
+        public static IEither<TErr, TVal> AsEither<TErr, TVal>(this Try<TVal> m, Func<Exception, TErr> errorMapping)
+        {
+            return m.Match(
+                success: val => val.AsRight<TErr, TVal>(),
+                failure: ex => errorMapping(ex).AsLeft<TErr, TVal>());
+        }
+
         #region BuildApplicative
         public static Try<Tuple<T1,T2>> BuildApplicative<T1,T2>(this Try<T1> try1, Try<T2> try2)
         {

@@ -69,8 +69,15 @@ namespace FunctionalProgramming.Monad
         public static T GetOrError<T>(this IMaybe<T> m, Func<Exception> errorToThrow)
         {
             return m.Match(
-                just: arg => arg,
+                just: val => val,
                 nothing: () => { throw errorToThrow(); });
+        }
+
+        public static IEither<TErr, TVal> AsEither<TErr, TVal>(this IMaybe<TVal> m, Func<TErr> error)
+        {
+            return m.Match(
+                just: val => val.AsRight<TErr, TVal>(),
+                nothing: () => error().AsLeft<TErr, TVal>());
         }
 
         private class Just<TValue> : IMaybe<TValue>
