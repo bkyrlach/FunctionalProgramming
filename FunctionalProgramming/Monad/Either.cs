@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
+using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad
 {
@@ -90,5 +92,79 @@ namespace FunctionalProgramming.Monad
         {
             return m.SelectMany(a => f(a).SelectMany(b => selector(a, b).AsRight<T1, T4>()));
         }
+
+        #region BuildApplicative
+        public static IEither<TErr, Tuple<T1, T2>> BuildApplicative<TErr, T1, T2>(this IEither<TErr, T1> e1,
+            IEither<TErr, T2> e2, IMonoid<TErr> mo)
+        {
+            return e1.Match(
+                left: err1 => e2.Match(
+                    left: err2 => mo.MAppend(err1, err2).AsLeft<TErr, Tuple<T1, T2>>(),
+                    right: t2 => err1.AsLeft<TErr, Tuple<T1, T2>>()),
+                right: t1 => e2.Match(
+                    left: err2 => err2.AsLeft<TErr, Tuple<T1, T2>>(),
+                    right: t2 => Tuple.Create(t1, t2).AsRight<TErr, Tuple<T1, T2>>()));
+        }
+
+        public static IEither<TErr, Tuple<T1, T2, T3>> BuildApplicative<TErr, T1, T2, T3>(this IEither<TErr, Tuple<T1, T2>> e1,
+    IEither<TErr, T3> e2, IMonoid<TErr> mo)
+        {
+            return e1.Match(
+                left: err1 => e2.Match(
+                    left: err2 => mo.MAppend(err1, err2).AsLeft<TErr, Tuple<T1, T2, T3>>(),
+                    right: t2 => err1.AsLeft<TErr, Tuple<T1, T2, T3>>()),
+                right: t1 => e2.Match(
+                    left: err2 => err2.AsLeft<TErr, Tuple<T1, T2, T3>>(),
+                    right: t2 => Tuple.Create(t1.Item1, t1.Item2, t2).AsRight<TErr, Tuple<T1, T2, T3>>()));
+        }
+
+        public static IEither<TErr, Tuple<T1, T2, T3, T4>> BuildApplicative<TErr, T1, T2, T3, T4>(this IEither<TErr, Tuple<T1, T2, T3>> e1,
+    IEither<TErr, T4> e2, IMonoid<TErr> mo)
+        {
+            return e1.Match(
+                left: err1 => e2.Match(
+                    left: err2 => mo.MAppend(err1, err2).AsLeft<TErr, Tuple<T1, T2, T3, T4>>(),
+                    right: t2 => err1.AsLeft<TErr, Tuple<T1, T2, T3, T4>>()),
+                right: t1 => e2.Match(
+                    left: err2 => err2.AsLeft<TErr, Tuple<T1, T2, T3, T4>>(),
+                    right: t2 => Tuple.Create(t1.Item1, t1.Item2, t1.Item3, t2).AsRight<TErr, Tuple<T1, T2, T3, T4>>()));
+        }
+
+        public static IEither<TErr, Tuple<T1, T2, T3, T4, T5>> BuildApplicative<TErr, T1, T2, T3, T4, T5>(this IEither<TErr, Tuple<T1, T2, T3, T4>> e1,
+    IEither<TErr, T5> e2, IMonoid<TErr> mo)
+        {
+            return e1.Match(
+                left: err1 => e2.Match(
+                    left: err2 => mo.MAppend(err1, err2).AsLeft<TErr, Tuple<T1, T2, T3, T4, T5>>(),
+                    right: t2 => err1.AsLeft<TErr, Tuple<T1, T2, T3, T4, T5>>()),
+                right: t1 => e2.Match(
+                    left: err2 => err2.AsLeft<TErr, Tuple<T1, T2, T3, T4, T5>>(),
+                    right: t2 => Tuple.Create(t1.Item1, t1.Item2, t1.Item3, t1.Item4, t2).AsRight<TErr, Tuple<T1, T2, T3, T4, T5>>()));
+        }
+
+        public static IEither<TErr, Tuple<T1, T2, T3, T4, T5, T6>> BuildApplicative<TErr, T1, T2, T3, T4, T5, T6>(this IEither<TErr, Tuple<T1, T2, T3, T4, T5>> e1,
+    IEither<TErr, T6> e2, IMonoid<TErr> mo)
+        {
+            return e1.Match(
+                left: err1 => e2.Match(
+                    left: err2 => mo.MAppend(err1, err2).AsLeft<TErr, Tuple<T1, T2, T3, T4, T5, T6>>(),
+                    right: t2 => err1.AsLeft<TErr, Tuple<T1, T2, T3, T4, T5, T6>>()),
+                right: t1 => e2.Match(
+                    left: err2 => err2.AsLeft<TErr, Tuple<T1, T2, T3, T4, T5, T6>>(),
+                    right: t2 => Tuple.Create(t1.Item1, t1.Item2, t1.Item3, t1.Item4, t1.Item5, t2).AsRight<TErr, Tuple<T1, T2, T3, T4, T5, T6>>()));
+        }
+
+        public static IEither<TErr, Tuple<T1, T2, T3, T4, T5, T6, T7>> BuildApplicative<TErr, T1, T2, T3, T4, T5, T6, T7>(this IEither<TErr, Tuple<T1, T2, T3, T4, T5, T6>> e1,
+    IEither<TErr, T7> e2, IMonoid<TErr> mo)
+        {
+            return e1.Match(
+                left: err1 => e2.Match(
+                    left: err2 => mo.MAppend(err1, err2).AsLeft<TErr, Tuple<T1, T2, T3, T4, T5, T6, T7>>(),
+                    right: t2 => err1.AsLeft<TErr, Tuple<T1, T2, T3, T4, T5, T6, T7>>()),
+                right: t1 => e2.Match(
+                    left: err2 => err2.AsLeft<TErr, Tuple<T1, T2, T3, T4, T5, T6, T7>>(),
+                    right: t2 => Tuple.Create(t1.Item1, t1.Item2, t1.Item3, t1.Item4, t1.Item5, t1.Item6, t2).AsRight<TErr, Tuple<T1, T2, T3, T4, T5, T6, T7>>()));
+        }
+        #endregion
     }
 }
