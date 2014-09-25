@@ -35,7 +35,7 @@ namespace FunctionalProgramming.Helpers
         /// </summary>
         /// <param name="s">The string to attempt to parse as a bool</param>
         /// <returns>The parsed bool, or nothing if parsing fails</returns>
-        private static IMaybe<bool> SafeParseBool(string s)
+        public static IMaybe<bool> SafeParseBool(this string s)
         {
             bool parseResult;
             return bool.TryParse(s, out parseResult) ? parseResult.ToMaybe() : Maybe.Nothing<bool>();
