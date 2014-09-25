@@ -29,5 +29,16 @@ namespace FunctionalProgramming.Helpers
             Guid parseResult;
             return Guid.TryParse(s, out parseResult) ? parseResult.ToMaybe() : Maybe.Nothing<Guid>();
         }
+
+        /// <summary>
+        /// Type safe way to parse a string to a bool
+        /// </summary>
+        /// <param name="s">The string to attempt to parse as a bool</param>
+        /// <returns>The parsed bool, or nothing if parsing fails</returns>
+        private static IMaybe<bool> SafeParseBool(string s)
+        {
+            bool parseResult;
+            return bool.TryParse(s, out parseResult) ? parseResult.ToMaybe() : Maybe.Nothing<bool>();
+        }
     }
 }
