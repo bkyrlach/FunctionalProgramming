@@ -21,17 +21,17 @@ namespace FunctionalProgramming.Monad
         {
             var retval = Empty<T>();
             var input = xs.Reverse().ToList();
-            return input.Aggregate(retval, (current, x) => x.Cons(current));  
+            return input.Aggregate(retval, (current, x) => x.Cons(() => current));  
         }
 
-        public static IStream<T> Cons<T>(this T head, IStream<T> tail)
+        public static IStream<T> Cons<T>(this T head, Func<IStream<T>> tail)
         {
-            return new NonEmptyStream<T>(head, new Lazy<IStream<T>>(() => tail));
+            return new NonEmptyStream<T>(head, new Lazy<IStream<T>>(tail));
         }
 
         public static IStream<T> LiftStream<T>(this T t)
         {
-            return t.Cons(Empty<T>());
+            return t.Cons(Empty<T>);
         }
 
         public static IStream<T> Empty<T>()
@@ -44,7 +44,7 @@ namespace FunctionalProgramming.Monad
             return n <= 0
                 ? Empty<T>()
                 : xs.Match(
-                    cons: (h, t) => h.Cons(t.Take(n - 1)),
+                    cons: (h, t) => h.Cons(() => t.Take(n - 1)),
                     nil: Empty<T>);
         }
 
@@ -76,7 +76,7 @@ namespace FunctionalProgramming.Monad
         public static IStream<TResult> Select<TInput, TResult>(this IStream<TInput> m, Func<TInput, TResult> f)
         {
             return m.Match(
-                cons: (h, t) => f(h).Cons(t.Select(f)),
+                cons: (h, t) => f(h).Cons(() => t.Select(f)),
                 nil: Empty<TResult>);
         }
 

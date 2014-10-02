@@ -54,6 +54,11 @@ namespace FunctionalProgramming.Monad.Outlaws
             return result;
         }
 
+        public static Try<T> Fail<T>(this Exception ex)
+        {
+            return Attempt<T>(() => { throw ex; });
+        }
+
         public static Try<TResult> Select<TInitial, TResult>(this Try<TInitial> m, Func<TInitial, TResult> f)
         {
             return m.SelectMany(a => Attempt(() => f(a)));
@@ -70,6 +75,11 @@ namespace FunctionalProgramming.Monad.Outlaws
             Func<TInitial, Try<TResult>> f, Func<TInitial, TResult, TSelect> selector)
         {
             return m.SelectMany(a => f(a).SelectMany(b => Attempt(() => selector(a, b))));
+        }
+
+        public static Try<T> Join<T>(this Try<Try<T>> t)
+        {
+            return t.SelectMany(BasicFunctions.Identity);
         }
 
         public static T GetOrElse<T>(this Try<T> m, Func<T> defaultValue)

@@ -1,9 +1,8 @@
-﻿using FunctionalProgramming.Monad;
+﻿using System;
+using FunctionalProgramming.Monad;
 using NUnit.Framework;
-using System;
-using Assert = NUnit.Framework.Assert;
 
-namespace FunctionalProgramming.Tests
+namespace FunctionalProgramming.Tests.MonadTests
 {
     class Turtle
     {

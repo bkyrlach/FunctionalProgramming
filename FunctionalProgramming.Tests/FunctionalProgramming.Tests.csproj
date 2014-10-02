@@ -55,12 +55,13 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
-    <Compile Include="ConsListTests.cs" />
-    <Compile Include="MaybeTests.cs" />
-    <Compile Include="TaskTests.cs" />
+    <Compile Include="MonadTests\ConsListTests.cs" />
+    <Compile Include="MonadTests\MaybeTests.cs" />
+    <Compile Include="MonadTests\TaskTests.cs" />
     <Compile Include="ListZipperTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="LensTests.cs" />
+    <Compile Include="MonadTests\LensTests.cs" />
+    <Compile Include="TransformerTests\IoEnumerableTryTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FunctionalProgramming\FunctionalProgramming.csproj">
@@ -71,6 +72,7 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
       <ItemGroup>

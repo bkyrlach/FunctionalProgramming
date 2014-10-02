@@ -59,7 +59,7 @@ namespace FunctionalProgramming.Monad
         {
             return xs.Match(
                 nil: StreamExtensions.Empty<T>,
-                cons: (h, t) => h.Cons(t.ToStream()));
+                cons: (h, t) => h.Cons(t.ToStream));
         }
 
         public static IConsList<TResult> Select<TInitial, TResult>(this IConsList<TInitial> xs,

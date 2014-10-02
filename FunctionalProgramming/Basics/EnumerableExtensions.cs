@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Threading.Tasks;
+using System.Xml.Xsl;
 using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Outlaws;
 using BF = FunctionalProgramming.Basics.BasicFunctions;
@@ -53,21 +55,36 @@ namespace FunctionalProgramming.Basics
             return ioTs.Aggregate(initial, (current, io) => current.SelectMany(ts => io.Select(t => t.Cons(ts)))).Select(ios => ios.AsEnumerable());
         }
 
+        public static Io<IEnumerable<T2>> Traverse<T1, T2>(this IEnumerable<T1> xs, Func<T1, Io<T2>> f)
+        {
+            return xs.Select(f).Sequence();
+        }
+
         public static Task<IEnumerable<T>> Sequence<T>(this IEnumerable<Task<T>> taskTs)
         {
             throw new NotImplementedException("Task API currently does bad things when sequenced.");
         }
 
-        public static State<TState, IEnumerable<T>> Sequence<TState, T>(this IEnumerable<State<TState, T>> stateTs)
+        public static State<TState, IEnumerable<T>> Sequence<TState, T>(this IEnumerable<State<TState, T>> states)
         {
             var initial = ConsListOps.Nil<T>().Insert<TState, IConsList<T>>();
-            return stateTs.Aggregate(initial, (current, s) => current.SelectMany(ts => s.Select(t => t.Cons(ts)))).Select(states => states.AsEnumerable());
+            return states.Aggregate(initial, (current, s) => current.SelectMany(ts => s.Select(t => t.Cons(ts)))).Select(x => x.AsEnumerable());
+        }
+
+        public static State<TState, IEnumerable<T2>> Traverse<TState, T1, T2>(this IEnumerable<T1> xs, Func<T1, State<TState, T2>> f)
+        {
+            return xs.Select(f).Sequence();
         }
 
         public static Try<IEnumerable<T>> Sequence<T>(this IEnumerable<Try<T>> tryTs)
         {
             var initial = TryOps.Attempt(ConsListOps.Nil<T>);
-            return tryTs.Aggregate(initial, (current, aTry) => current.SelectMany(ts => aTry.Select(t => t.Cons(ts)))).Select(trys => trys.AsEnumerable());
+            return tryTs.Aggregate(initial, (current, aTry) => current.SelectMany(ts => aTry.Select(t => t.Cons(ts)))).Select(tries => tries.AsEnumerable());
+        }
+
+        public static Try<IEnumerable<T2>> Traverse<T1, T2>(this IEnumerable<T1> xs, Func<T1, Try<T2>> f)
+        {
+            return xs.Select(f).Sequence();
         }
 
         /// <summary>
@@ -104,8 +121,8 @@ namespace FunctionalProgramming.Basics
         /// <returns>A string that is the result of concatenating the characters together</returns>
         public static string MkString(this IEnumerable<char> chars)
         {
-            //TODO This should use a string monoid
-            return chars.Aggregate(string.Empty, (str, c) => str + c.ToString(CultureInfo.InvariantCulture));
+            var sm = StringMonoid.Only;
+            return chars.Select(c => c.ToString(CultureInfo.InvariantCulture)).Aggregate(sm.MZero, sm.MAppend);
         }
     }
 }

@@ -3,7 +3,7 @@ using System.Linq;
 using FunctionalProgramming.Monad;
 using NUnit.Framework;
 
-namespace FunctionalProgramming.Tests
+namespace FunctionalProgramming.Tests.MonadTests
 {
     [TestFixture]
     public class ConsListTests
