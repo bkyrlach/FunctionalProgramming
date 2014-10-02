@@ -40,5 +40,16 @@ namespace FunctionalProgramming.Helpers
             bool parseResult;
             return bool.TryParse(s, out parseResult) ? parseResult.ToMaybe() : Maybe.Nothing<bool>();
         }
+
+         /// <summary>
+        /// Type safe way to parse a string to a date
+        /// </summary>
+        /// <param name="s">The string to attempt to parse as a date</param>
+        /// <returns>The parsed date, or nothing if parsing fails (note: not null, but Nothing 'date)</returns>
+        public static IMaybe<DateTime> SafeParseDate(this string s)
+        {
+            DateTime parseResult;
+            return DateTime.TryParse(s, out parseResult) ? parseResult.ToMaybe() : Maybe.Nothing<DateTime>();
+        }
     }
 }
