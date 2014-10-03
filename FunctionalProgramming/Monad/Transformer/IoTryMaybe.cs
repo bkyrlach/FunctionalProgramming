@@ -41,7 +41,7 @@ namespace FunctionalProgramming.Monad.Transformer
             return new IoTryMaybe<TResult>(_self.SelectMany(t => t.Match(
                 success: m => m.Match(
                     just: v => f(v).Out(),
-                    nothing: () => Io<Try<IMaybe<TResult>>>.Apply(() => TryOps.Attempt(Maybe.Nothing<TResult>))),
+                    nothing: () => Io<Try<IMaybe<TResult>>>.Apply(() => TryOps.Attempt(() => Maybe.Nothing<TResult>()))),
                 failure: ex => Io<Try<IMaybe<TResult>>>.Apply(() => ex.Fail<IMaybe<TResult>>()))));
         }
     }

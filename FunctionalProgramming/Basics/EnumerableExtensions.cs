@@ -78,7 +78,7 @@ namespace FunctionalProgramming.Basics
 
         public static Try<IEnumerable<T>> Sequence<T>(this IEnumerable<Try<T>> tryTs)
         {
-            var initial = TryOps.Attempt(ConsListOps.Nil<T>);
+            var initial = TryOps.Attempt(() => ConsListOps.Nil<T>());
             return tryTs.Aggregate(initial, (current, aTry) => current.SelectMany(ts => aTry.Select(t => t.Cons(ts)))).Select(tries => tries.AsEnumerable());
         }
 

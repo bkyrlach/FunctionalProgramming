@@ -54,9 +54,24 @@ namespace FunctionalProgramming.Monad.Outlaws
             return result;
         }
 
+        public static Try<Unit> Attempt(Action a)
+        {
+            Try<Unit> result;
+            try
+            {
+                a();
+                result = new Success<Unit>(Unit.Only);
+            }
+            catch (Exception ex)
+            {
+                result = new Failure<Unit>(ex);
+            }
+            return result;
+        }
+
         public static Try<T> Fail<T>(this Exception ex)
         {
-            return Attempt<T>(() => { throw ex; });
+            return new Failure<T>(ex);
         }
 
         public static Try<TResult> Select<TInitial, TResult>(this Try<TInitial> m, Func<TInitial, TResult> f)
