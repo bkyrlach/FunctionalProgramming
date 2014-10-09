@@ -124,5 +124,15 @@ namespace FunctionalProgramming.Basics
             var sm = StringMonoid.Only;
             return chars.Select(c => c.ToString(CultureInfo.InvariantCulture)).Aggregate(sm.MZero, sm.MAppend);
         }
+
+        public static IMaybe<T> MaybeFirst<T>(this IEnumerable<T> ts) where T : class
+        {
+            return ts.MaybeFirst(BasicFunctions.Const<T, bool>(true));
+        }
+
+        public static IMaybe<T> MaybeFirst<T>(this IEnumerable<T> ts, Func<T, bool> predicate) where T : class
+        {
+            return ts.FirstOrDefault(predicate).ToMaybe();
+        }
     }
 }

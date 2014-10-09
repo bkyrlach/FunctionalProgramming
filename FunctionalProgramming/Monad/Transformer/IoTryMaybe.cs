@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.Remoting.Messaging;
 using FunctionalProgramming.Monad.Outlaws;
 
 namespace FunctionalProgramming.Monad.Transformer
@@ -51,16 +52,31 @@ namespace FunctionalProgramming.Monad.Transformer
         public static IoTryMaybe<T> In<T>(this Io<Try<IMaybe<T>>> io)
         {
             return new IoTryMaybe<T>(io);    
+        }       
+
+        public static IoTryMaybe<T> ToIoTryMaybe<T>(this T t)
+        {
+            return new IoTryMaybe<T>(t);    
+        }
+
+        public static IoTryMaybe<T> ToIoTryMaybe<T>(this IMaybe<T> maybe)
+        {
+            return new IoTryMaybe<T>(maybe);
+        }
+
+        public static IoTryMaybe<T> ToIoTryMaybe<T>(this Try<IMaybe<T>> @try)
+        {
+            return new IoTryMaybe<T>(@try);
+        }
+
+        public static IoTryMaybe<T> ToIoTryMaybe<T>(this Try<T> @try)
+        {
+            return new IoTryMaybe<T>(@try.Select(t => t.ToMaybe()));
         }
 
         public static IoTryMaybe<T> ToIoTryMaybe<T>(this Io<T> io)
         {
             return io.Select(t => TryOps.Attempt(() => t.ToMaybe())).In();
-        }
-
-        public static IoTryMaybe<T> ToIoTryMaybe<T>(this T t)
-        {
-            return new IoTryMaybe<T>(t);    
         }
 
         public static IoTryMaybe<TResult> Select<TInitial, TResult>(this IoTryMaybe<TInitial> ioT,

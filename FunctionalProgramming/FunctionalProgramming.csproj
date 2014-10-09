@@ -69,6 +69,7 @@
     <Compile Include="Monad\Transformer\IoTry.cs" />
     <Compile Include="Monad\Transformer\IoTryMaybe.cs" />
     <Compile Include="Monad\Transformer\StateEither.cs" />
+    <Compile Include="Monad\Transformer\IoState.cs" />
     <Compile Include="Monad\Transformer\StateTry.cs" />
     <Compile Include="Monad\Validation.cs" />
     <Compile Include="Monad\Writer.cs" />

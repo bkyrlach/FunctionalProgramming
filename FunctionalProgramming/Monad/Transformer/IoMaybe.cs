@@ -25,7 +25,7 @@ namespace FunctionalProgramming.Monad.Transformer
         {
             return _self;
         }
-
+        
         public IoMaybe<TResult> Bind<TResult>(Func<T, IoMaybe<TResult>> f)
         {
             return new IoMaybe<TResult>(_self.SelectMany(m => m.Match(
@@ -36,10 +36,6 @@ namespace FunctionalProgramming.Monad.Transformer
 
     public static class IoMaybe
     {
-        public static IoMaybe<T> LiftIo<T>(this IMaybe<T> m)
-        {
-            return new IoMaybe<T>(Io<IMaybe<T>>.Apply(() => m));    
-        }
 
         public static IoMaybe<T> In<T>(this Io<IMaybe<T>> io)
         {
@@ -56,9 +52,14 @@ namespace FunctionalProgramming.Monad.Transformer
             return new IoMaybe<T>(io.Select(t => t.ToMaybe()));
         }
 
+        public static IoMaybe<T> ToIoMaybe<T>(this IMaybe<T> m)
+        {
+            return new IoMaybe<T>(Io<IMaybe<T>>.Apply(() => m));
+        }
+
         public static IoMaybe<T> NothingIo<T>()
         {
-            return Maybe.Nothing<T>().LiftIo();
+            return Maybe.Nothing<T>().ToIoMaybe();
         }
 
         public static IoMaybe<T> Where<T>(this IoMaybe<T> ioT, Func<T, bool> predicate)
