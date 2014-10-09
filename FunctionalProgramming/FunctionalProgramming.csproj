@@ -71,6 +71,7 @@
     <Compile Include="Monad\Transformer\StateEither.cs" />
     <Compile Include="Monad\Transformer\IoState.cs" />
     <Compile Include="Monad\Transformer\StateTry.cs" />
+    <Compile Include="Monad\Transformer\TryMaybe.cs" />
     <Compile Include="Monad\Validation.cs" />
     <Compile Include="Monad\Writer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
