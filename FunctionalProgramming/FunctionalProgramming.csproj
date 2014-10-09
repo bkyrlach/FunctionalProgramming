@@ -62,7 +62,9 @@
     <Compile Include="Monad\Outlaws\TaskExtensions.cs" />
     <Compile Include="Monad\Trampoline.cs" />
     <Compile Include="Monad\Outlaws\Try.cs" />
+    <Compile Include="Monad\Transformer\EitherMaybe.cs" />
     <Compile Include="Monad\Transformer\IoEither.cs" />
+    <Compile Include="Monad\Transformer\IoEitherMaybe.cs" />
     <Compile Include="Monad\Transformer\IoEnumerable.cs" />
     <Compile Include="Monad\Transformer\IoEnumerableTry.cs" />
     <Compile Include="Monad\Transformer\IoMaybe.cs" />
