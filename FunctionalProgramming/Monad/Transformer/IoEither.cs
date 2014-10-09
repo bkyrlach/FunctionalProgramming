@@ -51,6 +51,11 @@ namespace FunctionalProgramming.Monad.Transformer
             return new IoEither<TLeft, TRight>(io);    
         }
 
+        public static IoEither<TLeft, TRight> ToIoEither<TLeft, TRight>(this Io<TRight> io)
+        {
+            return new IoEither<TLeft, TRight>(io.Select(right => right.AsRight<TLeft, TRight>()));
+        }
+
         public static IoEither<TLeft, TRight> ToIoEither<TLeft, TRight>(this IEither<TLeft, TRight> either)
         {
             return new IoEither<TLeft, TRight>(either);
