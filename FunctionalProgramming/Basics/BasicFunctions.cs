@@ -22,6 +22,12 @@ namespace FunctionalProgramming.Basics
             return predicate ? consequent() : alternative();
         }
 
+        public static IEither<TLeft, TRight> If<TLeft, TRight>(bool predicate, Func<TRight> consequent,
+            Func<TLeft> alternative)
+        {
+            return predicate ? consequent().AsRight<TLeft, TRight>() : alternative().AsLeft<TLeft, TRight>();
+        }
+
         /// <summary>
         /// The standard identity function. Useful in functional programming, it just gives back the value presented.
         /// </summary>
