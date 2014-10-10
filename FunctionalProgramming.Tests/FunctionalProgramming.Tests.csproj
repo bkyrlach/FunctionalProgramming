@@ -55,6 +55,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="BasicFunctionsTests.cs" />
     <Compile Include="MonadTests\ConsListTests.cs" />
     <Compile Include="MonadTests\MaybeTests.cs" />
     <Compile Include="MonadTests\TaskTests.cs" />
