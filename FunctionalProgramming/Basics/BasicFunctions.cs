@@ -22,19 +22,19 @@ namespace FunctionalProgramming.Basics
             return predicate ? consequent() : alternative();
         }
 
-        public static IEither<TLeft, TRight> If<TLeft, TRight>(bool predicate, Func<TRight> consequent,
+        public static IEither<TLeft, TRight> EIf<TLeft, TRight>(bool predicate, Func<TRight> consequent,
             Func<TLeft> alternative)
         {
             return predicate ? consequent().AsRight<TLeft, TRight>() : alternative().AsLeft<TLeft, TRight>();
         }
 
-        public static IEither<TLeft, TRight> If<TLeft, TRight>(bool predicate, Func<IEither<TLeft, TRight>> consequent, 
+        public static IEither<TLeft, TRight> EIf<TLeft, TRight>(bool predicate, Func<IEither<TLeft, TRight>> consequent, 
             Func<TLeft> alternative)
         {
             return predicate ? consequent() : alternative().AsLeft<TLeft, TRight>();
         }
 
-        public static IEither<TLeft, TRight> If<TLeft, TRight>(bool predicate, Func<TRight> consequent,
+        public static IEither<TLeft, TRight> EIf<TLeft, TRight>(bool predicate, Func<TRight> consequent,
             Func<IEither<TLeft, TRight>> alternative)
         {
             return predicate ? consequent().AsRight<TLeft, TRight>() : alternative();
