@@ -1,5 +1,6 @@
 ﻿using System;
 using FunctionalProgramming.Monad;
+using FunctionalProgramming.Monad.Outlaws;
 
 namespace FunctionalProgramming.Basics
 {
@@ -61,6 +62,16 @@ namespace FunctionalProgramming.Basics
                 }
                 return Unit.Only;
             });
+        }
+
+        public static IMaybe<T> Cast<T>(this object o) where T : class
+        {
+            return (o as T).ToMaybe();
+        }
+
+        public static IMaybe<T> CastV<T>(this object o) where T : struct
+        {
+            return TryOps.Attempt(() => (T) o).AsMaybe();
         }
 
         #region Const
