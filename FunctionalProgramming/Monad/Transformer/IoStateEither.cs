@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net.NetworkInformation;
 
 namespace FunctionalProgramming.Monad.Transformer
 {
@@ -78,6 +79,11 @@ namespace FunctionalProgramming.Monad.Transformer
         {
             return new IoStateEither<TState, TLeft, TRight>(either);
         }
+
+        public static IoStateEither<TState, TLeft, TRight> ToIoStateEither<TState, TLeft, TRight>(this Io<IEither<TLeft, TRight>> ioEither)
+        {
+            return new IoStateEither<TState, TLeft, TRight>(ioEither.Select(either => either.Insert<TState, IEither<TLeft, TRight>>()));
+        } 
 
         public static IoStateEither<TState, TLeft, TRight> InsertLeftIo<TState, TLeft, TRight>(this TLeft t)
         {
