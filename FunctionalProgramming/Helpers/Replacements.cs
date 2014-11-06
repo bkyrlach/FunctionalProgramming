@@ -20,6 +20,17 @@ namespace FunctionalProgramming.Helpers
         }
 
         /// <summary>
+        /// Type safe way to parse a string to an ulong
+        /// </summary>
+        /// <param name="s">The string to attempt to parse as an ulong</param>
+        /// <returns>The parsed ulong, or nothing if parsing fails (note: not null, but Nothing 'ulong)</returns>
+        public static IMaybe<ulong> SafeParseULong(this string s)
+        {
+            ulong parseResult;
+            return ulong.TryParse(s, out parseResult) ? parseResult.ToMaybe() : Maybe.Nothing<ulong>();
+        }
+
+        /// <summary>
         /// Type safe way to parse a string to a Guid
         /// </summary>
         /// <param name="s">The string to attempt to parse as a Guid</param>
