@@ -57,6 +57,11 @@ namespace FunctionalProgramming.Monad.Transformer
             return new IoEnumerableTry<T>(io.Select(t => TryOps.Attempt(() => t).LiftEnumerable()));
         }
 
+        public static IoEnumerableTry<T> ToIoEnumerableTry<T>(this Try<T> @try)
+        {
+            return new IoEnumerableTry<T>(@try.LiftEnumerable());
+        }
+
         public static IoEnumerableTry<T> ToIoEnumerableTry<T>(this IEnumerable<T> xs)
         {
             return new IoEnumerableTry<T>(xs.Select(t => TryOps.Attempt(() => t)));
