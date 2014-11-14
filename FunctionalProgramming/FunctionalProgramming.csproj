@@ -66,6 +66,7 @@
     <Compile Include="Monad\Transformer\IoEither.cs" />
     <Compile Include="Monad\Transformer\IoEitherMaybe.cs" />
     <Compile Include="Monad\Transformer\IoEnumerable.cs" />
+    <Compile Include="Monad\Transformer\IoEnumerableMaybe.cs" />
     <Compile Include="Monad\Transformer\IoEnumerableTry.cs" />
     <Compile Include="Monad\Transformer\IoMaybe.cs" />
     <Compile Include="Monad\Transformer\IoStateEither.cs" />
