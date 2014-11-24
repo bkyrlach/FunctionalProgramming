@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad.Transformer
@@ -70,6 +71,12 @@ namespace FunctionalProgramming.Monad.Transformer
         public static StateEnumerable<TState, TValue> ToStateEnumerable<TState, TValue>(this TValue value)
         {
             return new StateEnumerable<TState, TValue>(value);
+        }
+
+        public static StateEnumerable<TState, TValue> Where<TState, TValue>(this StateEnumerable<TState, TValue> stateT,
+            Func<TValue, bool> predicate)
+        {
+            return stateT.Keep(predicate);
         }
 
         public static StateEnumerable<TState, TResult> Select<TState, TInitial, TResult>(
