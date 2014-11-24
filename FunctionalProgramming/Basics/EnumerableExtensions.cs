@@ -52,7 +52,7 @@ namespace FunctionalProgramming.Basics
         public static Io<IEnumerable<T>> Sequence<T>(this IEnumerable<Io<T>> ioTs)
         {
             var initial = Io<IConsList<T>>.Apply(() => ConsListOps.Nil<T>());
-            return ioTs.Aggregate(initial, (current, io) => current.SelectMany(ts => io.Select(t => t.Cons(ts)))).Select(ios => ios.AsEnumerable());
+            return ioTs.Aggregate(initial, (current, io) => current.SelectMany(ts => io.Select(t => t.Cons(ts)))).Select(ios => ios.AsEnumerable().Reverse());
         }
 
         public static Io<IEnumerable<T2>> Traverse<T1, T2>(this IEnumerable<T1> xs, Func<T1, Io<T2>> f)
@@ -68,7 +68,7 @@ namespace FunctionalProgramming.Basics
         public static State<TState, IEnumerable<T>> Sequence<TState, T>(this IEnumerable<State<TState, T>> states)
         {
             var initial = ConsListOps.Nil<T>().Insert<TState, IConsList<T>>();
-            return states.Aggregate(initial, (current, s) => current.SelectMany(ts => s.Select(t => t.Cons(ts)))).Select(x => x.AsEnumerable());
+            return states.Aggregate(initial, (current, s) => current.SelectMany(ts => s.Select(t => t.Cons(ts)))).Select(x => x.AsEnumerable().Reverse());
         }
 
         public static State<TState, IEnumerable<T2>> Traverse<TState, T1, T2>(this IEnumerable<T1> xs, Func<T1, State<TState, T2>> f)
@@ -79,7 +79,7 @@ namespace FunctionalProgramming.Basics
         public static Try<IEnumerable<T>> Sequence<T>(this IEnumerable<Try<T>> tryTs)
         {
             var initial = TryOps.Attempt(() => ConsListOps.Nil<T>());
-            return tryTs.Aggregate(initial, (current, aTry) => current.SelectMany(ts => aTry.Select(t => t.Cons(ts)))).Select(tries => tries.AsEnumerable());
+            return tryTs.Aggregate(initial, (current, aTry) => current.SelectMany(ts => aTry.Select(t => t.Cons(ts)))).Select(tries => tries.AsEnumerable().Reverse());
         }
 
         public static Try<IEnumerable<T2>> Traverse<T1, T2>(this IEnumerable<T1> xs, Func<T1, Try<T2>> f)

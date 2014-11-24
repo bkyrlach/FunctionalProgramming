@@ -74,6 +74,7 @@
     <Compile Include="Monad\Transformer\IoTryMaybe.cs" />
     <Compile Include="Monad\Transformer\StateEither.cs" />
     <Compile Include="Monad\Transformer\IoState.cs" />
+    <Compile Include="Monad\Transformer\StateEnumerable.cs" />
     <Compile Include="Monad\Transformer\StateTry.cs" />
     <Compile Include="Monad\Transformer\TryMaybe.cs" />
     <Compile Include="Monad\Validation.cs" />
