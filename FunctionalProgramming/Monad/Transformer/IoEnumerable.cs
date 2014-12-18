@@ -24,6 +24,11 @@ namespace FunctionalProgramming.Monad.Transformer
             return _self;
         }
 
+        public IoEnumerable<T> Keep(Func<T, bool> predicate)
+        {
+            return new IoEnumerable<T>(_self.Select(enumerable => enumerable.Where(predicate)));
+        }
+
         public IoEnumerable<TResult> FMap<TResult>(Func<T, TResult> f)
         {
             return new IoEnumerable<TResult>(_self.Select(ts => ts.Select(f)));
@@ -55,6 +60,11 @@ namespace FunctionalProgramming.Monad.Transformer
         public static IoEnumerable<T> ToIoEnumerable<T>(this T t)
         {
             return new IoEnumerable<T>(t.LiftEnumerable());
+        }
+
+        public static IoEnumerable<T> Where<T>(this IoEnumerable<T> ioT, Func<T, bool> predicate)
+        {
+            return ioT.Keep(predicate);
         }
 
         public static IoEnumerable<TResult> Select<TInitial, TResult>(this IoEnumerable<TInitial> ioT,
