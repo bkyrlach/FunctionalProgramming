@@ -1,9 +1,13 @@
-﻿using System;
-using FunctionalProgramming.Monad;
+﻿using FunctionalProgramming.Monad;
 
 namespace FunctionalProgramming.Basics
 {
-    public class ConsListZipper<T>
+    /// <summary>
+    /// A functional zipper for cons lists. Provides a way to treat an immutable linked list as if it were a traditional list, updating elements at specific
+    /// indeces, removing elements at specific indeces, etc...
+    /// </summary>
+    /// <typeparam name="T">The type of elements stored in the list for which this is a zipper</typeparam>
+    public sealed class ConsListZipper<T>
     {
         public static ConsListZipper<T> ToZipper(IConsList<T> xs)
         {

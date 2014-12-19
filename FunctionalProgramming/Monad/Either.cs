@@ -71,6 +71,13 @@ namespace FunctionalProgramming.Monad
                 right: r => f(r).AsRight<T1, T3>());
         }
 
+        public static IEither<T3, T2> SelectLeft<T1, T2, T3>(this IEither<T1, T2> m, Func<T1, T3> f)
+        {
+            return m.Match(
+                left: l => f(l).AsLeft<T3, T2>(),
+                right: r => r.AsRight<T3, T2>());
+        } 
+
         public static IEither<T3, T4> SelectEither<T1, T2, T3, T4>(this IEither<T1, T2> m, Func<T1, T3> left,
             Func<T2, T4> right)
         {
