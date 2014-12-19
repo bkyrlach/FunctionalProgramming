@@ -90,7 +90,7 @@ namespace FunctionalProgramming.Basics
         /// <returns>A value that represents an effectual computation that is only useful for its side-effects</returns>
         public static Io<Unit> Using(Func<IDisposable> source, Action<IDisposable> body)
         {
-            return Io<Unit>.Apply(() =>
+            return Io.Apply(() =>
             {
                 using (var resource = source())
                 {
@@ -121,7 +121,7 @@ namespace FunctionalProgramming.Basics
         /// <returns>Potentially a T (or nothing if we cannot prove at runtime that 'o' is a T)</returns>
         public static IMaybe<T> CastV<T>(this object o) where T : struct
         {
-            return TryOps.Attempt(() => (T) o).AsMaybe();
+            return Try.Attempt(() => (T) o).AsMaybe();
         }
 
         #region Const

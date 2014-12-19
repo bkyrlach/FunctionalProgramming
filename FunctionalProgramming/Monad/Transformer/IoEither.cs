@@ -11,7 +11,7 @@ namespace FunctionalProgramming.Monad.Transformer
             _self = io;
         }
 
-        public IoEither(IEither<TLeft, TRight> either) : this(Io<IEither<TLeft, TRight>>.Apply(() => either))
+        public IoEither(IEither<TLeft, TRight> either) : this(Io.Apply(() => either))
         {
             
         }
@@ -39,7 +39,7 @@ namespace FunctionalProgramming.Monad.Transformer
         public IoEither<TLeft, TResult> Bind<TResult>(Func<TRight, IoEither<TLeft, TResult>> f)
         {
             return new IoEither<TLeft, TResult>(_self.SelectMany(either => either.Match(
-                left: l => Io<IEither<TLeft, TResult>>.Apply(() => l.AsLeft<TLeft, TResult>()),
+                left: l => Io.Apply(() => l.AsLeft<TLeft, TResult>()),
                 right: r => f(r).Out())));
         }
     }

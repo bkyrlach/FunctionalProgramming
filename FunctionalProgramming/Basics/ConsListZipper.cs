@@ -11,7 +11,7 @@ namespace FunctionalProgramming.Basics
     {
         public static ConsListZipper<T> ToZipper(IConsList<T> xs)
         {
-            return new ConsListZipper<T>(ConsListOps.Nil<T>(), xs);
+            return new ConsListZipper<T>(ConsList.Nil<T>(), xs);
         }
 
         private readonly IConsList<T> _before;
@@ -35,12 +35,12 @@ namespace FunctionalProgramming.Basics
 
         public ConsListZipper<T> First()
         {
-            return new ConsListZipper<T>(ConsListOps.Nil<T>(), _before.FoldL(_after, (afters, b) => b.Cons(afters)));
+            return new ConsListZipper<T>(ConsList.Nil<T>(), _before.FoldL(_after, (afters, b) => b.Cons(afters)));
         }
 
         public ConsListZipper<T> Last()
         {
-            return new ConsListZipper<T>(_after.FoldL(_before, (befores, a) => a.Cons(befores)), ConsListOps.Nil<T>()).Prev();
+            return new ConsListZipper<T>(_after.FoldL(_before, (befores, a) => a.Cons(befores)), ConsList.Nil<T>()).Prev();
         }
 
         public IMaybe<T> Get()

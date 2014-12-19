@@ -14,7 +14,7 @@ namespace FunctionalProgramming.Monad.Transformer
             _self = io;
         }
 
-        public IoEnumerable(IEnumerable<T> ts) : this(Io<IEnumerable<T>>.Apply(() => ts))
+        public IoEnumerable(IEnumerable<T> ts) : this(Io.Apply(() => ts))
         {
             
         }
@@ -54,7 +54,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
         public static IoEnumerable<T> ToIoEnumerable<T>(this IEnumerable<T> ts)
         {
-            return new IoEnumerable<T>(Io<IEnumerable<T>>.Apply(() => ts));
+            return new IoEnumerable<T>(Io.Apply(() => ts));
         }
 
         public static IoEnumerable<T> ToIoEnumerable<T>(this T t)

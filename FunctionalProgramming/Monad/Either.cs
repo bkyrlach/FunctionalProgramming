@@ -9,7 +9,7 @@ namespace FunctionalProgramming.Monad
         T3 Match<T3>(Func<T1, T3> left, Func<T2, T3> right);
     }
 
-    public static class EitherExtensions
+    public static class Either
     {
         private sealed class Left<T1, T2> : IEither<T1, T2>
         {

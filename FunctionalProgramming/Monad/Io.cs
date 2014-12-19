@@ -32,7 +32,7 @@ namespace FunctionalProgramming.Monad
     /// <summary>
     /// Static class that contains all of the standard monadic operators for Io expressed in LINQ compatible terms.
     /// </summary>
-    public static class IoOps
+    public static class Io
     {
         /// <summary>
         /// "Factory" function that takes a lazy value (represented by a lambda) that wraps effectual code which
@@ -80,7 +80,7 @@ namespace FunctionalProgramming.Monad
         /// <returns>The value in the range TResult lifted to Io</returns>
         public static Io<TResult> Select<TValue, TResult>(this Io<TValue> io, Func<TValue, TResult> f)
         {
-            return Io<TResult>.Apply(() => f(io.UnsafePerformIo()));
+            return Apply(() => f(io.UnsafePerformIo()));
         }
 
         /// <summary>
@@ -93,13 +93,13 @@ namespace FunctionalProgramming.Monad
         /// <returns>The value in the range TResult lifted to Io</returns>
         public static Io<TResult> SelectMany<TValue, TResult>(this Io<TValue> io, Func<TValue, Io<TResult>> f)
         {
-            return Io<TResult>.Apply(() => f(io.UnsafePerformIo()).UnsafePerformIo());
+            return Apply(() => f(io.UnsafePerformIo()).UnsafePerformIo());
         }
 
         public static Io<TSelect> SelectMany<TValue, TResult, TSelect>(this Io<TValue> m, Func<TValue, Io<TResult>> f,
             Func<TValue, TResult, TSelect> selector)
         {
-            return m.SelectMany(a => f(a).SelectMany(b => Io<TSelect>.Apply(() => selector(a, b))));
+            return m.SelectMany(a => f(a).SelectMany(b => Apply(() => selector(a, b))));
         }
     }
 }

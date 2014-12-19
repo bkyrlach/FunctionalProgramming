@@ -12,7 +12,7 @@ namespace FunctionalProgramming.Monad.Transformer
             _self = @try;
         }
 
-        public TryMaybe(IMaybe<T> maybe) : this(TryOps.Attempt(() => maybe))
+        public TryMaybe(IMaybe<T> maybe) : this(Try.Attempt(() => maybe))
         {
             
         }
@@ -38,7 +38,7 @@ namespace FunctionalProgramming.Monad.Transformer
                 failure: ex => ex.Fail<IMaybe<TResult>>(),
                 success: maybe => maybe.Match(
                     just: val => f(val).Out(),
-                    nothing: () => TryOps.Attempt(() => Maybe.Nothing<TResult>()))));
+                    nothing: () => Try.Attempt(() => Maybe.Nothing<TResult>()))));
         }
     }
 

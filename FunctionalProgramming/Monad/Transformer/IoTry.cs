@@ -12,12 +12,12 @@ namespace FunctionalProgramming.Monad.Transformer
             _self = io;
         }
 
-        public IoTry(Try<T> t) : this(Io<Try<T>>.Apply(() => t))
+        public IoTry(Try<T> t) : this(Io.Apply(() => t))
         {
             
         }
 
-        public IoTry(T t) : this(TryOps.Attempt(() => t))
+        public IoTry(T t) : this(Try.Attempt(() => t))
         {
             
         }
@@ -49,17 +49,17 @@ namespace FunctionalProgramming.Monad.Transformer
 
         public static IoTry<T> ToIoTry<T>(this Io<T> io)
         {
-            return new IoTry<T>(io.Select(t => TryOps.Attempt(() => t)));
+            return new IoTry<T>(io.Select(t => Try.Attempt(() => t)));
         }
 
         public static IoTry<T> TryIo<T>(Func<T> f)
         {
-            return new IoTry<T>(Io<Try<T>>.Apply(() => TryOps.Attempt(f)));
+            return new IoTry<T>(Io.Apply(() => Try.Attempt(f)));
         }
 
         public static IoTry<T> FailIo<T>(this Exception ex)
         {
-            return new IoTry<T>(Io<Try<T>>.Apply(() => ex.Fail<T>()));
+            return new IoTry<T>(Io.Apply(() => ex.Fail<T>()));
         }
 
         public static IoTry<TResult> Select<TInitial, TResult>(this IoTry<TInitial> ioT, Func<TInitial, TResult> f)

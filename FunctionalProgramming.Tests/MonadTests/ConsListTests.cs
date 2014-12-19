@@ -10,7 +10,7 @@ namespace FunctionalProgramming.Tests.MonadTests
     {
         private static IConsList<T> MkList<T>(IEnumerable<T> ts)
         {
-            return ts.Reverse().Aggregate(ConsListOps.Nil<T>(), (lst, t) => t.Cons(lst));
+            return ts.Reverse().Aggregate(ConsList.Nil<T>(), (lst, t) => t.Cons(lst));
         }
             
         [TestCase(new int[] { }, 1)]

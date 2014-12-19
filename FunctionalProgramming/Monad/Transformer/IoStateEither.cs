@@ -12,7 +12,7 @@ namespace FunctionalProgramming.Monad.Transformer
             _self = state;
         }
 
-        public IoStateEither(State<TState, IEither<TLeft, TRight>> state) : this(Io<State<TState, IEither<TLeft, TRight>>>.Apply(() => state))
+        public IoStateEither(State<TState, IEither<TLeft, TRight>> state) : this(Io.Apply(() => state))
         {
             
         }
@@ -45,7 +45,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
         public IoStateEither<TState, TLeft, TResult> Bind<TResult>(Func<TRight, IoStateEither<TState, TLeft, TResult>> f)
         {
-            return new IoStateEither<TState, TLeft, TResult>(_self.SelectMany(state => Io<State<TState, IEither<TLeft, TResult>>>.Apply(() => new State<TState, IEither<TLeft, TResult>>(s =>
+            return new IoStateEither<TState, TLeft, TResult>(_self.SelectMany(state => Io.Apply(() => new State<TState, IEither<TLeft, TResult>>(s =>
             {
                 var result = state.Run(s);
                 return result.Item2.Match(

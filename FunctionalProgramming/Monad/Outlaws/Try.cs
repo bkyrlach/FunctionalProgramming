@@ -8,7 +8,7 @@ namespace FunctionalProgramming.Monad.Outlaws
         public abstract TResult Match<TResult>(Func<T, TResult> success, Func<Exception, TResult> failure);
     }
 
-    public static class TryOps
+    public static class Try
     {
         private sealed class Success<T> : Try<T>
         {

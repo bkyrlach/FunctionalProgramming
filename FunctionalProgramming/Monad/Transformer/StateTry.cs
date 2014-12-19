@@ -17,7 +17,7 @@ namespace FunctionalProgramming.Monad.Transformer
             
         }
 
-        public StateTry(TValue t) : this(TryOps.Attempt(() => t))
+        public StateTry(TValue t) : this(Try.Attempt(() => t))
         {
             
         }
@@ -44,12 +44,12 @@ namespace FunctionalProgramming.Monad.Transformer
     {
         public static StateTry<TState, T> ToStateTry<TState, T>(this T t)
         {
-            return new StateTry<TState, T>(TryOps.Attempt(() => t).Insert<TState, Try<T>>());
+            return new StateTry<TState, T>(Try.Attempt(() => t).Insert<TState, Try<T>>());
         }
 
         public static StateTry<TState, T> ToStateTry<TState, T>(this State<TState, T> state)
         {
-            return new StateTry<TState, T>(state.Select(t => TryOps.Attempt(() => t)));
+            return new StateTry<TState, T>(state.Select(t => Try.Attempt(() => t)));
         }
 
         public static StateTry<TState, T> In<TState, T>(this State<TState, Try<T>> state)

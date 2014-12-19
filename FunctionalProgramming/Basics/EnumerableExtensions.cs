@@ -22,7 +22,7 @@ namespace FunctionalProgramming.Basics
         /// <returns>A single IMaybe computation of type IEnumerable 'T</returns>
         public static IMaybe<IEnumerable<T>> Sequence<T>(this IEnumerable<IMaybe<T>> maybeTs)
         {
-            var initial = ConsListOps.Nil<T>().ToMaybe();
+            var initial = ConsList.Nil<T>().ToMaybe();
             return maybeTs.Aggregate(initial, (current, maybe) => current.SelectMany(ts => maybe.Select(t => t.Cons(ts)))).Select(xs => xs.AsEnumerable());
         }
 
@@ -51,7 +51,7 @@ namespace FunctionalProgramming.Basics
         /// <returns>A single Io computation of type IEnumerable 'T</returns>
         public static Io<IEnumerable<T>> Sequence<T>(this IEnumerable<Io<T>> ioTs)
         {
-            var initial = Io<IConsList<T>>.Apply(() => ConsListOps.Nil<T>());
+            var initial = Io.Apply(() => ConsList.Nil<T>());
             return ioTs.Aggregate(initial, (current, io) => current.SelectMany(ts => io.Select(t => t.Cons(ts)))).Select(ios => ios.AsEnumerable());
         }
 
@@ -67,7 +67,7 @@ namespace FunctionalProgramming.Basics
 
         public static State<TState, IEnumerable<T>> Sequence<TState, T>(this IEnumerable<State<TState, T>> states)
         {
-            var initial = ConsListOps.Nil<T>().Insert<TState, IConsList<T>>();
+            var initial = ConsList.Nil<T>().Insert<TState, IConsList<T>>();
             return states.Aggregate(initial, (current, s) => current.SelectMany(ts => s.Select(t => t.Cons(ts)))).Select(x => x.AsEnumerable());
         }
 
@@ -78,7 +78,7 @@ namespace FunctionalProgramming.Basics
 
         public static Try<IEnumerable<T>> Sequence<T>(this IEnumerable<Try<T>> tryTs)
         {
-            var initial = TryOps.Attempt(() => ConsListOps.Nil<T>());
+            var initial = Try.Attempt(() => ConsList.Nil<T>());
             return tryTs.Aggregate(initial, (current, aTry) => current.SelectMany(ts => aTry.Select(t => t.Cons(ts)))).Select(tries => tries.AsEnumerable());
         }
 

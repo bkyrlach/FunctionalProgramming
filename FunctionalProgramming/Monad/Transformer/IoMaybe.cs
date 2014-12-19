@@ -11,7 +11,7 @@ namespace FunctionalProgramming.Monad.Transformer
             _self = io;        
         }
 
-        public IoMaybe(T t) : this(Io<IMaybe<T>>.Apply(() => t.ToMaybe()))
+        public IoMaybe(T t) : this(Io.Apply(() => t.ToMaybe()))
         {
             
         }
@@ -54,7 +54,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
         public static IoMaybe<T> ToIoMaybe<T>(this IMaybe<T> m)
         {
-            return new IoMaybe<T>(Io<IMaybe<T>>.Apply(() => m));
+            return new IoMaybe<T>(Io.Apply(() => m));
         }
 
         public static IoMaybe<T> NothingIo<T>()

@@ -15,12 +15,12 @@ namespace FunctionalProgramming.Monad.Transformer
             _self = io;
         }
 
-        public IoEnumerableTry(IEnumerable<Try<T>> tries) : this(Io<IEnumerable<Try<T>>>.Apply(() => tries))
+        public IoEnumerableTry(IEnumerable<Try<T>> tries) : this(Io.Apply(() => tries))
         {
             
         }
 
-        public IoEnumerableTry(Func<T> toAttempt) : this(Io<IEnumerable<Try<T>>>.Apply(() => TryOps.Attempt(toAttempt).LiftEnumerable()))
+        public IoEnumerableTry(Func<T> toAttempt) : this(Io.Apply(() => Try.Attempt(toAttempt).LiftEnumerable()))
         {
             
         }
@@ -39,7 +39,7 @@ namespace FunctionalProgramming.Monad.Transformer
         {
             return new IoEnumerableTry<TResult>(_self.SelectMany(tries => tries.Select(@try => @try.Match(
                 success: val => f(val).Out(),
-                failure: ex => Io<IEnumerable<Try<TResult>>>.Apply(() => ex.Fail<TResult>().LiftEnumerable())))
+                failure: ex => Io.Apply(() => ex.Fail<TResult>().LiftEnumerable())))
                 .Sequence()
                 .Select(x => x.SelectMany(BasicFunctions.Identity))));
         }
@@ -54,7 +54,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
         public static IoEnumerableTry<T> ToIoEnumerableTry<T>(this Io<T> io)
         {
-            return new IoEnumerableTry<T>(io.Select(t => TryOps.Attempt(() => t).LiftEnumerable()));
+            return new IoEnumerableTry<T>(io.Select(t => Try.Attempt(() => t).LiftEnumerable()));
         }
 
         public static IoEnumerableTry<T> ToIoEnumerableTry<T>(this Try<T> @try)
@@ -64,7 +64,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
         public static IoEnumerableTry<T> ToIoEnumerableTry<T>(this IEnumerable<T> xs)
         {
-            return new IoEnumerableTry<T>(xs.Select(t => TryOps.Attempt(() => t)));
+            return new IoEnumerableTry<T>(xs.Select(t => Try.Attempt(() => t)));
         }
 
         public static IoEnumerableTry<TResult> Select<TInitial, TResult>(this IoEnumerableTry<TInitial> ioT,
@@ -83,7 +83,7 @@ namespace FunctionalProgramming.Monad.Transformer
             this IoEnumerableTry<TInitial> ioT, Func<TInitial, IoEnumerableTry<TResult>> f,
             Func<TInitial, TResult, TSelect> selector)
         {
-            return ioT.SelectMany(a => f(a).SelectMany(b => new IoEnumerableTry<TSelect>(Io<IEnumerable<Try<TSelect>>>.Apply(() => TryOps.Attempt(() => selector(a, b)).LiftEnumerable()))));
+            return ioT.SelectMany(a => f(a).SelectMany(b => new IoEnumerableTry<TSelect>(Io.Apply(() => Try.Attempt(() => selector(a, b)).LiftEnumerable()))));
         }
     }
 }

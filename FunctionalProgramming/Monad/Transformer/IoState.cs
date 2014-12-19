@@ -11,7 +11,7 @@ namespace FunctionalProgramming.Monad.Transformer
             _self = io;
         }
 
-        public IoState(State<TState, TValue> state) : this(Io<State<TState, TValue>>.Apply(() => state))
+        public IoState(State<TState, TValue> state) : this(Io.Apply(() => state))
         {
             
         }
@@ -33,7 +33,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
         public IoState<TState, TResult> Bind<TResult>(Func<TValue, IoState<TState, TResult>> f)
         {
-            return new IoState<TState, TResult>(_self.SelectMany(state => Io<State<TState, TResult>>.Apply(() => new State<TState, TResult>(s =>
+            return new IoState<TState, TResult>(_self.SelectMany(state => Io.Apply(() => new State<TState, TResult>(s =>
             {
                 var result = state.Run(s);
                 var result2 = f(result.Item2).Out().UnsafePerformIo().Run(result.Item1);
