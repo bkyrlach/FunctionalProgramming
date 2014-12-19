@@ -44,7 +44,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
     public static class IoState
     {
-        public static IoState<TState, T> In<TState, T>(this Io<State<TState, T>> ioT)
+        public static IoState<TState, T> ToIoState<TState, T>(this Io<State<TState, T>> ioT)
         {
             return new IoState<TState, T>(ioT);
         }

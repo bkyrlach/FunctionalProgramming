@@ -49,7 +49,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
     public static class IoTryMaybe
     {
-        public static IoTryMaybe<T> In<T>(this Io<Try<IMaybe<T>>> io)
+        public static IoTryMaybe<T> ToIoTryMaybe<T>(this Io<Try<IMaybe<T>>> io)
         {
             return new IoTryMaybe<T>(io);    
         }       
@@ -76,7 +76,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
         public static IoTryMaybe<T> ToIoTryMaybe<T>(this Io<T> io)
         {
-            return io.Select(t => Try.Attempt(() => t.ToMaybe())).In();
+            return io.Select(t => Try.Attempt(() => t.ToMaybe())).ToIoTryMaybe();
         }
 
         public static IoTryMaybe<TResult> Select<TInitial, TResult>(this IoTryMaybe<TInitial> ioT,

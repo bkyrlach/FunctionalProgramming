@@ -47,7 +47,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
     public static class IoEnumerableTry
     {
-        public static IoEnumerableTry<T> In<T>(this Io<IEnumerable<Try<T>>> io)
+        public static IoEnumerableTry<T> ToIoEnumerableTry<T>(this Io<IEnumerable<Try<T>>> io)
         {
             return new IoEnumerableTry<T>(io);
         }

@@ -50,7 +50,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
     public static class StateEither
     {
-        public static StateEither<TState, TLeft, TRight> In<TState, TLeft, TRight>(
+        public static StateEither<TState, TLeft, TRight> ToStateEither<TState, TLeft, TRight>(
             this State<TState, IEither<TLeft, TRight>> state)
         {
             return new StateEither<TState, TLeft, TRight>(state);

@@ -57,7 +57,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
     public static class IoStateEither
     {
-        public static IoStateEither<TState, TLeft, TRight> In<TState, TLeft, TRight>(
+        public static IoStateEither<TState, TLeft, TRight> ToIoStateEither<TState, TLeft, TRight>(
             this Io<State<TState, IEither<TLeft, TRight>>> state)
         {
             return new IoStateEither<TState, TLeft, TRight>(state);

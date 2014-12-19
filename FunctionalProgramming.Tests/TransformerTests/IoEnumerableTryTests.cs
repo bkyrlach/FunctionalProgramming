@@ -22,7 +22,7 @@ namespace FunctionalProgramming.Tests.TransformerTests
                         throw new Exception("Ruh roh");
                     }
                     return n;
-                }))).In();
+                }))).ToIoEnumerableTry();
 
             var pgm = (from x in xs
                 from _ in PutStrLn(x).ToIoEnumerableTry()

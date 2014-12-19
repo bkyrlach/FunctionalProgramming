@@ -52,7 +52,7 @@ namespace FunctionalProgramming.Monad.Transformer
             return new StateTry<TState, T>(state.Select(t => Try.Attempt(() => t)));
         }
 
-        public static StateTry<TState, T> In<TState, T>(this State<TState, Try<T>> state)
+        public static StateTry<TState, T> ToStateTry<TState, T>(this State<TState, Try<T>> state)
         {
             return new StateTry<TState, T>(state);
         }

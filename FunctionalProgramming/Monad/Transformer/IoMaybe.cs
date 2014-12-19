@@ -37,7 +37,7 @@ namespace FunctionalProgramming.Monad.Transformer
     public static class IoMaybe
     {
 
-        public static IoMaybe<T> In<T>(this Io<IMaybe<T>> io)
+        public static IoMaybe<T> ToIoMaybe<T>(this Io<IMaybe<T>> io)
         {
             return new IoMaybe<T>(io);
         }

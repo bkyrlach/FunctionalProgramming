@@ -44,7 +44,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
     public static class TryMaybe
     {
-        public static TryMaybe<T> In<T>(this Try<IMaybe<T>> @try)
+        public static TryMaybe<T> ToTryMaybe<T>(this Try<IMaybe<T>> @try)
         {
             return new TryMaybe<T>(@try);
         }

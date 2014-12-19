@@ -4,7 +4,7 @@ namespace FunctionalProgramming.Monad.Transformer
 {
     public static class IoEitherMaybe
     {
-        public static IoEitherMaybe<TLeft, TRight> In<TLeft, TRight>(this Io<IEither<TLeft, IMaybe<TRight>>> either)
+        public static IoEitherMaybe<TLeft, TRight> ToIoEitherMaybe<TLeft, TRight>(this Io<IEither<TLeft, IMaybe<TRight>>> either)
         {
             return new IoEitherMaybe<TLeft, TRight>(either);
         }

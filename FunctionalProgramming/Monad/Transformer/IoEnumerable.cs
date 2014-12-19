@@ -42,7 +42,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
     public static class IoEnumerable
     {
-        public static IoEnumerable<T> In<T>(this Io<IEnumerable<T>> io)
+        public static IoEnumerable<T> ToIoEnumerable<T>(this Io<IEnumerable<T>> io)
         {
             return new IoEnumerable<T>(io);
         }

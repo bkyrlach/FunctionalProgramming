@@ -42,7 +42,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
     public static class IoTry
     {
-        public static IoTry<T> In<T>(this Io<Try<T>> io)
+        public static IoTry<T> ToIoTry<T>(this Io<Try<T>> io)
         {
             return new IoTry<T>(io);    
         }
