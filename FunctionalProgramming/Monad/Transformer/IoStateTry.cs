@@ -75,6 +75,11 @@ namespace FunctionalProgramming.Monad.Transformer
             return new IoStateTry<TState, T>(ioTry.Select(@try => @try.Insert<TState, Try<T>>()));
         }
 
+        public static IoStateTry<TState, T> ToIoStateTry<TState, T>(this Io<State<TState, T>> ioState)
+        {
+            return new IoStateTry<TState, T>(ioState.Select(state => state.Select(t => TryOps.Attempt(() => t))));
+        }
+
         public static IoStateTry<TState, T> ToIoStateTry<TState, T>(this T t)
         {
             return new IoStateTry<TState, T>(t);
