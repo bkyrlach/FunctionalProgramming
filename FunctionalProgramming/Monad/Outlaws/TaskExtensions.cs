@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace FunctionalProgramming.Monad
+namespace FunctionalProgramming.Monad.Outlaws
 {
+    //TODO Fix horrible brokenness. Perhaps replace with implementation of 'Futures
+    /// <summary>
+    /// DO NOT USE
+    /// </summary>
     public static class TaskExtensions
     {
         public static Task<T> ToTask<T>(this T t)

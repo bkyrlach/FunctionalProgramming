@@ -3,13 +3,37 @@ using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad.Outlaws
 {
+    /// <summary>
+    /// A computational context that represents a computation that can fail.
+    /// 
+    /// Note that this class should only ever have one implementation. Also, this is
+    /// in the 'Outlaws' package because, although I've provided the monadic operators
+    /// here, it doesn't always satisfy the monad laws.
+    /// </summary>
+    /// <typeparam name="T">The type of value the computation will yield if successful</typeparam>
     public abstract class Try<T>
     {
+        /// <summary>
+        /// ML style pattern matching for the 'Try' ADT. The 'success' lambda will be invoked if the 
+        /// computation was successful, whereas the 'failure' lambda will be invoked if the computation
+        /// was a failure
+        /// </summary>
+        /// <typeparam name="TResult">The type of value we're computing based off of the success or failure of this computation</typeparam>
+        /// <param name="success">A computation to preform if this computation was successful (will have access to the computed value)</param>
+        /// <param name="failure">A computation to perform if this computation was a failure (will have access to the exception thrown)</param>
+        /// <returns>The value computed by the 'success' or 'failure' lambda, depending on if this computation was successful, or if it failed</returns>
         public abstract TResult Match<TResult>(Func<T, TResult> success, Func<Exception, TResult> failure);
     }
 
+    /// <summary>
+    /// Extension methods for 'Try' that implement the monadic operators and other helpful functions
+    /// </summary>
     public static class Try
     {
+        /// <summary>
+        /// Represents a successful computation
+        /// </summary>
+        /// <typeparam name="T">The type of value that was successfully computed</typeparam>
         private sealed class Success<T> : Try<T>
         {
             private readonly T _a;
@@ -25,6 +49,10 @@ namespace FunctionalProgramming.Monad.Outlaws
             }
         }
 
+        /// <summary>
+        /// Represents a failed computation
+        /// </summary>
+        /// <typeparam name="T">The type of value that was attempted to be computed</typeparam>
         private sealed class Failure<T> : Try<T>
         {
             private readonly Exception _ex;
@@ -40,6 +68,13 @@ namespace FunctionalProgramming.Monad.Outlaws
             }
         }
 
+        /// <summary>
+        /// Attempts to execute the supplied lambda, handling failure in a type safe way by returning a value that forces you to 
+        /// handle failure scenarios
+        /// </summary>
+        /// <typeparam name="T">The type of value that this computation will yield if successful</typeparam>
+        /// <param name="supplier">A lambda that encapsulates code that may or may not throw an exception</param>
+        /// <returns>A value that represents a potentially failed computation</returns>
         public static Try<T> Attempt<T>(Func<T> supplier)
         {
             Try<T> result;
@@ -54,6 +89,12 @@ namespace FunctionalProgramming.Monad.Outlaws
             return result;
         }
 
+        /// <summary>
+        /// Attempts to execute the supplied side-effecting function, handling failure in a type safe way by returning a value
+        /// that forces you to handle failure scenarios
+        /// </summary>
+        /// <param name="a">A side-effecting function</param>
+        /// <returns>A value that represents a potentially failed computation</returns>
         public static Try<Unit> Attempt(Action a)
         {
             Try<Unit> result;
@@ -69,16 +110,39 @@ namespace FunctionalProgramming.Monad.Outlaws
             return result;
         }
 
+        /// <summary>
+        /// Helper that constructs a value representing a failed computation. Useful when you need to restore a previously
+        /// discarded failure
+        /// </summary>
+        /// <typeparam name="T">The type of value that was attempted to be computed</typeparam>
+        /// <param name="ex">The exception you wish to promote</param>
+        /// <returns>A value that represents a failed computation with the supplied exception as the failure reason</returns>
         public static Try<T> Fail<T>(this Exception ex)
         {
             return new Failure<T>(ex);
         }
 
+        /// <summary>
+        /// Lifts the function 'TInitial -> 'TResult from the category C# to the category 'Try', and then applies it to the value 'm'
+        /// </summary>
+        /// <typeparam name="TInitial"></typeparam>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="m">A value in the category 'Try to apply the lifted function 'f'</param>
+        /// <param name="f">The function to lift to the category 'Try</param>
+        /// <returns>The result of applying the lifted function 'f' to 'm'</returns>
         public static Try<TResult> Select<TInitial, TResult>(this Try<TInitial> m, Func<TInitial, TResult> f)
         {
             return m.SelectMany(a => Attempt(() => f(a)));
         }
 
+        /// <summary>
+        /// Lifts the function 'TInitial -> 'Try 'TResult from the category C# to the category 'Try', and then applies it to the value 'm'
+        /// </summary>
+        /// <typeparam name="TInitial"></typeparam>
+        /// <typeparam name="TResult"></typeparam>
+        /// <param name="m">A value in the category 'Try to apply the lifted function 'f'</param>
+        /// <param name="f">The function to lift to the category 'Try</param>
+        /// <returns>The result of applying the lifted function 'f' to 'm'</returns>
         public static Try<TResult> SelectMany<TInitial, TResult>(this Try<TInitial> m, Func<TInitial, Try<TResult>> f)
         {
             return m.Match(
@@ -86,12 +150,29 @@ namespace FunctionalProgramming.Monad.Outlaws
                 failure: ex => new Failure<TResult>(ex));
         }
 
+        /// <summary>
+        /// Helper function to support LINQ Query syntax. Lifts the function 'TInitial -> 'Try 'TResult from the category C# to the category
+        /// 'Try, and then applies it to the value 'm', additionally applying a selector function
+        /// </summary>
+        /// <typeparam name="TInitial"></typeparam>
+        /// <typeparam name="TResult"></typeparam>
+        /// <typeparam name="TSelect"></typeparam>
+        /// <param name="m">A value in the category 'Try to apply the lifted function 'f'</param>
+        /// <param name="f">The function to lift to the category 'Try</param>
+        /// <param name="selector">A function that computes a result from the initial state and the result of applying 'f'</param>
+        /// <returns>The result of applying the lifted function 'f' to 'm', and then additionally applying 'selector' to the initial state and that result</returns>
         public static Try<TSelect> SelectMany<TInitial, TResult, TSelect>(this Try<TInitial> m,
             Func<TInitial, Try<TResult>> f, Func<TInitial, TResult, TSelect> selector)
         {
             return m.SelectMany(a => f(a).SelectMany(b => Attempt(() => selector(a, b))));
         }
 
+        /// <summary>
+        /// Syntactic sugar for t >>= identity
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="t"></param>
+        /// <returns></returns>
         public static Try<T> Join<T>(this Try<Try<T>> t)
         {
             return t.SelectMany(BasicFunctions.Identity);
