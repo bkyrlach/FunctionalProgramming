@@ -1,4 +1,5 @@
-﻿using FunctionalProgramming.Monad.Outlaws;
+﻿using System.Net.NetworkInformation;
+using FunctionalProgramming.Monad.Outlaws;
 using System;
 
 namespace FunctionalProgramming.Monad.Transformer
@@ -67,6 +68,11 @@ namespace FunctionalProgramming.Monad.Transformer
         public static IoStateTry<TState, T> ToIoStateTry<TState, T>(this State<TState, T> state)
         {
             return new IoStateTry<TState, T>(state.Select(t => TryOps.Attempt(() => t)));
+        }
+
+        public static IoStateTry<TState, T> ToIoStateTry<TState, T>(this Io<Try<T>> ioTry)
+        {
+            return new IoStateTry<TState, T>(ioTry.Select(@try => @try.Insert<TState, Try<T>>()));
         }
 
         public static IoStateTry<TState, T> ToIoStateTry<TState, T>(this T t)
