@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using FunctionalProgramming.Basics;
+using FunctionalProgramming.Monad.Outlaws;
 using BF = FunctionalProgramming.Basics.BasicFunctions;
 
 namespace FunctionalProgramming.Monad
@@ -17,11 +19,34 @@ namespace FunctionalProgramming.Monad
 
     public static class StreamExtensions
     {
-        public static IStream<T> AsStream<T>(this IEnumerable<T> xs)
+        public static IStream<T> ToStream<T>(this IEnumerable<T> xs)
         {
             var retval = Empty<T>();
             var input = xs.Reverse().ToList();
             return input.Aggregate(retval, (current, x) => x.Cons(() => current));  
+        }
+
+        public static List<T> ToList<T>(this IStream<T> xs)
+        {
+            var retval = new List<T>();
+            xs.ForEach(retval.Add);
+            return retval;
+        }
+
+        private static Trampoline<Unit> ForEachT<T>(IStream<T> xs, Action<T> f)
+        {
+            return xs.Match<Trampoline<Unit>>(
+                cons: (h, t) => new More<Unit>(() =>
+                {
+                    f(h);
+                    return ForEachT<T>(t, f);
+                }),
+                nil: () => new Done<Unit>(Unit.Only));
+        } 
+
+        public static Unit ForEach<T>(this IStream<T> xs, Action<T> f)
+        {
+            return ForEachT(xs, f).Run();
         }
 
         public static IStream<T> Cons<T>(this T head, Func<IStream<T>> tail)
@@ -59,6 +84,20 @@ namespace FunctionalProgramming.Monad
         {
             return Tuple.Create(xs.Take(n), xs.Drop(n));
         }
+
+        public static IStream<T> Repeat<T>(this T t)
+        {
+            return t.Cons(() => Repeat(t));
+        }
+
+        public static IStream<Tuple<T1, T2>> ZipWith<T1, T2>(this IStream<T1> ts, IStream<T2> vs)
+        {
+            return ts.Match(
+                nil: Empty<Tuple<T1, T2>>,
+                cons: (x, xs) => vs.Match(
+                    nil: Empty<Tuple<T1, T2>>,
+                    cons: (y, ys) => Tuple.Create(x, y).Cons(() => xs.ZipWith(ys))));
+        } 
 
         public static TResult FoldL<TInput, TResult>(this IStream<TInput> xs, TResult defaultValue,
             Func<TResult, TInput, TResult> f)
@@ -107,6 +146,11 @@ namespace FunctionalProgramming.Monad
             {
                 return cons(_head, _tail.Value);
             }
+
+            public override string ToString()
+            {
+                return string.Format("Stream({0}, ?)", _head);
+            }
         }
 
         private class EmptyStream<T> : IStream<T>
@@ -120,6 +164,11 @@ namespace FunctionalProgramming.Monad
             public TResult Match<TResult>(Func<T, IStream<T>, TResult> cons, Func<TResult> nil)
             {
                 return nil();
+            }
+
+            public override string ToString()
+            {
+                return "Stream()";
             }
         }
     }

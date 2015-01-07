@@ -7,6 +7,11 @@ namespace FunctionalProgramming.Helpers
         public static Func<T, bool> And<T>(this Func<T, bool> f, Func<T, bool> g)
         {
             return t => f(t) && g(t);
+        }
+
+        public static Func<T, T2> AndThen<T, T1, T2>(this Func<T, T1> f, Func<T1, T2> g)
+        {
+            return t => g(f(t));
         } 
 
         /// <summary>

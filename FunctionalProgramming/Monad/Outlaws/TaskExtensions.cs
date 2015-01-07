@@ -1,23 +1,39 @@
 ﻿using System;
 using System.Threading.Tasks;
 
-namespace FunctionalProgramming.Monad
+namespace FunctionalProgramming.Monad.Outlaws
 {
     public static class TaskExtensions
     {
-        public static Task<T> ToTask<T>(this T t)
+        public static Task<T> FromResult<T>(this T t)
         {
             return Task.FromResult(t);
         }
 
-        public static async Task<TResult> Select<TInitial, TResult>(this Task<TInitial> t, Func<TInitial, TResult> f)
+        public static async Task<TResult> Select<TInitial, TResult>(this Task<TInitial> m, Func<TInitial, TResult> f)
         {
-            return f(await t);
+            return f(await m);
         }
 
-        public static async Task<TResult> SelectMany<TInitial, TResult>(this Task<TInitial> t, Func<TInitial, Task<TResult>> f)
+        public static async Task<TResult> SelectMany<TInitial, TResult>(this Task<TInitial> m,
+            Func<TInitial, Task<TResult>> f)
         {
-            return await f(await t);
+            return await f(await m);
+        }
+
+        public static Task<TSelect> SelectMany<TInitial, TResult, TSelect>(this Task<TInitial> m,
+            Func<TInitial, Task<TResult>> f, Func<TInitial, TResult, TSelect> selector)
+        {
+            return m.SelectMany(a => f(a).SelectMany(b => selector(a, b).FromResult()));
+        }
+
+        public static T Await<T>(this Task<T> t)
+        {
+            if (t.Status == TaskStatus.Created)
+            {
+                t.Start();
+            }
+            return t.Result;
         }
     }
 }

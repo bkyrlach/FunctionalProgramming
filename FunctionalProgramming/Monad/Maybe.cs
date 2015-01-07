@@ -1,4 +1,5 @@
 ﻿using System;
+using FunctionalProgramming.Monad.Outlaws;
 
 namespace FunctionalProgramming.Monad
 {
@@ -79,6 +80,13 @@ namespace FunctionalProgramming.Monad
                 just: val => val.AsRight<TErr, TVal>(),
                 nothing: () => error().AsLeft<TErr, TVal>());
         }
+
+        public static Try<TVal> AsTry<TVal, TErr>(this IMaybe<TVal> m, Func<TErr> error) where TErr : Exception
+        {
+            return m.Match(
+                just: v => TryOps.Attempt(() => v),
+                nothing: () => TryOps.Attempt<TVal>(() => { throw error(); }));
+        } 
 
         private class Just<TValue> : IMaybe<TValue>
         {

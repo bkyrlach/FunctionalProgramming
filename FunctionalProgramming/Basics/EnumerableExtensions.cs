@@ -62,7 +62,13 @@ namespace FunctionalProgramming.Basics
 
         public static Task<IEnumerable<T>> Sequence<T>(this IEnumerable<Task<T>> taskTs)
         {
-            throw new NotImplementedException("Task API currently does bad things when sequenced.");
+            var initial = ConsListOps.Nil<T>().FromResult();
+            return taskTs.Aggregate(initial, (current, task) => current.SelectMany(ts => task.Select(t => t.Cons(ts)))).Select(tasks => tasks.AsEnumerable().Reverse());
+        }
+
+        public static Task<IEnumerable<T2>> Traverse<T1, T2>(this IEnumerable<T1> xs, Func<T1, Task<T2>> f)
+        {
+            return xs.Select(f).Sequence();
         }
 
         public static State<TState, IEnumerable<T>> Sequence<TState, T>(this IEnumerable<State<TState, T>> states)

@@ -27,6 +27,11 @@ namespace FunctionalProgramming.Monad
             {
                 return left(Value);
             }
+
+            public override string ToString()
+            {
+                return string.Format("{0}-\\", Value);
+            }
         }
 
         private sealed class Right<T1, T2> : IEither<T1, T2>
@@ -44,6 +49,11 @@ namespace FunctionalProgramming.Monad
             public T3 Match<T3>(Func<T1, T3> left, Func<T2, T3> right)
             {
                 return right(Value);
+            }
+
+            public override string ToString()
+            {
+                return string.Format("/-{0}", Value);
             }
         }
 
