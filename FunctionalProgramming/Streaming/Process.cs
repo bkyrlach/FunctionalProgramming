@@ -68,9 +68,9 @@ namespace FunctionalProgramming.Streaming
                 failure: ex => new Halt<TI, TO>(ex));
         }
 
-        public static Process<TI, TO> Concat<TI, TO>(this Process<TI, TO> p1, Process<TI, TO> p2)
+        public static Process<TI, TO> Concat<TI, TO>(this Process<TI, TO> p1, Func<Process<TI, TO>> p2)
         {
-            return p1.OnHalt(ex => BasicFunctions.If(ex is End, () => Try(() => p2), () => new Halt<TI, TO>(ex)));
+            return p1.OnHalt(ex => BasicFunctions.If(ex is End, () => Try(p2), () => new Halt<TI, TO>(ex)));
         }
 
         public static Process<T, T> Take<T>(int n)
@@ -92,7 +92,7 @@ namespace FunctionalProgramming.Streaming
         {
             return m.Match(
                 halt: e => new Halt<TI, TO2>(e),
-                emit: (h, t) => Try(() => f(h)).Concat(t.SelectMany(f)),
+                emit: (h, t) => Try(() => f(h)).Concat(() => t.SelectMany(f)),
                 await: (req, recv) => new Await<TI, TO2>(req, recv.AndThen(p => p.SelectMany(f))));
         }
 
@@ -123,14 +123,14 @@ namespace FunctionalProgramming.Streaming
             return RunHelper(this, Enumerable.Empty<TO>());
         }
 
-        public Process<TI, TO> RepeatHelper(Process<TI, TO> p)
+        private Process<TI, TO> RepeatHelper(Process<TI, TO> p)
         {
             return p.Match(
-                halt: e => BasicFunctions.If(e is End, () => RepeatHelper(this), () => new Halt<TI, TO>(e)), 
+                halt: e => RepeatHelper(this),
+                emit: (h, t) => new Emit<TI, TO>(h, RepeatHelper(t)),
                 await: (req, recv) => new Await<TI, TO>(req, either => either.Match(
                     left: ex => recv(ex.AsLeft<Exception, TI>()),
-                    right: i => RepeatHelper(recv(i.AsRight<Exception, TI>())))),
-                emit: (h, t) => new Emit<TI, TO>(h, RepeatHelper(t)));
+                    right: i => RepeatHelper(recv(i.AsRight<Exception, TI>())))));
         }
 
         public Process<TI, TO> Repeat()
@@ -141,7 +141,7 @@ namespace FunctionalProgramming.Streaming
         public Process<TI, TO2> Pipe<TO2>(Process<TO, TO2> p2)
         {
             return p2.Match(
-                halt: e => Kill<TO2>().OnHalt(e2 => new Halt<TI, TO2>(e).Concat(new Halt<TI, TO2>(e2))),
+                halt: e => Kill<TO2>().OnHalt(e2 => new Halt<TI, TO2>(e).Concat(() => new Halt<TI, TO2>(e2))),
                 emit: (h, t) => new Emit<TI, TO2>(h, Pipe(t)),
                 await: (req, recv) => Match(
                     halt: e => new Halt<TI, TO>(e).Pipe(recv(e.AsLeft<Exception, TO>())),
@@ -185,7 +185,7 @@ namespace FunctionalProgramming.Streaming
 
         public Process<TI, TO> OnComplete(Func<Process<TI, TO>> p)
         {
-            return OnHalt(ex => BasicFunctions.If(ex is End, () => p().AsFinalizer(), () => p().AsFinalizer().Concat(new Halt<TI, TO>(ex))));
+            return OnHalt(ex => BasicFunctions.If(ex is End, () => p().AsFinalizer(), () => p().AsFinalizer().Concat(() => new Halt<TI, TO>(ex))));
         }
 
         public Process<TI, TO3> Tee<TO2, TO3>(Process<TI, TO2> p2, Process<IEither<TO, TO2>, TO3> tee)
