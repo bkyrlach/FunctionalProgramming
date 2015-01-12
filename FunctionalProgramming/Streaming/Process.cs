@@ -34,6 +34,49 @@ namespace FunctionalProgramming.Streaming
 
     public static class Process
     {
+        private static readonly Random R = new Random();
+
+        public static Process<T, IEither<T1, T2>> Wye<T, T1, T2>(Process<T, T1> p1, Process<T, T2> p2)
+        {
+            return p1.Match(
+                halt: e => new Halt<T, IEither<T1, T2>>(e).Concat(() => p2.Select(t2 => t2.AsRight<T1, T2>())),
+                emit: (h, t) => new Emit<T, IEither<T1, T2>>(h.AsLeft<T1, T2>(), Wye(t, p2)),
+                cont: cw => new Cont<T, IEither<T1, T2>>(() => Wye(cw, p2)),
+                eval: (effect, next) => new Eval<T, IEither<T1, T2>>(effect, Wye<T, T1, T2>(next, p2)),
+                await: (reql, recvl) => p2.Match(
+                    halt: e => new Halt<T, IEither<T1, T2>>(e).Concat(() => p1.Select(t1 => t1.AsLeft<T1, T2>())),
+                    emit: (h, t) => new Emit<T, IEither<T1, T2>>(h.AsRight<T1, T2>(), Wye(new Await<T, T1>(reql, recvl), t)),
+                    cont: cw => new Cont<T, IEither<T1, T2>>(() => Wye(p1, cw)),
+                    eval: (effect, next) => new Eval<T, IEither<T1, T2>>(effect, Wye<T, T1, T2>(p1, next)),
+                    await: (reqr, recvr) =>
+                    {
+                        var isRight = false;
+                        var tleft = new Task<T>(reql);
+                        var tright = new Task<T>(reqr);
+                        return new Await<T, IEither<T1, T2>>(() =>
+                        {
+                            if (R.Next() % 2 == 0)
+                            {
+                                tleft.Start();
+                                tright.Start();
+                            }
+                            else
+                            {
+                                tright.Start();
+                                tleft.Start();
+                            }
+                            var task = Task.WhenAny(new[] { tleft, tright });
+                            var result = task.Await();
+                            isRight = result.Equals(tright);
+                            return result.Await();
+                        }, x => x.Match(
+                            left: e => new Halt<T, IEither<T1, T2>>(e),
+                            right: i => BasicFunctions.If(isRight,
+                                () => Wye(new Await<T, T1>(() => tleft.Result, recvl), recvr(i.AsRight<Exception, T>())),
+                                () => Wye(recvl(i.AsRight<Exception, T>()), new Await<T, T2>(() => tright.Result, recvr)))));
+                    }));
+        }
+
         private static Process<TI, TO> BufferHelper<TState, TI, TO>(TState buffer, Func<TState> @new, Action<TI, TState> add,
             Func<TState, bool> ready, Func<TState, TO> flush)
         {
