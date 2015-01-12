@@ -67,7 +67,6 @@
     <Compile Include="Helpers\FuncExtensions.cs" />
     <Compile Include="Helpers\RecursionHelper.cs" />
     <Compile Include="Helpers\Replacements.cs" />
-    <Compile Include="Helpers\Tramp2.cs" />
     <Compile Include="Monad\ConsList.cs" />
     <Compile Include="Monad\Either.cs" />
     <Compile Include="Monad\Io.cs" />
