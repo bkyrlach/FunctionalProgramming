@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using FunctionalProgramming.Basics;
@@ -7,6 +8,7 @@ using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Outlaws;
 using FunctionalProgramming.Streaming;
 using NUnit.Framework;
+using Process = FunctionalProgramming.Streaming.Process;
 
 namespace FunctionalProgramming.Tests.StreamingTests
 {
@@ -78,11 +80,39 @@ namespace FunctionalProgramming.Tests.StreamingTests
         public void TestBoringNonDet()
         {
             var nums = ListToProcess(new[] { 1, 2, 3, 4, 5 });
-            var nums2 = ListToProcess(new[] {1, 2, 3}).OnHalt(ex => new Halt<int, int>(Kill.Only));
+            var nums2 = ListToProcess(new[] {1, 2, 3});
             var letters = ListToProcess(new[] { "a", "b", "c", "d", "e" });
             var process = Process.Wye(nums, nums2);
             var results = process.RunLog();
             results.ToList().ForEach(Console.WriteLine);
+        }
+
+        private static readonly Random R = new Random();
+
+        private Process<T, T> Delayed<T>(IEnumerable<T> ints)
+        {
+            return BasicFunctions.If(ints.Any(),
+                () => new Await<T, T>(() =>
+                {
+                    var sw = Stopwatch.StartNew();
+                    var milliseconds = R.Next(25, 101);
+                    while (sw.ElapsedMilliseconds < milliseconds)
+                        ;
+                    return ints.First();
+                }, either => either.Match<Process<T, T>>(
+                    left: e => new Halt<T, T>(e),
+                    right: x => new Emit<T, T>(x))).Concat(() => Delayed<T>(ints.Skip(1))),
+                Process.Halt1<T, T>);
+        }
+
+        [Test]
+        public void TestNonDet()
+        {
+            var nums = Delayed(Enumerable.Range(1, 100));
+            var sink = Process.Sink<int>(n => Console.WriteLine(n));
+            var stopAfter = Process.Delay<int>(3000);
+            var process = Process.Wye(stopAfter, nums.Pipe(sink));
+            process.Run();
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using FunctionalProgramming.Basics;
 using FunctionalProgramming.Helpers;
@@ -36,18 +38,46 @@ namespace FunctionalProgramming.Streaming
     {
         private static readonly Random R = new Random();
 
+        public static Process<TI, Unit> Sink<TI>(Action<TI> effect)
+        {
+            return Lift<TI, Unit>(i =>
+            {
+                effect(i);
+                return Unit.Only;
+            });
+        }
+
+        public static Process<TI, Unit> Sink<TI>(Action effect)
+        {
+            return Sink<TI>(i => effect());
+        }
+
+        public static Process<TI, Unit> Delay<TI>(uint milliseconds)
+        {
+            return new Await<TI, Unit>(() =>
+            {
+                var sw = Stopwatch.StartNew();
+                while (sw.ElapsedMilliseconds < milliseconds)
+                    ;
+                sw.Stop();
+                return default(TI);
+            }, either => either.Match(
+                left: ex => new Halt<TI, Unit>(ex),
+                right: i => new Halt<TI, Unit>(End.Only)));
+        } 
+
         public static Process<T, IEither<T1, T2>> Wye<T, T1, T2>(Process<T, T1> p1, Process<T, T2> p2)
         {
             return p1.Match(
-                halt: e => new Halt<T, IEither<T1, T2>>(e).Concat(() => p2.Select(t2 => t2.AsRight<T1, T2>())),
+                halt: e => new Halt<T, IEither<T1, T2>>(e), 
                 emit: (h, t) => new Emit<T, IEither<T1, T2>>(h.AsLeft<T1, T2>(), Wye(t, p2)),
                 cont: cw => new Cont<T, IEither<T1, T2>>(() => Wye(cw, p2)),
-                eval: (effect, next) => new Eval<T, IEither<T1, T2>>(effect, Wye<T, T1, T2>(next, p2)),
-                await: (reql, recvl) => p2.Match(
-                    halt: e => new Halt<T, IEither<T1, T2>>(e).Concat(() => p1.Select(t1 => t1.AsLeft<T1, T2>())),
+                eval: (effect, next) => new Eval<T, IEither<T1, T2>>(effect, Wye(next, p2)),
+                await: (reql, recvl) => p2.Match<Process<T, IEither<T1, T2>>>(
+                    halt: e => new Halt<T, IEither<T1, T2>>(e), 
                     emit: (h, t) => new Emit<T, IEither<T1, T2>>(h.AsRight<T1, T2>(), Wye(new Await<T, T1>(reql, recvl), t)),
                     cont: cw => new Cont<T, IEither<T1, T2>>(() => Wye(p1, cw)),
-                    eval: (effect, next) => new Eval<T, IEither<T1, T2>>(effect, Wye<T, T1, T2>(p1, next)),
+                    eval: (effect, next) => new Eval<T, IEither<T1, T2>>(effect, Wye(p1, next)),
                     await: (reqr, recvr) =>
                     {
                         var isRight = false;
@@ -55,7 +85,7 @@ namespace FunctionalProgramming.Streaming
                         var tright = new Task<T>(reqr);
                         return new Await<T, IEither<T1, T2>>(() =>
                         {
-                            if (R.Next() % 2 == 0)
+                            if (R.Next()%2 == 0)
                             {
                                 tleft.Start();
                                 tright.Start();
@@ -65,7 +95,7 @@ namespace FunctionalProgramming.Streaming
                                 tright.Start();
                                 tleft.Start();
                             }
-                            var task = Task.WhenAny(new[] { tleft, tright });
+                            var task = Task.WhenAny(new[] {tleft, tright});
                             var result = task.Await();
                             isRight = result.Equals(tright);
                             return result.Await();
@@ -272,7 +302,7 @@ namespace FunctionalProgramming.Streaming
                     await: (req, recv) =>
                     {
                         var res = new Task<TI>(req).Await();
-                        cur = recv(res.AsRight<Exception, TI>());
+                        cur = recv(res.AsRight<Exception, TI>());                            
                         return Unit.Only;
                     },
                     cont: cw =>
