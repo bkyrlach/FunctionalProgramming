@@ -92,16 +92,10 @@ namespace FunctionalProgramming.Tests.StreamingTests
         private Process<T, T> Delayed<T>(IEnumerable<T> ints)
         {
             return BasicFunctions.If(ints.Any(),
-                () => new Await<T, T>(() =>
-                {
-                    var sw = Stopwatch.StartNew();
-                    var milliseconds = R.Next(25, 101);
-                    while (sw.ElapsedMilliseconds < milliseconds)
-                        ;
-                    return ints.First();
-                }, either => either.Match<Process<T, T>>(
+                () => Process.Delay<T, T>((uint)R.Next(25, 101)).Concat(() => new Await<T, T>(() => ints.First(), 
+                either => either.Match<Process<T, T>>(
                     left: e => new Halt<T, T>(e),
-                    right: x => new Emit<T, T>(x))).Concat(() => Delayed<T>(ints.Skip(1))),
+                    right: x => new Emit<T, T>(x))).Concat(() => Delayed<T>(ints.Skip(1)))),
                 Process.Halt1<T, T>);
         }
 
@@ -110,7 +104,7 @@ namespace FunctionalProgramming.Tests.StreamingTests
         {
             var nums = Delayed(Enumerable.Range(1, 100));
             var sink = Process.Sink<int>(n => Console.WriteLine(n));
-            var stopAfter = Process.Delay<int>(3000);
+            var stopAfter = Process.Delay<int, int>(30000);
             var process = Process.Wye(stopAfter, nums.Pipe(sink));
             process.Run();
         }

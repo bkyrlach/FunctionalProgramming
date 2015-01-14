@@ -52,9 +52,9 @@ namespace FunctionalProgramming.Streaming
             return Sink<TI>(i => effect());
         }
 
-        public static Process<TI, Unit> Delay<TI>(uint milliseconds)
+        public static Process<TI, TO> Delay<TI, TO>(uint milliseconds)
         {
-            return new Await<TI, Unit>(() =>
+            return new Await<TI, TO>(() =>
             {
                 var sw = Stopwatch.StartNew();
                 while (sw.ElapsedMilliseconds < milliseconds)
@@ -62,8 +62,8 @@ namespace FunctionalProgramming.Streaming
                 sw.Stop();
                 return default(TI);
             }, either => either.Match(
-                left: ex => new Halt<TI, Unit>(ex),
-                right: i => new Halt<TI, Unit>(End.Only)));
+                left: ex => new Halt<TI, TO>(ex),
+                right: i => new Halt<TI, TO>(End.Only)));
         } 
 
         public static Process<T, IEither<T1, T2>> Wye<T, T1, T2>(Process<T, T1> p1, Process<T, T2> p2)
