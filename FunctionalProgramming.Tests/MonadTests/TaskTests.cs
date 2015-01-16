@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad;
+using FunctionalProgramming.Monad.Outlaws;
 using NUnit.Framework;
 
 namespace FunctionalProgramming.Tests.MonadTests

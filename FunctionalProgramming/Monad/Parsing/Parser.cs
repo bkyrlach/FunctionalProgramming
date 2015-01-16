@@ -327,7 +327,7 @@ namespace FunctionalProgramming.Monad.Parsing
             }
             else
             {
-                finalResult = new SuccessResult<TInput, IConsList<TOutput>>(resultList.AsEnumerable().Reverse().Aggregate(ConsListOps.Nil<TOutput>(), (list, e) => e.Cons(list)), remainder);
+                finalResult = new SuccessResult<TInput, IConsList<TOutput>>(resultList.AsEnumerable().Reverse().Aggregate(ConsList.Nil<TOutput>(), (list, e) => e.Cons(list)), remainder);
             }
             return finalResult;
             //return r.Match(

@@ -31,7 +31,7 @@ namespace FunctionalProgramming.Monad
         IEnumerable<T> AsEnumerable();
     }
 
-    public static class ConsListOps
+    public static class ConsList
     {
         public static IConsList<T> Cons<T>(this T t, IConsList<T> xs)
         {
@@ -58,7 +58,7 @@ namespace FunctionalProgramming.Monad
         public static IStream<T> ToStream<T>(this IConsList<T> xs)
         {
             return xs.Match(
-                nil: StreamExtensions.Empty<T>,
+                nil: Stream.Empty<T>,
                 cons: (h, t) => h.Cons(t.ToStream));
         }
 

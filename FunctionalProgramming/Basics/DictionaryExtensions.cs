@@ -21,6 +21,7 @@ namespace FunctionalProgramming.Basics
         public static IDictionary<TKey, TValue> Put<TKey, TValue>(this IDictionary<TKey, TValue> dictionary,
             Tuple<TKey, TValue> update)
         {
+            //TODO This is not likely very performant. Lets see if there's a better way
             var newDictionary = new Dictionary<TKey, TValue>(dictionary);
             newDictionary[update.Item1] = update.Item2;
             return newDictionary;
@@ -36,8 +37,7 @@ namespace FunctionalProgramming.Basics
         /// <returns>Nothing if the dictionary is null, the dictionary does not contain the key, or value associated with that key is null, otherwise Just the value</returns>
         public static IMaybe<TValue> Get<TKey, TValue>(this IDictionary<TKey, TValue> dictionary, TKey key)
         {
-            return
-                dictionary.ToMaybe().SelectMany(d => key.ToMaybe().Where(d.ContainsKey).SelectMany(k => d[k].ToMaybe()));
+            return dictionary.ToMaybe().SelectMany(d => key.ToMaybe().Where(d.ContainsKey).SelectMany(k => d[k].ToMaybe()));
         } 
     }
 }

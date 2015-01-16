@@ -17,15 +17,13 @@ namespace FunctionalProgramming.Examples.StateExamples
         {
             return z <= 1
                 ? z.Insert<IDictionary<BigInteger, BigInteger>, BigInteger>()
-                : from u in StateExtensions.Get<IDictionary<BigInteger, BigInteger>, IMaybe<BigInteger>>(d => d.Get(z))
+                : from u in State.Get<IDictionary<BigInteger, BigInteger>, IMaybe<BigInteger>>(d => d.Get(z))
                     from v in u.Select(n => n.Insert<IDictionary<BigInteger, BigInteger>, BigInteger>()).GetOrElse(() =>
                         from r in FibM(z - 1)
                         from s in FibM(z - 2)
                         let t = r + s
-                        from _ in
-                            StateExtensions.Mod<IDictionary<BigInteger, BigInteger>>(d => d.Put(Tuple.Create(z, t)))
-                        select t
-                        )
+                        from _ in State.Mod<IDictionary<BigInteger, BigInteger>>(d => d.Put(Tuple.Create(z, t)))
+                        select t)
                     select v;
         }
     }

@@ -101,7 +101,7 @@ namespace FunctionalProgramming.Monad
         }
     }
 
-    public static class TrampolineExtensions
+    public static class Trampoline
     {
         public static Trampoline<T> Select<T>(this Trampoline<T> m, Func<T, T> f)
         {

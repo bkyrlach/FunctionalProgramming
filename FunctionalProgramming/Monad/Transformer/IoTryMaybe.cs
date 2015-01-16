@@ -13,17 +13,17 @@ namespace FunctionalProgramming.Monad.Transformer
             _self = io;
         }
 
-        public IoTryMaybe(Try<IMaybe<T>> aTry) : this(Io<Try<IMaybe<T>>>.Apply(() => aTry))
+        public IoTryMaybe(Try<IMaybe<T>> aTry) : this(Io.Apply(() => aTry))
         {
 
         }
 
-        public IoTryMaybe(IMaybe<T> m) : this(Io<Try<IMaybe<T>>>.Apply(() => TryOps.Attempt(() => m)))
+        public IoTryMaybe(IMaybe<T> m) : this(Io.Apply(() => Try.Attempt(() => m)))
         {
             
         }
 
-        public IoTryMaybe(T t) : this(Io<Try<IMaybe<T>>>.Apply(() => TryOps.Attempt(() => t.ToMaybe())))
+        public IoTryMaybe(T t) : this(Io.Apply(() => Try.Attempt(() => t.ToMaybe())))
         {
         }
 
@@ -42,14 +42,14 @@ namespace FunctionalProgramming.Monad.Transformer
             return new IoTryMaybe<TResult>(_self.SelectMany(t => t.Match(
                 success: m => m.Match(
                     just: v => f(v).Out(),
-                    nothing: () => Io<Try<IMaybe<TResult>>>.Apply(() => TryOps.Attempt(() => Maybe.Nothing<TResult>()))),
-                failure: ex => Io<Try<IMaybe<TResult>>>.Apply(() => ex.Fail<IMaybe<TResult>>()))));
+                    nothing: () => Io.Apply(() => Try.Attempt(() => Maybe.Nothing<TResult>()))),
+                failure: ex => Io.Apply(() => ex.Fail<IMaybe<TResult>>()))));
         }
     }
 
     public static class IoTryMaybe
     {
-        public static IoTryMaybe<T> In<T>(this Io<Try<IMaybe<T>>> io)
+        public static IoTryMaybe<T> ToIoTryMaybe<T>(this Io<Try<IMaybe<T>>> io)
         {
             return new IoTryMaybe<T>(io);    
         }       
@@ -76,7 +76,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
         public static IoTryMaybe<T> ToIoTryMaybe<T>(this Io<T> io)
         {
-            return io.Select(t => TryOps.Attempt(() => t.ToMaybe())).In();
+            return io.Select(t => Try.Attempt(() => t.ToMaybe())).ToIoTryMaybe();
         }
 
         public static IoTryMaybe<TResult> Select<TInitial, TResult>(this IoTryMaybe<TInitial> ioT,

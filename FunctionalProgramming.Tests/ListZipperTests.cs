@@ -12,7 +12,7 @@ namespace FunctionalProgramming.Tests
         public void TestEmptySet()
         {
             var expected = 1.LiftList();
-            var zipper = ConsListZipper<int>.ToZipper(ConsListOps.Nil<int>());
+            var zipper = ConsListZipper<int>.ToZipper(ConsList.Nil<int>());
             var result = zipper.Set(1).ToList();
             Assert.AreEqual(expected,result);
         }
