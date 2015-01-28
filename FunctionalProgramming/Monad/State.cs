@@ -41,7 +41,7 @@ namespace FunctionalProgramming.Monad
         }
     }
 
-    public static class StateExtensions
+    public static class State
     {
         public static State<TState, TValue> Insert<TState, TValue>(this TValue t)
         {

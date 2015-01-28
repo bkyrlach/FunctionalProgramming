@@ -15,14 +15,14 @@ namespace FunctionalProgramming.Tests.TransformerTests
         [Test]
         public void Test1()
         {
-            var xs = Io<IEnumerable<Try<int>>>.Apply(() => Enumerable.Range(0, 10000).Select(n => n%8).Select(n => TryOps.Attempt(() =>
+            var xs = Io.Apply(() => Enumerable.Range(0, 10000).Select(n => n%8).Select(n => Try.Attempt(() =>
                 {
                     if (n == 0)
                     {
                         throw new Exception("Ruh roh");
                     }
                     return n;
-                }))).In();
+                }))).ToIoEnumerableTry();
 
             var pgm = (from x in xs
                 from _ in PutStrLn(x).ToIoEnumerableTry()
@@ -33,7 +33,7 @@ namespace FunctionalProgramming.Tests.TransformerTests
 
         public static Io<Unit> PutStrLn(object s)
         {
-            return Io<Unit>.Apply(() => Console.WriteLine(s));
+            return Io.Apply(() => Console.WriteLine(s));
         }
     }   
 }

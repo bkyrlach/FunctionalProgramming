@@ -23,34 +23,75 @@ namespace FunctionalProgramming.Basics
         T MAppend(T t1, T t2);
     }
 
+    /// <summary>
+    /// Proof that strings are a monoid
+    /// </summary>
     public sealed class StringMonoid : IMonoid<string>
     {
+        /// <summary>
+        /// This proof is represented as a singleton (as proofs should not have multiple instances)
+        /// </summary>
         public static IMonoid<string> Only = new StringMonoid();
 
+        /// <summary>
+        /// Default constructor marked as private to prevent multiple instances of this proof
+        /// </summary>
         private StringMonoid()
         {
             
         }
 
+        /// <summary>
+        /// The identity value for the string monoid is the empty string
+        /// </summary>
         public string MZero { get { return string.Empty; } }
 
+        /// <summary>
+        /// The binary operation for the string monoid is concatenation.
+        /// 
+        /// Monoid property: Mappend("anyString", MZero) == "anyString"
+        /// </summary>
+        /// <param name="s1">Any value from the monoid string</param>
+        /// <param name="s2">Any value from the monoid string</param>
+        /// <returns>'s2' appended to 's1'</returns>
         public string MAppend(string s1, string s2)
         {
-            return s1 + s2;
+            return string.Format("{0}{1}", s1, s2);
         }
     }
 
+    /// <summary>
+    /// Proof that ints are a monoid
+    /// </summary>
     public sealed class IntMonoid : IMonoid<int>
     {
+        /// <summary>
+        /// This proof is represented as a singleton (as proofs should not have multiple instances)
+        /// </summary>
         public static IMonoid<int> Only = new IntMonoid();
 
+        /// <summary>
+        /// Default constructor marked as private to prevent multiple instances of this proof from
+        /// being created
+        /// </summary>
         private IntMonoid()
         {
             
         }
 
+        /// <summary>
+        /// The identity value for the int monoid is zero
+        /// </summary>
         public int MZero { get { return 0; } }
 
+        /// <summary>
+        /// The binary operation for the int monoid is addition
+        /// 
+        /// Monoid property: MAppend(13, MZero) == 13
+        /// </summary>
+        /// <param name="a">Any value from the monoid int</param>
+        /// <param name="b">Any value from the monoid int</param>
+        /// <returns>'a' + 'b'</returns>
         public int MAppend(int a, int b)
         {
             return a + b;
@@ -73,8 +114,19 @@ namespace FunctionalProgramming.Basics
         {
         }
 
+        /// <summary>
+        /// The identity value for the enumerable monoid is 'Enumerable.Empty'
+        /// </summary>
         public IEnumerable<T> MZero { get { return Enumerable.Empty<T>(); } }
 
+        /// <summary>
+        /// The binary operation for enumerables is concatenation
+        /// 
+        /// Monoid property: MAppend(new [] {1,2,3}, MZero) == [1, 2, 3]
+        /// </summary>
+        /// <param name="t1">Any value from the monoid enumerable</param>
+        /// <param name="t2">Any value from the monoid enumerable</param>
+        /// <returns>'t1'.Concat('t2')</returns>
         public IEnumerable<T> MAppend(IEnumerable<T> t1, IEnumerable<T> t2)
         {
             return t1.Concat(t2);

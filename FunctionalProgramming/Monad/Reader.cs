@@ -18,7 +18,7 @@ namespace FunctionalProgramming.Monad
         }
     }
 
-    public static class ReaderExtensions
+    public static class Reader
     {
         public static Reader<TEnvironment, TNewResult> Select<TEnvironment, TResult, TNewResult>(
             this Reader<TEnvironment, TResult> r, Func<TResult, TNewResult> f)
