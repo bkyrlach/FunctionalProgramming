@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Threading;
 using System.Threading.Tasks;
 using FunctionalProgramming.Basics;
 using FunctionalProgramming.Helpers;
@@ -176,7 +175,7 @@ namespace FunctionalProgramming.Streaming
 
         public static Process<TI, TO> Try<TI, TO>(Func<Process<TI, TO>> p)
         {
-            return TryOps.Attempt(p).Match(
+            return Monad.Outlaws.Try.Attempt(p).Match(
                 success: BasicFunctions.Identity,
                 failure: ex => new Halt<TI, TO>(ex));
         }

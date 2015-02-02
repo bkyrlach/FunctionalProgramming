@@ -84,8 +84,8 @@ namespace FunctionalProgramming.Monad
         public static Try<TVal> AsTry<TVal, TErr>(this IMaybe<TVal> m, Func<TErr> error) where TErr : Exception
         {
             return m.Match(
-                just: v => TryOps.Attempt(() => v),
-                nothing: () => TryOps.Attempt<TVal>(() => { throw error(); }));
+                just: v => Try.Attempt(() => v),
+                nothing: () => Try.Attempt<TVal>(() => { throw error(); }));
         } 
 
         private class Just<TValue> : IMaybe<TValue>

@@ -83,7 +83,7 @@ namespace FunctionalProgramming.Basics
         /// <returns></returns>
         public static Task<IEnumerable<T>> Sequence<T>(this IEnumerable<Task<T>> taskTs)
         {
-            var initial = ConsListOps.Nil<T>().FromResult();
+            var initial = ConsList.Nil<T>().FromResult();
             return taskTs.Aggregate(initial, (current, task) => current.SelectMany(ts => task.Select(t => t.Cons(ts)))).Select(tasks => tasks.AsEnumerable().Reverse());
         }
 
