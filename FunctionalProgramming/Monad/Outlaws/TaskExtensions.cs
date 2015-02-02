@@ -3,6 +3,10 @@ using System.Threading.Tasks;
 
 namespace FunctionalProgramming.Monad.Outlaws
 {
+    //TODO Fix horrible brokenness. Perhaps replace with implementation of 'Futures
+    /// <summary>
+    /// DO NOT USE
+    /// </summary>
     public static class TaskExtensions
     {
         public static Task<T> FromResult<T>(this T t)

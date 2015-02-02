@@ -4,7 +4,7 @@ namespace FunctionalProgramming.Monad.Transformer
 {
     public static class IoEitherMaybe
     {
-        public static IoEitherMaybe<TLeft, TRight> In<TLeft, TRight>(this Io<IEither<TLeft, IMaybe<TRight>>> either)
+        public static IoEitherMaybe<TLeft, TRight> ToIoEitherMaybe<TLeft, TRight>(this Io<IEither<TLeft, IMaybe<TRight>>> either)
         {
             return new IoEitherMaybe<TLeft, TRight>(either);
         }
@@ -65,7 +65,7 @@ namespace FunctionalProgramming.Monad.Transformer
         }
 
         public IoEitherMaybe(IEither<TLeft, IMaybe<TRight>> either)
-            : this(Io<IEither<TLeft, IMaybe<TRight>>>.Apply(() => either))
+            : this(Io.Apply(() => either))
         {
 
         }
@@ -95,10 +95,10 @@ namespace FunctionalProgramming.Monad.Transformer
         public IoEitherMaybe<TLeft, TResult> Bind<TResult>(Func<TRight, IoEitherMaybe<TLeft, TResult>> f)
         {
             return new IoEitherMaybe<TLeft, TResult>(_self.SelectMany(either => either.Match(
-                left: left => Io<IEither<TLeft, IMaybe<TResult>>>.Apply(() => left.AsLeft<TLeft, IMaybe<TResult>>()),
+                left: left => Io.Apply(() => left.AsLeft<TLeft, IMaybe<TResult>>()),
                 right: maybe => maybe.Match(
                     just: val => f(val).Out(),
-                    nothing: () => Io<IEither<TLeft, IMaybe<TResult>>>.Apply(() => Maybe.Nothing<TResult>().AsRight<TLeft, IMaybe<TResult>>())))));
+                    nothing: () => Io.Apply(() => Maybe.Nothing<TResult>().AsRight<TLeft, IMaybe<TResult>>())))));
         }
 
         public IoEitherMaybe<TLeft, TRight> Keep(Func<TRight, bool> predicate)

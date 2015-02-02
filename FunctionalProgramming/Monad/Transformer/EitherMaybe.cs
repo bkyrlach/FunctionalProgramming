@@ -4,7 +4,7 @@ namespace FunctionalProgramming.Monad.Transformer
 {
     public static class EitherMaybe
     {
-        public static EitherMaybe<TLeft, TRight> In<TLeft, TRight>(this IEither<TLeft, IMaybe<TRight>> either)
+        public static EitherMaybe<TLeft, TRight> ToEitherMaybe<TLeft, TRight>(this IEither<TLeft, IMaybe<TRight>> either)
         {
             return new EitherMaybe<TLeft, TRight>(either);
         }
@@ -41,7 +41,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
         public static EitherMaybe<TLeft, TSelect> SelectMany<TLeft, TRight, TResult, TSelect>(this EitherMaybe<TLeft, TRight> eitherT, Func<TRight, EitherMaybe<TLeft, TResult>> f, Func<TRight, TResult, TSelect> selector)
         {
-            return eitherT.SelectMany(a => f(a).SelectMany(b => selector(a, b).ToMaybe().AsRight<TLeft, IMaybe<TSelect>>().In()));
+            return eitherT.SelectMany(a => f(a).SelectMany(b => selector(a, b).ToMaybe().AsRight<TLeft, IMaybe<TSelect>>().ToEitherMaybe()));
         }
 
         public static EitherMaybe<TLeft, TRight> Where<TLeft, TRight>(this EitherMaybe<TLeft, TRight> eitherT, Func<TRight, bool> predicate)

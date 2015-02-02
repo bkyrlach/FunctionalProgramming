@@ -16,7 +16,7 @@ namespace FunctionalProgramming.Monad.Transformer
             _self = io;
         }
 
-        public IoEnumerableMaybe(IEnumerable<IMaybe<T>> maybes) : this(Io<IEnumerable<IMaybe<T>>>.Apply(() => maybes))
+        public IoEnumerableMaybe(IEnumerable<IMaybe<T>> maybes) : this(Io.Apply(() => maybes))
         {
             
         }
@@ -50,7 +50,7 @@ namespace FunctionalProgramming.Monad.Transformer
         {
             return new IoEnumerableMaybe<TResult>(_self.SelectMany(maybes => maybes.Select(maybe => maybe.Match(
                 just: v => f(v).Out(),
-                nothing: () => Io<IEnumerable<IMaybe<TResult>>>.Apply(() => Enumerable.Empty<IMaybe<TResult>>())))
+                nothing: () => Io.Apply(() => Enumerable.Empty<IMaybe<TResult>>())))
                 .Sequence()
                 .Select(x => x.SelectMany(BasicFunctions.Identity))));
         }
@@ -58,7 +58,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
     public static class IoEnumerableMaybe
     {
-        public static IoEnumerableMaybe<T> In<T>(this Io<IEnumerable<IMaybe<T>>> io)
+        public static IoEnumerableMaybe<T> ToIoEnumerableMaybe<T>(this Io<IEnumerable<IMaybe<T>>> io)
         {
             return new IoEnumerableMaybe<T>(io);
         }

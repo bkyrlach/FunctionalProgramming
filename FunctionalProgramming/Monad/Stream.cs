@@ -17,7 +17,7 @@ namespace FunctionalProgramming.Monad
         TResult Match<TResult>(Func<T, IStream<T>, TResult> cons, Func<TResult> nil);
     }
 
-    public static class StreamExtensions
+    public static class Stream
     {
         public static IStream<T> ToStream<T>(this IEnumerable<T> xs)
         {
