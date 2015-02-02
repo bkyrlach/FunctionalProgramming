@@ -212,14 +212,14 @@ namespace FunctionalProgramming.Streaming
                 eval: (effect, next) => new Eval<TI, TO2>(effect, next.SelectMany(f)));
         }
 
-        public static Process<TI, TO> Resource<TR, TI, TO>(Func<TR> create, Action<TR> initialize, Action<TR> release, Process<TI, TO> use)
+        public static Process<TI, TO> Resource<TR, TI, TO>(Func<TR> create, Action<TR> initialize, Action<TR> release, Func<TR, Process<TI, TO>> use)
         {
             TR resource = default(TR);
             return new Eval<TI, TO>(
                 () => resource = create(),
                 new Eval<TI, TO>(
                     () => initialize(resource),
-                    use.OnHalt(ex => new Eval<TI, TO>(() => release(resource)).Concat(() => new Halt<TI, TO>(ex)))));
+                    use(resource).OnHalt(ex => new Eval<TI, TO>(() => release(resource)).Concat(() => new Halt<TI, TO>(ex)))));
         }
     }
 
