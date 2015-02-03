@@ -37,6 +37,13 @@ namespace FunctionalProgramming.Streaming
     {
         private static readonly Random R = new Random();
 
+        public static Process<TI, TI> Continually<TI>(Func<TI> effect)
+        {
+            return new Await<TI, TI>(effect, result => result.Match<Process<TI, TI>>(
+                left: ex => new Halt<TI, TI>(ex), 
+                right: ti => new Emit<TI, TI>(ti, new Cont<TI, TI>(() => Continually(effect)))));
+        } 
+
         public static Process<TI, Unit> Sink<TI>(Action<TI> effect)
         {
             return Lift<TI, Unit>(i =>
@@ -94,7 +101,7 @@ namespace FunctionalProgramming.Streaming
                                 tright.Start();
                                 tleft.Start();
                             }
-                            var task = Task.WhenAny(new[] {tleft, tright});
+                            var task = Task.WhenAny(tleft, tright);
                             var result = task.Await();
                             isRight = result.Equals(tright);
                             return result.Await();
@@ -113,17 +120,8 @@ namespace FunctionalProgramming.Streaming
                 left: e => new Halt<TI, TO>(e),
                 right: i =>
                 {
-                    Process<TI, TO> retval;
                     add(i, buffer);
-                    if (ready(buffer))
-                    {
-                        retval = new Emit<TI, TO>(flush(buffer)).Concat(() => BufferHelper(@new(), @new, add, ready, flush));
-                    }
-                    else
-                    {
-                        retval = new Cont<TI, TO>(() => BufferHelper(buffer, @new, add, ready, flush));
-                    }
-                    return retval;
+                    return ready(buffer) ? new Emit<TI, TO>(flush(buffer)).Concat(() => BufferHelper(@new(), @new, add, ready, flush)) : new Cont<TI, TO>(() => BufferHelper(buffer, @new, add, ready, flush));
                 }));            
         }
 
@@ -145,9 +143,9 @@ namespace FunctionalProgramming.Streaming
             return new Await<TI, TO>(
                 () => default(TI),
                 either => either.Match(
-                    left: ex => BasicFunctions.If(ex is End,
-                        () => fallback.ToMaybe().Select(f => f()).GetOrElse(Halt1<TI, TO>),
-                        () => new Halt<TI, TO>(ex)),
+                    left: ex => ex is End
+                        ? fallback.ToMaybe().Select(f => f()).GetOrElse(Halt1<TI, TO>)
+                        : new Halt<TI, TO>(ex),
                     right: recv));
         }
 
@@ -187,9 +185,9 @@ namespace FunctionalProgramming.Streaming
 
         public static Process<T, T> Take<T>(int n)
         {
-            return BasicFunctions.If(n <= 0, 
-                Halt1<T, T>,
-                () => Await1<T, T>(i => Emit(i, Take<T>(n - 1))));
+            return n <= 0
+                ? Halt1<T, T>()
+                : Await1<T, T>(i => Emit(i, Take<T>(n - 1)));
         }
 
         public static Process<TI, TO2> Select<TI, TO1, TO2>(this Process<TI, TO1> m, Func<TO1, TO2> f)
@@ -330,12 +328,12 @@ namespace FunctionalProgramming.Streaming
                 halt: e => Kill<TO2>().OnHalt(e2 => new Halt<TI, TO2>(e).Concat(() => new Halt<TI, TO2>(e2))),
                 emit: (h, t) => new Emit<TI, TO2>(h, Pipe(t)),
                 cont: cw => new Cont<TI, TO2>(() => Pipe(cw)), 
-                eval: (effect, next) => new Eval<TI, TO2>(effect, Pipe<TO2>(next)),
+                eval: (effect, next) => new Eval<TI, TO2>(effect, Pipe(next)),
                 await: (req, recv) => Match(
                     halt: e => new Halt<TI, TO>(e).Pipe(recv(e.AsLeft<Exception, TO>())),
                     emit: (h, t) => t.Pipe(Process.Try(() => recv(h.AsRight<Exception, TO>()))),
                     cont: cw => new Cont<TI, TO2>(() => cw.Pipe(p2)), 
-                    eval: (effect, next) => new Eval<TI, TO2>(effect, next.Pipe<TO2>(p2)), 
+                    eval: (effect, next) => new Eval<TI, TO2>(effect, next.Pipe(p2)), 
                     await: (req0, recv0) => new Await<TI, TO2>(req0, recv0.AndThen(p => p.Pipe(p2)))));
         }
 
