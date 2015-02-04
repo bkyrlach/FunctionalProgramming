@@ -37,11 +37,16 @@ namespace FunctionalProgramming.Streaming
     {
         private static readonly Random R = new Random();
 
-        public static Process<TI, TI> Continually<TI>(Func<TI> effect)
+        public static Process<TI, TI> AwaitAndEmit<TI>(Func<TI> effect)
         {
             return new Await<TI, TI>(effect, result => result.Match<Process<TI, TI>>(
-                left: ex => new Halt<TI, TI>(ex), 
-                right: ti => new Emit<TI, TI>(ti, new Cont<TI, TI>(() => Continually(effect)))));
+                left: ex => new Halt<TI, TI>(ex),
+                right: ti => new Emit<TI, TI>(ti)));
+        }
+
+        public static Process<TI, TI> Continually<TI>(Func<TI> effect)
+        {
+            return AwaitAndEmit(effect).Repeat();
         } 
 
         public static Process<TI, Unit> Sink<TI>(Action<TI> effect)
