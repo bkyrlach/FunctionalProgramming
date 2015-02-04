@@ -37,6 +37,11 @@ namespace FunctionalProgramming.Streaming
     {
         private static readonly Random R = new Random();
 
+        public static Process<TI, TO> RepeatUntil<TI, TO>(this Process<TI, TO> p, Func<bool> predicate)
+        {
+            return p.Concat(() => BasicFunctions.If<Process<TI, TO>>(predicate(), () => new Halt<TI, TO>(Kill.Only), () => new Cont<TI, TO>(() => p.RepeatUntil(predicate))));
+        }
+
         public static Process<TI, TI> AwaitAndEmit<TI>(Func<TI> effect)
         {
             return new Await<TI, TI>(effect, result => result.Match<Process<TI, TI>>(
