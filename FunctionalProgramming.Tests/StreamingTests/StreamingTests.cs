@@ -48,7 +48,7 @@ namespace FunctionalProgramming.Tests.StreamingTests
         private Process<IEither<T, T2>, IEither<T, T2>> Tee<T, T2>(bool right = true)
         {
             return new Await<IEither<T, T2>, IEither<T, T2>>(
-                () => BasicFunctions.EIf(right, () => default(T2), () => default(T)),
+                Io.Apply(() => BasicFunctions.EIf(right, () => default(T2), () => default(T))),
                 errorOrValue => errorOrValue.Match<Process<IEither<T, T2>, IEither<T, T2>>>(
                     left: e => new Halt<IEither<T, T2>, IEither<T, T2>>(e),
                     right: either => new Emit<IEither<T, T2>, IEither<T, T2>>(either, Tee<T, T2>(!right))));
@@ -57,7 +57,7 @@ namespace FunctionalProgramming.Tests.StreamingTests
         private Process<T, T> ListToProcess<T>(IEnumerable<T> xs)
         {
             return BasicFunctions.If(xs.Any(),
-                () => new Await<T, T>(() => xs.First(), either => either.Match<Process<T, T>>(
+                () => new Await<T, T>(Io.Apply(() => xs.First()), either => either.Match<Process<T, T>>(
                     left: e => new Halt<T, T>(e),
                     right: x => new Emit<T, T>(x, ListToProcess(xs.Skip(1))))),
                 Process.Halt1<T, T>);
@@ -89,10 +89,11 @@ namespace FunctionalProgramming.Tests.StreamingTests
         private Process<T, T> Delayed<T>(IEnumerable<T> ints)
         {
             return BasicFunctions.If(ints.Any(),
-                () => Process.Delay<T, T>((uint)R.Next(25, 101)).Concat(() => new Await<T, T>(() => ints.First(), 
-                either => either.Match<Process<T, T>>(
-                    left: e => new Halt<T, T>(e),
-                    right: x => new Emit<T, T>(x))).Concat(() => Delayed(ints.Skip(1)))),
+                () => Process.Delay<T, T>((uint)R.Next(25, 101)).Concat(() => new Await<T, T>(
+                    Io.Apply(() => ints.First()), 
+                    either => either.Match<Process<T, T>>(
+                        left: e => new Halt<T, T>(e),
+                        right: x => new Emit<T, T>(x))).Concat(() => Delayed(ints.Skip(1)))),
                 Process.Halt1<T, T>);
         }
 

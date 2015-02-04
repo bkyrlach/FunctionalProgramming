@@ -42,14 +42,14 @@ namespace FunctionalProgramming.Streaming
             return p.Concat(() => BasicFunctions.If<Process<TI, TO>>(predicate(), () => new Halt<TI, TO>(Kill.Only), () => new Cont<TI, TO>(() => p.RepeatUntil(predicate))));
         }
 
-        public static Process<TI, TI> AwaitAndEmit<TI>(Func<TI> effect)
+        public static Process<TI, TI> AwaitAndEmit<TI>(Io<TI> effect)
         {
             return new Await<TI, TI>(effect, result => result.Match<Process<TI, TI>>(
                 left: ex => new Halt<TI, TI>(ex),
                 right: ti => new Emit<TI, TI>(ti)));
         }
 
-        public static Process<TI, TI> Continually<TI>(Func<TI> effect)
+        public static Process<TI, TI> Continually<TI>(Io<TI> effect)
         {
             return AwaitAndEmit(effect).Repeat();
         } 
@@ -70,14 +70,14 @@ namespace FunctionalProgramming.Streaming
 
         public static Process<TI, TO> Delay<TI, TO>(uint milliseconds)
         {
-            return new Await<TI, TO>(() =>
+            return new Await<TI, TO>(Io.Apply(() =>
             {
                 var sw = Stopwatch.StartNew();
                 while (sw.ElapsedMilliseconds < milliseconds)
                     ;
                 sw.Stop();
                 return default(TI);
-            }, either => either.Match(
+            }), either => either.Match(
                 left: ex => new Halt<TI, TO>(ex),
                 right: i => new Halt<TI, TO>(End.Only)));
         } 
@@ -97,9 +97,9 @@ namespace FunctionalProgramming.Streaming
                     await: (reqr, recvr) =>
                     {
                         var isRight = false;
-                        var tleft = new Task<T>(reql);
-                        var tright = new Task<T>(reqr);
-                        return new Await<T, IEither<T1, T2>>(() =>
+                        var tleft = new Task<T>(reql.UnsafePerformIo);
+                        var tright = new Task<T>(reqr.UnsafePerformIo);
+                        return new Await<T, IEither<T1, T2>>(Io.Apply(() =>
                         {
                             if (R.Next()%2 == 0)
                             {
@@ -115,18 +115,18 @@ namespace FunctionalProgramming.Streaming
                             var result = task.Await();
                             isRight = result.Equals(tright);
                             return result.Await();
-                        }, x => x.Match(
+                        }), x => x.Match(
                             left: e => new Halt<T, IEither<T1, T2>>(e),
                             right: i => BasicFunctions.If(isRight,
-                                () => Wye(new Await<T, T1>(() => tleft.Result, recvl), recvr(i.AsRight<Exception, T>())),
-                                () => Wye(recvl(i.AsRight<Exception, T>()), new Await<T, T2>(() => tright.Result, recvr)))));
+                                () => Wye(new Await<T, T1>(Io.Apply(() => tleft.Result), recvl), recvr(i.AsRight<Exception, T>())),
+                                () => Wye(recvl(i.AsRight<Exception, T>()), new Await<T, T2>(Io.Apply(() => tright.Result), recvr)))));
                     }));
         }
 
         private static Process<TI, TO> BufferHelper<TState, TI, TO>(TState buffer, Func<TState> @new, Action<TI, TState> add,
             Func<TState, bool> ready, Func<TState, TO> flush)
         {
-            return new Await<TI, TO>(() => default(TI), either => either.Match(
+            return new Await<TI, TO>(Io.Apply(() => default(TI)), either => either.Match(
                 left: e => new Halt<TI, TO>(e),
                 right: i =>
                 {
@@ -151,7 +151,7 @@ namespace FunctionalProgramming.Streaming
             Func<Process<TI, TO>> fallback = null)
         {
             return new Await<TI, TO>(
-                () => default(TI),
+                Io.Apply(() => default(TI)),
                 either => either.Match(
                     left: ex => ex is End
                         ? fallback.ToMaybe().Select(f => f()).GetOrElse(Halt1<TI, TO>)
@@ -168,13 +168,6 @@ namespace FunctionalProgramming.Streaming
         {
             return Lift1(f).Repeat();
         }
-
-        public static Process<TI, TO> Apply<TI, TO>(Func<TI> req, Func<TI, TO> recv)
-        {
-            return new Await<TI, TO>(req, either => either.Match<Process<TI, TO>>(
-                left: e => new Halt<TI, TO>(e),
-                right: i => new Emit<TI, TO>(recv(i))));
-        } 
 
         public static Process<TI, TO> Halt1<TI, TO>()
         {
@@ -224,10 +217,10 @@ namespace FunctionalProgramming.Streaming
         {
             TR resource = default(TR);
             return new Eval<TI, TO>(
-                () => resource = create(),
+                Io.Apply(() => { resource = create(); }),
                 new Eval<TI, TO>(
-                    () => initialize(resource),
-                    new Cont<TI, TO>(() => use(resource).OnHalt(ex => new Eval<TI, TO>(() => release(resource)).Concat(() => new Halt<TI, TO>(ex))))));
+                    Io.Apply(() => initialize(resource)),
+                    new Cont<TI, TO>(() => use(resource).OnHalt(ex => new Eval<TI, TO>(Io.Apply(() => release(resource))).Concat(() => new Halt<TI, TO>(ex))))));
         }
     }
 
@@ -261,7 +254,7 @@ namespace FunctionalProgramming.Streaming
                     },
                     await: (req, recv) =>
                     {
-                        var res = req();
+                        var res = req.UnsafePerformIo();
                         cur = recv(res.AsRight<Exception, TI>());
                         return Unit.Only;
                     },
@@ -272,7 +265,7 @@ namespace FunctionalProgramming.Streaming
                     },
                     eval: (effect, next) =>
                     {
-                        effect();
+                        effect.UnsafePerformIo();
                         cur = next;
                         return Unit.Only;
                     });                
@@ -308,7 +301,7 @@ namespace FunctionalProgramming.Streaming
                     },
                     await: (req, recv) =>
                     {
-                        var res = req();
+                        var res = req.UnsafePerformIo();
                         cur = recv(res.AsRight<Exception, TI>());                            
                         return Unit.Only;
                     },
@@ -319,7 +312,7 @@ namespace FunctionalProgramming.Streaming
                     },
                     eval: (effect, next) =>
                     {
-                        effect();
+                        effect.UnsafePerformIo();
                         cur = next;
                         return Unit.Only;
                     });
@@ -401,7 +394,7 @@ namespace FunctionalProgramming.Streaming
                 emit: (h, t) => new Emit<TI, TO3>(h, Tee(p2, t)),
                 cont: cw => new Cont<TI, TO3>(() => Tee(p2, cw)), 
                 eval: (effect, next) => new Eval<TI, TO3>(effect, Tee(p2, next)), 
-                await: (side, recv) => side().Match(
+                await: (side, recv) => side.UnsafePerformIo().Match(
                     left: isO => Match(
                         halt: e => p2.Kill<TO3>().OnComplete(() => new Halt<TI, TO3>(e)),
                         emit: (o, ot) => ot.Tee(p2, Process.Try(() => recv(o.AsLeft<TO, TO2>().AsRight<Exception, IEither<TO, TO2>>()))),
@@ -418,10 +411,10 @@ namespace FunctionalProgramming.Streaming
 
         public abstract T Match<T>(
             Func<Exception, T> halt,
-            Func<Func<TI>, Func<IEither<Exception, TI>, Process<TI, TO>>, T> await,
+            Func<Io<TI>, Func<IEither<Exception, TI>, Process<TI, TO>>, T> await,
             Func<TO, Process<TI, TO>, T> emit,
             Func<Process<TI, TO>, T> cont,
-            Func<Action, Process<TI, TO>, T> eval);
+            Func<Io<Unit>, Process<TI, TO>, T> eval);
     }
 
     public sealed class Halt<TI, TO> : Process<TI, TO>
@@ -435,10 +428,10 @@ namespace FunctionalProgramming.Streaming
 
         public override T Match<T>(
             Func<Exception, T> halt,
-            Func<Func<TI>, Func<IEither<Exception, TI>, Process<TI, TO>>, T> await,
+            Func<Io<TI>, Func<IEither<Exception, TI>, Process<TI, TO>>, T> await,
             Func<TO, Process<TI, TO>, T> emit,
             Func<Process<TI, TO>, T> cont,
-            Func<Action, Process<TI, TO>, T> eval)
+            Func<Io<Unit>, Process<TI, TO>, T> eval)
         {
             return halt(_error);
         }
@@ -451,10 +444,10 @@ namespace FunctionalProgramming.Streaming
 
     public sealed class Await<TI, TO> : Process<TI, TO>
     {
-        private readonly Func<TI> _request;
+        private readonly Io<TI> _request;
         private readonly Func<IEither<Exception, TI>, Process<TI, TO>> _receive;
 
-        public Await(Func<TI> request, Func<IEither<Exception, TI>, Process<TI, TO>> receive)
+        public Await(Io<TI> request, Func<IEither<Exception, TI>, Process<TI, TO>> receive)
         {
             _request = request;
             _receive = receive;
@@ -462,10 +455,10 @@ namespace FunctionalProgramming.Streaming
 
         public override T Match<T>(
             Func<Exception, T> halt,
-            Func<Func<TI>, Func<IEither<Exception, TI>, Process<TI, TO>>, T> await,
+            Func<Io<TI>, Func<IEither<Exception, TI>, Process<TI, TO>>, T> await,
             Func<TO, Process<TI, TO>, T> emit,
             Func<Process<TI, TO>, T> cont,
-            Func<Action, Process<TI, TO>, T> eval)
+            Func<Io<Unit>, Process<TI, TO>, T> eval)
         {
             return @await(_request, _receive);
         }
@@ -489,10 +482,10 @@ namespace FunctionalProgramming.Streaming
 
         public override T Match<T>(
             Func<Exception, T> halt,
-            Func<Func<TI>, Func<IEither<Exception, TI>, Process<TI, TO>>, T> await,
+            Func<Io<TI>, Func<IEither<Exception, TI>, Process<TI, TO>>, T> await,
             Func<TO, Process<TI, TO>, T> emit,
             Func<Process<TI, TO>, T> cont,
-            Func<Action, Process<TI, TO>, T> eval)
+            Func<Io<Unit>, Process<TI, TO>, T> eval)
         {
             return emit(_head, _tail);
         }
@@ -514,10 +507,10 @@ namespace FunctionalProgramming.Streaming
 
         public override T Match<T>(
             Func<Exception, T> halt, 
-            Func<Func<TI>, Func<IEither<Exception, TI>, Process<TI, TO>>, T> await, 
+            Func<Io<TI>, Func<IEither<Exception, TI>, Process<TI, TO>>, T> await, 
             Func<TO, Process<TI, TO>, T> emit,
             Func<Process<TI, TO>, T> cont,
-            Func<Action, Process<TI, TO>, T> eval)
+            Func<Io<Unit>, Process<TI, TO>, T> eval)
         {
             return cont(_continueWith.Value);
         }
@@ -530,10 +523,10 @@ namespace FunctionalProgramming.Streaming
 
     public sealed class Eval<TI, TO> : Process<TI, TO>
     {
-        private readonly Action _effect;
+        private readonly Io<Unit> _effect;
         private readonly Process<TI, TO> _next;
 
-        public Eval(Action effect, Process<TI, TO > next = null)
+        public Eval(Io<Unit> effect, Process<TI, TO > next = null)
         {
             _effect = effect;
             _next = next ?? Process.Halt1<TI, TO>();
@@ -541,10 +534,10 @@ namespace FunctionalProgramming.Streaming
 
         public override T Match<T>(
             Func<Exception, T> halt, 
-            Func<Func<TI>, Func<IEither<Exception, TI>, Process<TI, TO>>, T> await,
+            Func<Io<TI>, Func<IEither<Exception, TI>, Process<TI, TO>>, T> await,
             Func<TO, Process<TI, TO>, T> emit,
             Func<Process<TI, TO>, T> cont,
-            Func<Action, Process<TI, TO>, T> eval)
+            Func<Io<Unit>, Process<TI, TO>, T> eval)
         {
             return eval(_effect, _next);
         }
