@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
 using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad;
-using FunctionalProgramming.Monad.Outlaws;
 using FunctionalProgramming.Streaming;
 using NUnit.Framework;
 using Process = FunctionalProgramming.Streaming.Process;
@@ -95,7 +92,7 @@ namespace FunctionalProgramming.Tests.StreamingTests
                 () => Process.Delay<T, T>((uint)R.Next(25, 101)).Concat(() => new Await<T, T>(() => ints.First(), 
                 either => either.Match<Process<T, T>>(
                     left: e => new Halt<T, T>(e),
-                    right: x => new Emit<T, T>(x))).Concat(() => Delayed<T>(ints.Skip(1)))),
+                    right: x => new Emit<T, T>(x))).Concat(() => Delayed(ints.Skip(1)))),
                 Process.Halt1<T, T>);
         }
 

@@ -222,7 +222,7 @@ namespace FunctionalProgramming.Streaming
                 () => resource = create(),
                 new Eval<TI, TO>(
                     () => initialize(resource),
-                    use(resource).OnHalt(ex => new Eval<TI, TO>(() => release(resource)).Concat(() => new Halt<TI, TO>(ex)))));
+                    new Cont<TI, TO>(() => use(resource).OnHalt(ex => new Eval<TI, TO>(() => release(resource)).Concat(() => new Halt<TI, TO>(ex))))));
         }
     }
 
@@ -256,7 +256,7 @@ namespace FunctionalProgramming.Streaming
                     },
                     await: (req, recv) =>
                     {
-                        var res = new Task<TI>(req).Await();
+                        var res = req();
                         cur = recv(res.AsRight<Exception, TI>());
                         return Unit.Only;
                     },
@@ -267,7 +267,7 @@ namespace FunctionalProgramming.Streaming
                     },
                     eval: (effect, next) =>
                     {
-                        new Task(effect).RunSynchronously();
+                        effect();
                         cur = next;
                         return Unit.Only;
                     });                
@@ -303,7 +303,7 @@ namespace FunctionalProgramming.Streaming
                     },
                     await: (req, recv) =>
                     {
-                        var res = new Task<TI>(req).Await();
+                        var res = req();
                         cur = recv(res.AsRight<Exception, TI>());                            
                         return Unit.Only;
                     },
@@ -314,7 +314,7 @@ namespace FunctionalProgramming.Streaming
                     },
                     eval: (effect, next) =>
                     {
-                        new Task(effect).RunSynchronously();
+                        effect();
                         cur = next;
                         return Unit.Only;
                     });
@@ -396,7 +396,7 @@ namespace FunctionalProgramming.Streaming
                 emit: (h, t) => new Emit<TI, TO3>(h, Tee(p2, t)),
                 cont: cw => new Cont<TI, TO3>(() => Tee(p2, cw)), 
                 eval: (effect, next) => new Eval<TI, TO3>(effect, Tee(p2, next)), 
-                await: (side, recv) => new Task<IEither<TO, TO2>>(side).Await().Match(
+                await: (side, recv) => side().Match(
                     left: isO => Match(
                         halt: e => p2.Kill<TO3>().OnComplete(() => new Halt<TI, TO3>(e)),
                         emit: (o, ot) => ot.Tee(p2, Process.Try(() => recv(o.AsLeft<TO, TO2>().AsRight<Exception, IEither<TO, TO2>>()))),
