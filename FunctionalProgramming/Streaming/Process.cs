@@ -95,10 +95,10 @@ namespace FunctionalProgramming.Streaming
                     await: (reqr, recvr) =>
                     {
                         var isRight = false;
-                        var tleft = new Task<T>(reql.UnsafePerformIo);
-                        var tright = new Task<T>(reqr.UnsafePerformIo);
                         return new Await<T, IEither<T1, T2>>(Io.Apply(() =>
                         {
+                            var tleft = new Task<T>(reql.UnsafePerformIo);
+                            var tright = new Task<T>(reqr.UnsafePerformIo);
                             if (R.Next()%2 == 0)
                             {
                                 tleft.Start();
@@ -116,8 +116,8 @@ namespace FunctionalProgramming.Streaming
                         }), x => x.Match(
                             left: e => new Halt<T, IEither<T1, T2>>(e),
                             right: i => BasicFunctions.If(isRight,
-                                () => Wye(new Await<T, T1>(Io.Apply(() => tleft.Result), recvl), recvr(i.AsRight<Exception, T>())),
-                                () => Wye(recvl(i.AsRight<Exception, T>()), new Await<T, T2>(Io.Apply(() => tright.Result), recvr)))));
+                                () => Wye(new Await<T, T1>(Io.Apply(() => i), recvl), recvr(i.AsRight<Exception, T>())),
+                                () => Wye(recvl(i.AsRight<Exception, T>()), new Await<T, T2>(Io.Apply(() => i), recvr)))));
                     }));
         }
 
