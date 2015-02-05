@@ -103,7 +103,7 @@ namespace FunctionalProgramming.Tests.StreamingTests
             var nums = Delayed(Enumerable.Range(1, 100));
             var sink = Process.Sink<int>(n => Console.WriteLine(n));
             var stopAfter = Process.Delay<int, int>(30000);
-            var process = Process.Wye(stopAfter, nums.Pipe(sink));
+            var process = Process.Wye(nums.Pipe(sink), stopAfter);
             process.Run();
         }
     }

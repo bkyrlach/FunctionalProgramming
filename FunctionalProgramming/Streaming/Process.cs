@@ -289,7 +289,7 @@ namespace FunctionalProgramming.Streaming
                     },
                     halt: ex =>
                     {
-                        if (ex is End)
+                        if (ex is End || ex is Kill)
                         {
                             isDone = true;
                         }
