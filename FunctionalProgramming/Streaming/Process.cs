@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading;
 using System.Threading.Tasks;
 using FunctionalProgramming.Basics;
 using FunctionalProgramming.Helpers;
@@ -39,7 +40,7 @@ namespace FunctionalProgramming.Streaming
 
         public static Process<TI, TO> RepeatUntil<TI, TO>(this Process<TI, TO> p, Func<bool> predicate)
         {
-            return p.Concat(() => BasicFunctions.If<Process<TI, TO>>(predicate(), () => new Halt<TI, TO>(Kill.Only), () => new Cont<TI, TO>(() => p.RepeatUntil(predicate))));
+            return p.Concat(() => BasicFunctions.If<Process<TI, TO>>(predicate(), () => new Halt<TI, TO>(End.Only), () => new Cont<TI, TO>(() => p.RepeatUntil(predicate))));
         }
 
         public static Process<TI, TI> AwaitAndEmit<TI>(Io<TI> effect)
@@ -72,10 +73,7 @@ namespace FunctionalProgramming.Streaming
         {
             return new Await<TI, TO>(Io.Apply(() =>
             {
-                var sw = Stopwatch.StartNew();
-                while (sw.ElapsedMilliseconds < milliseconds)
-                    ;
-                sw.Stop();
+                Thread.Sleep((int)milliseconds);
                 return default(TI);
             }), either => either.Match(
                 left: ex => new Halt<TI, TO>(ex),
