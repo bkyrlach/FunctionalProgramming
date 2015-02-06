@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Outlaws;
@@ -220,5 +221,16 @@ namespace FunctionalProgramming.Basics
         {
             return ts.FirstOrDefault(predicate).ToMaybe();
         }
+
+        public static IMaybe<T> MaybeFirst<T>(this IQueryable<T> ts, Expression<Func<T, bool>> predicate)
+            where T : class
+        {
+            return ts.FirstOrDefault(predicate).ToMaybe();
+        }
+
+        public static IMaybe<T> MaybeFirst<T>(this IQueryable<T> ts) where T : class
+        {
+            return ts.MaybeFirst(t => true);
+        } 
     }
 }
