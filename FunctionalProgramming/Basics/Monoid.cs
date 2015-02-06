@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using FunctionalProgramming.Helpers;
 
 namespace FunctionalProgramming.Basics
 {
@@ -130,6 +132,37 @@ namespace FunctionalProgramming.Basics
         public IEnumerable<T> MAppend(IEnumerable<T> t1, IEnumerable<T> t2)
         {
             return t1.Concat(t2);
+        }
+    }
+
+    public sealed class BooleanAndMonoid : IMonoid<bool>
+    {
+        public static IMonoid<bool> Only = new BooleanAndMonoid();
+
+        private BooleanAndMonoid()
+        {
+        }
+
+        public bool MZero { get { return true; } }
+
+        public bool MAppend(bool t1, bool t2)
+        {
+            return t1 && t2;
+        }
+    }
+
+    public sealed class FuncMonoid<T> : IMonoid<Func<T, T>>
+    {
+        public static IMonoid<Func<T, T>> Only = new FuncMonoid<T>();
+
+        private FuncMonoid()
+        {
+        }
+
+        public Func<T, T> MZero { get { return BasicFunctions.Identity; } }
+        public Func<T, T> MAppend(Func<T, T> f, Func<T, T> g)
+        {
+            return g.Compose(f);
         }
     }
 }

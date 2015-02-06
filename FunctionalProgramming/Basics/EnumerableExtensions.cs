@@ -83,8 +83,13 @@ namespace FunctionalProgramming.Basics
         /// <returns></returns>
         public static Task<IEnumerable<T>> Sequence<T>(this IEnumerable<Task<T>> taskTs)
         {
-            //TODO This needs to be fixed. Possibly by implementing a better futures library.
-            throw new NotImplementedException("Task API currently does bad things when sequenced.");
+            var initial = ConsList.Nil<T>().FromResult();
+            return taskTs.Aggregate(initial, (current, task) => current.SelectMany(ts => task.Select(t => t.Cons(ts)))).Select(tasks => tasks.AsEnumerable().Reverse());
+        }
+
+        public static Task<IEnumerable<T2>> Traverse<T1, T2>(this IEnumerable<T1> xs, Func<T1, Task<T2>> f)
+        {
+            return xs.Select(f).Sequence();
         }
 
         /// <summary>
