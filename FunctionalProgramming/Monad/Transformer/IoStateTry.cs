@@ -1,5 +1,4 @@
-﻿using System.Net.NetworkInformation;
-using FunctionalProgramming.Monad.Outlaws;
+﻿using FunctionalProgramming.Monad.Outlaws;
 using System;
 
 namespace FunctionalProgramming.Monad.Transformer
@@ -14,7 +13,7 @@ namespace FunctionalProgramming.Monad.Transformer
         }
 
         public IoStateTry(State<TState, Try<TValue>> state)
-            : this(Io<State<TState, Try<TValue>>>.Apply(() => state))
+            : this(Io.Apply(() => state))
         {
 
         }
@@ -26,7 +25,7 @@ namespace FunctionalProgramming.Monad.Transformer
         }
 
         public IoStateTry(TValue val)
-            : this(TryOps.Attempt(() => val))
+            : this(Try.Attempt(() => val))
         {
             
         }
@@ -43,7 +42,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
         public IoStateTry<TState, TResult> Bind<TResult>(Func<TValue, IoStateTry<TState, TResult>> f)
         {
-            return new IoStateTry<TState, TResult>(_self.SelectMany(state => Io<State<TState, Try<TResult>>>.Apply(() => new State<TState, Try<TResult>>(s =>
+            return new IoStateTry<TState, TResult>(_self.SelectMany(state => Io.Apply(() => new State<TState, Try<TResult>>(s =>
             {
                 var result = state.Run(s);
                 return result.Item2.Match(
@@ -62,12 +61,12 @@ namespace FunctionalProgramming.Monad.Transformer
 
         public static IoStateTry<TState, T> ToIoStateTry<TState, T>(this Io<T> io)
         {
-            return new IoStateTry<TState, T>(io.Select(t => TryOps.Attempt(() => t).Insert<TState, Try<T>>()));
+            return new IoStateTry<TState, T>(io.Select(t => Try.Attempt(() => t).Insert<TState, Try<T>>()));
         }
 
         public static IoStateTry<TState, T> ToIoStateTry<TState, T>(this State<TState, T> state)
         {
-            return new IoStateTry<TState, T>(state.Select(t => TryOps.Attempt(() => t)));
+            return new IoStateTry<TState, T>(state.Select(t => Try.Attempt(() => t)));
         }
 
         public static IoStateTry<TState, T> ToIoStateTry<TState, T>(this Io<Try<T>> ioTry)
@@ -77,7 +76,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
         public static IoStateTry<TState, T> ToIoStateTry<TState, T>(this Io<State<TState, T>> ioState)
         {
-            return new IoStateTry<TState, T>(ioState.Select(state => state.Select(t => TryOps.Attempt(() => t))));
+            return new IoStateTry<TState, T>(ioState.Select(state => state.Select(t => Try.Attempt(() => t))));
         }
 
         public static IoStateTry<TState, T> ToIoStateTry<TState, T>(this T t)
