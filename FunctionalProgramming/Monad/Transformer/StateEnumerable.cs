@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.NetworkInformation;
 using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad.Transformer
@@ -53,7 +52,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
     public static class StateEnumerable
     {
-        public static StateEnumerable<TState, TValue> In<TState, TValue>(this State<TState, IEnumerable<TValue>> state)
+        public static StateEnumerable<TState, TValue> ToStateEnumerable<TState, TValue>(this State<TState, IEnumerable<TValue>> state)
         {
             return new StateEnumerable<TState, TValue>(state);
         }
