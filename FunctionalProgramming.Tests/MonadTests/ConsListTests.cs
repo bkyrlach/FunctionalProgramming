@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using FunctionalProgramming.Monad;
 using NUnit.Framework;
@@ -19,7 +20,9 @@ namespace FunctionalProgramming.Tests.MonadTests
         public void TestAsEnumerable(int[] xs, int fake)
         {
             var expected = xs.AsEnumerable();
-            var result = MkList(xs).AsEnumerable();
+            var list = MkList(xs);
+            Console.WriteLine(list);
+            var result = list.AsEnumerable();
             Assert.AreEqual(expected, result);
         }
 

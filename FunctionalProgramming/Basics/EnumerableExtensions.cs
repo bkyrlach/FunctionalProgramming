@@ -25,7 +25,7 @@ namespace FunctionalProgramming.Basics
         public static IMaybe<IEnumerable<T>> Sequence<T>(this IEnumerable<IMaybe<T>> maybeTs)
         {
             var initial = ConsList.Nil<T>().ToMaybe();
-            return maybeTs.Aggregate(initial, (current, maybe) => current.SelectMany(ts => maybe.Select(t => t.Cons(ts)))).Select(xs => xs.AsEnumerable());
+            return maybeTs.Reverse().Aggregate(initial, (current, maybe) => current.SelectMany(ts => maybe.Select(t => t.Cons(ts)))).Select(xs => xs.AsEnumerable());
         }
 
         /// <summary>
@@ -57,7 +57,7 @@ namespace FunctionalProgramming.Basics
         public static Io<IEnumerable<T>> Sequence<T>(this IEnumerable<Io<T>> ioTs)
         {
             var initial = Io.Apply(() => ConsList.Nil<T>());
-            return ioTs.Aggregate(initial, (current, io) => current.SelectMany(ts => io.Select(t => t.Cons(ts)))).Select(ios => ios.AsEnumerable());
+            return ioTs.Aggregate(initial, (current, io) => current.SelectMany(ts => io.Select(t => t.Cons(ts)))).Select(ios => ios.AsEnumerable().Reverse());
         }
 
         /// <summary>
@@ -85,7 +85,7 @@ namespace FunctionalProgramming.Basics
         public static Task<IEnumerable<T>> Sequence<T>(this IEnumerable<Task<T>> taskTs)
         {
             var initial = ConsList.Nil<T>().FromResult();
-            return taskTs.Aggregate(initial, (current, task) => current.SelectMany(ts => task.Select(t => t.Cons(ts)))).Select(tasks => tasks.AsEnumerable().Reverse());
+            return taskTs.Reverse().Aggregate(initial, (current, task) => current.SelectMany(ts => task.Select(t => t.Cons(ts)))).Select(tasks => tasks.AsEnumerable());
         }
 
         public static Task<IEnumerable<T2>> Traverse<T1, T2>(this IEnumerable<T1> xs, Func<T1, Task<T2>> f)
@@ -107,7 +107,7 @@ namespace FunctionalProgramming.Basics
         public static State<TState, IEnumerable<T>> Sequence<TState, T>(this IEnumerable<State<TState, T>> states)
         {
             var initial = ConsList.Nil<T>().Insert<TState, IConsList<T>>();
-            return states.Aggregate(initial, (current, s) => current.SelectMany(ts => s.Select(t => t.Cons(ts)))).Select(x => x.AsEnumerable());
+            return states.Aggregate(initial, (current, s) => current.SelectMany(ts => s.Select(t => t.Cons(ts)))).Select(x => x.AsEnumerable().Reverse());
         }
 
         /// <summary>
@@ -140,7 +140,7 @@ namespace FunctionalProgramming.Basics
         public static Try<IEnumerable<T>> Sequence<T>(this IEnumerable<Try<T>> tryTs)
         {
             var initial = Try.Attempt(() => ConsList.Nil<T>());
-            return tryTs.Aggregate(initial, (current, aTry) => current.SelectMany(ts => aTry.Select(t => t.Cons(ts)))).Select(tries => tries.AsEnumerable());
+            return tryTs.Reverse().Aggregate(initial, (current, aTry) => current.SelectMany(ts => aTry.Select(t => t.Cons(ts)))).Select(tries => tries.AsEnumerable());
         }
 
         /// <summary>

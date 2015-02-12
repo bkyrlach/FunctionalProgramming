@@ -1,7 +1,7 @@
 ﻿using System;
 using Newtonsoft.Json;
 
-namespace FunctionalProgramming.Extras
+namespace FunctionalProgramming.Extras.JsonConverters
 {
     public class MaybeConverter : JsonConverter
     {

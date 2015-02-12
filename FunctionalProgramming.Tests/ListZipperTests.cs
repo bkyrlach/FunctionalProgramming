@@ -6,7 +6,7 @@ using System;
 namespace FunctionalProgramming.Tests
 {
     [TestFixture]
-    class ListZipperTests
+    public sealed class ListZipperTests
     {
         [Test]
         public void TestEmptySet()
