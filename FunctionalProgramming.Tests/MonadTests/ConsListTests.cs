@@ -38,5 +38,12 @@ namespace FunctionalProgramming.Tests.MonadTests
             var result = list1.Concat(list2).AsEnumerable();
             Assert.AreEqual(expected, result);
         }
+
+        [TestCase(new[] { 1, 2, 3 }, 1)]
+        public void TestAsEnumerable(IEnumerable<int> expected, int fake)
+        {
+            var actual = 1.Cons(2.Cons(3.Cons(ConsList.Nil<int>()))).AsEnumerable();
+            Assert.AreEqual(expected, actual);
+        }
     }
 }

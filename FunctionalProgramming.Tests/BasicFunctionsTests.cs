@@ -1,4 +1,6 @@
-﻿using NUnit.Framework;
+﻿using FunctionalProgramming.Basics;
+using FunctionalProgramming.Monad;
+using NUnit.Framework;
 using BF = FunctionalProgramming.Basics.BasicFunctions;
 
 namespace FunctionalProgramming.Tests
@@ -15,6 +17,15 @@ namespace FunctionalProgramming.Tests
             Assert.AreEqual("abc", test2.Match(left: n => n.ToString(), right: BF.Identity));
             var test3 = BF.EIf(false, () => "abc", () => test1);
             Assert.AreEqual("abc", test3.Match(left: n => n.ToString(), right: BF.Identity));
+        }
+
+        [Test]
+        public void TestTraverse()
+        {
+            var expected = new[] {1, 2, 3};
+            var actual = expected.Traverse(n => Io.Apply(() => n)).UnsafePerformIo();
+
+            Assert.AreEqual(expected, actual);
         }
     }
 }

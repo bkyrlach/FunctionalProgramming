@@ -83,8 +83,10 @@
     <Compile Include="MonadTests\TaskTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="MonadTests\LensTests.cs" />
+    <Compile Include="TransformerTests\IoEnumerableTests.cs" />
     <Compile Include="StreamingTests\StreamingTests.cs" />
     <Compile Include="TransformerTests\IoEnumerableTryTests.cs" />
+    <Compile Include="TransformerTests\StateEnumerableTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FunctionalProgramming\FunctionalProgramming.csproj">
