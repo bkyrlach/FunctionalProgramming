@@ -1,4 +1,5 @@
 ﻿using System;
+using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad.Outlaws;
 
 namespace FunctionalProgramming.Monad
@@ -86,6 +87,13 @@ namespace FunctionalProgramming.Monad
             return m.Match(
                 just: v => Try.Attempt(() => v),
                 nothing: () => Try.Attempt<TVal>(() => { throw error(); }));
+        }
+
+        public static Io<IMaybe<T>> GetOrLog<T>(this IMaybe<T> m, Func<Io<Unit>> logger)
+        {
+            return m.Match(
+                just: v => Io.Apply(() => v.ToMaybe()), 
+                nothing: () => logger().Select(u => Nothing<T>()));
         } 
 
         private class Just<TValue> : IMaybe<TValue>
