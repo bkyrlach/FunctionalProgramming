@@ -233,6 +233,19 @@ namespace FunctionalProgramming.Basics
         }
 
         /// <summary>
+        /// Type-safe version of LINQs 'Single' and 'SingleOrDefault' function that accepts a predicate, returning
+        /// a Maybe instead of possibly throwing an exception or returning null
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="ts">An enumerable from which we want the only element that satisfies the provided predicate</param>
+        /// <param name="predicate">A predicate for which only one element will satisfy to be the return value</param>
+        /// <returns>The only value in the enumerable that satisfies the predicate, or nothing if no such element exists or multiple elements satisifying the predicate exist</returns>
+        public static IMaybe<T> MaybeSingle<T>(this IEnumerable<T> ts, Func<T, bool> predicate) where T : class
+        {
+            return Try.Attempt(() => ts.SingleOrDefault(predicate).ToMaybe()).AsMaybe().Join();
+        }
+
+        /// <summary>
         /// Type-safe version of LINQs 'Single' and 'SingleOrDefault' function that returns a Maybe 
         /// instead of possibly throwing an exception or returning null
         /// </summary>
@@ -249,12 +262,25 @@ namespace FunctionalProgramming.Basics
         /// a Maybe instead of possibly throwing an exception or returning null
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="ts">An enumerable from which we want the only element that satisfies the provided predicate</param>
+        /// <param name="ts">A queryable from which we want the only element that satisfies the provided predicate</param>
         /// <param name="predicate">A predicate for which only one element will satisfy to be the return value</param>
-        /// <returns>The only value in the enumerable that satisfies the predicate, or nothing if no such element exists or multiple elements satisifying the predicate exist</returns>
-        public static IMaybe<T> MaybeSingle<T>(this IEnumerable<T> ts, Func<T, bool> predicate) where T : class
+        /// <returns>The only value in the queryable that satisfies the predicate, or nothing if no such element exists or multiple elements satisifying the predicate exist</returns>
+        public static IMaybe<T> MaybeSingle<T>(this IQueryable<T> ts, Expression<Func<T, bool>> predicate)
+            where T : class
         {
-            return Try.Attempt(() => ts.SingleOrDefault(predicate).ToMaybe()).GetOrElse(Maybe.Nothing<T>);
+            return Try.Attempt(() => ts.SingleOrDefault(predicate).ToMaybe()).AsMaybe().Join();
+        }
+
+        /// <summary>
+        /// Type-safe version of LINQs 'Single' and 'SingleOrDefault' function that returns a Maybe 
+        /// instead of possibly throwing an exception or returning null
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="ts">A queryable of elements that we want the only element of</param>
+        /// <returns>The only value in the queryable, or nothing if no such element exists or multiple elements exist</returns>
+        public static IMaybe<T> MaybeSingle<T>(this IQueryable<T> ts) where T : class
+        {
+            return ts.MaybeFirst(t => true);
         }
     }
 }
