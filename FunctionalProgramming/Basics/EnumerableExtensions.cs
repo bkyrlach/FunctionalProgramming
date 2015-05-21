@@ -1,12 +1,11 @@
-﻿using System;
+﻿using FunctionalProgramming.Monad;
+using FunctionalProgramming.Monad.Outlaws;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using FunctionalProgramming.Monad;
-using FunctionalProgramming.Monad.Outlaws;
-using BF = FunctionalProgramming.Basics.BasicFunctions;
 
 namespace FunctionalProgramming.Basics
 {
@@ -183,7 +182,7 @@ namespace FunctionalProgramming.Basics
         /// <returns>The value lifted to the category IEnumerable</returns>
         public static IEnumerable<T> LiftEnumerable<T>(this T t)
         {
-            return new[] {t};
+            return new[] { t };
         }
 
         /// <summary>
@@ -231,6 +230,31 @@ namespace FunctionalProgramming.Basics
         public static IMaybe<T> MaybeFirst<T>(this IQueryable<T> ts) where T : class
         {
             return ts.MaybeFirst(t => true);
-        } 
+        }
+
+        /// <summary>
+        /// Type-safe version of LINQs 'Single' and 'SingleOrDefault' function that returns a Maybe 
+        /// instead of possibly throwing an exception or returning null
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="ts">An enumerable of elements that we want the only element of</param>
+        /// <returns>The only value in the enumerable, or nothing if no such element exists or multiple elements exist</returns>
+        public static IMaybe<T> MaybeSingle<T>(this IEnumerable<T> ts) where T : class
+        {
+            return ts.MaybeSingle(BasicFunctions.Const<T, bool>(true));
+        }
+
+        /// <summary>
+        /// Type-safe version of LINQs 'Single' and 'SingleOrDefault' function that accepts a predicate, returning
+        /// a Maybe instead of possibly throwing an exception or returning null
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="ts">An enumerable from which we want the only element that satisfies the provided predicate</param>
+        /// <param name="predicate">A predicate for which only one element will satisfy to be the return value</param>
+        /// <returns>The only value in the enumerable that satisfies the predicate, or nothing if no such element exists or multiple elements satisifying the predicate exist</returns>
+        public static IMaybe<T> MaybeSingle<T>(this IEnumerable<T> ts, Func<T, bool> predicate) where T : class
+        {
+            return Try.Attempt(() => ts.SingleOrDefault(predicate).ToMaybe()).GetOrElse(Maybe.Nothing<T>);
+        }
     }
 }
