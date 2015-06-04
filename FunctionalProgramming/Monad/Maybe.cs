@@ -1,5 +1,6 @@
-﻿using System;
+﻿using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad.Outlaws;
+using System;
 
 namespace FunctionalProgramming.Monad
 {
@@ -29,12 +30,12 @@ namespace FunctionalProgramming.Monad
             return new Nadda<TValue>();
         }
 
-        public static IMaybe<T> Where<T>(this IMaybe<T> m, Func<T, Boolean> predicate) 
+        public static IMaybe<T> Where<T>(this IMaybe<T> m, Func<T, bool> predicate)
         {
             return m.Match(
                 just: value => predicate(value) ? new Just<T>(value) : Nothing<T>(),
                 nothing: Nothing<T>);
-        } 
+        }
 
         public static IMaybe<TResult> Select<TValue, TResult>(this IMaybe<TValue> m, Func<TValue, TResult> f)
         {
@@ -91,7 +92,25 @@ namespace FunctionalProgramming.Monad
             return m.Match(
                 just: v => Try.Attempt(() => v),
                 nothing: () => Try.Attempt<TVal>(() => { throw error(); }));
-        } 
+        }
+
+        public static Io<IMaybe<T>> GetOrLog<T>(this IMaybe<T> m, Func<Io<Unit>> logger)
+        {
+            return m.Match(
+                just: v => Io.Apply(() => v.ToMaybe()),
+                nothing: () => logger().Select(u => Nothing<T>()));
+        }
+
+        /// <summary>
+        /// Select out the possible unknowns into a single unknown
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="m">maybe of maybe of type T</param>
+        /// <returns>maybe of type T</returns>
+        public static IMaybe<T> Join<T>(this IMaybe<IMaybe<T>> m)
+        {
+            return m.SelectMany(BasicFunctions.Identity);
+        }
 
         private class Just<TValue> : IMaybe<TValue>
         {
@@ -127,7 +146,7 @@ namespace FunctionalProgramming.Monad
 
             public override string ToString()
             {
-                return string.Format("Just({0})", _value);
+                return String.Format("Just({0})", _value);
             }
         }
 

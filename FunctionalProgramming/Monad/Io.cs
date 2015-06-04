@@ -1,5 +1,5 @@
-﻿using System;
-using FunctionalProgramming.Basics;
+﻿using FunctionalProgramming.Basics;
+using System;
 
 namespace FunctionalProgramming.Monad
 {
