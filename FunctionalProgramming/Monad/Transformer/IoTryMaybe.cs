@@ -13,17 +13,20 @@ namespace FunctionalProgramming.Monad.Transformer
             _self = io;
         }
 
-        public IoTryMaybe(Try<IMaybe<T>> aTry) : this(Io.Apply(() => aTry))
+        public IoTryMaybe(Try<IMaybe<T>> aTry)
+            : this(Io.Apply(() => aTry))
         {
 
         }
 
-        public IoTryMaybe(IMaybe<T> m) : this(Io.Apply(() => Try.Attempt(() => m)))
+        public IoTryMaybe(IMaybe<T> m)
+            : this(Io.Apply(() => Try.Attempt(() => m)))
         {
-            
+
         }
 
-        public IoTryMaybe(T t) : this(Io.Apply(() => Try.Attempt(() => t.ToMaybe())))
+        public IoTryMaybe(T t)
+            : this(Io.Apply(() => Try.Attempt(() => t.ToMaybe())))
         {
         }
 
@@ -45,18 +48,23 @@ namespace FunctionalProgramming.Monad.Transformer
                     nothing: () => Io.Apply(() => Try.Attempt(() => Maybe.Nothing<TResult>()))),
                 failure: ex => Io.Apply(() => ex.Fail<IMaybe<TResult>>()))));
         }
+
+        public IoTryMaybe<T> Keep(Func<T, bool> predicate)
+        {
+            return new IoTryMaybe<T>(_self.Select(@try => @try.Select(maybe => maybe.Where(predicate))));
+        }
     }
 
     public static class IoTryMaybe
     {
         public static IoTryMaybe<T> ToIoTryMaybe<T>(this Io<Try<IMaybe<T>>> io)
         {
-            return new IoTryMaybe<T>(io);    
-        }       
+            return new IoTryMaybe<T>(io);
+        }
 
         public static IoTryMaybe<T> ToIoTryMaybe<T>(this T t)
         {
-            return new IoTryMaybe<T>(t);    
+            return new IoTryMaybe<T>(t);
         }
 
         public static IoTryMaybe<T> ToIoTryMaybe<T>(this IMaybe<T> maybe)
@@ -96,6 +104,11 @@ namespace FunctionalProgramming.Monad.Transformer
             Func<TInitial, TResult, TSelect> selector)
         {
             return ioT.SelectMany(a => f(a).SelectMany(b => selector(a, b).ToIoTryMaybe()));
+        }
+
+        public static IoTryMaybe<T> Where<T>(this IoTryMaybe<T> ioT, Func<T, bool> predicate)
+        {
+            return ioT.Keep(predicate);
         }
     }
 }
