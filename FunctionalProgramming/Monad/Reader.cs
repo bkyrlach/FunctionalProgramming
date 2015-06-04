@@ -1,5 +1,5 @@
 ﻿using System;
-using System.ComponentModel;
+using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad
 {
@@ -20,6 +20,11 @@ namespace FunctionalProgramming.Monad
 
     public static class Reader
     {
+        public static Reader<TEnvironment, TResult> Pure<TEnvironment, TResult>(TResult t) where TResult : struct
+        {
+            return new Reader<TEnvironment, TResult>(BasicFunctions.Const<TEnvironment, TResult>(t));
+        }
+
         public static Reader<TEnvironment, TNewResult> Select<TEnvironment, TResult, TNewResult>(
             this Reader<TEnvironment, TResult> r, Func<TResult, TNewResult> f)
         {

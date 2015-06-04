@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Outlaws;
+using FunctionalProgramming.Monad.Parsing;
 using BF = FunctionalProgramming.Basics.BasicFunctions;
 
 namespace FunctionalProgramming.Basics
@@ -135,12 +136,12 @@ namespace FunctionalProgramming.Basics
         /// This is the sequence for Try computations
         /// </summary>
         /// <typeparam name="T">Type of value yielded by each computation</typeparam>
-        /// <param name="tryTs">The list of computations</param>
+        /// <param name="tries">The list of computations</param>
         /// <returns>A computation thqt yields a sequence of values of type 'T</returns>
-        public static Try<IEnumerable<T>> Sequence<T>(this IEnumerable<Try<T>> tryTs)
+        public static Try<IEnumerable<T>> Sequence<T>(this IEnumerable<Try<T>> tries)
         {
             var initial = Try.Attempt(() => ConsList.Nil<T>());
-            return tryTs.Reverse().Aggregate(initial, (current, aTry) => current.SelectMany(ts => aTry.Select(t => t.Cons(ts)))).Select(tries => tries.AsEnumerable());
+            return tries.Reverse().Aggregate(initial, (current, aTry) => current.SelectMany(ts => aTry.Select(t => t.Cons(ts)))).Select(ts => ts.AsEnumerable());
         }
 
         /// <summary>
@@ -158,6 +159,12 @@ namespace FunctionalProgramming.Basics
         {
             return xs.Select(f).Sequence();
         }
+
+        public static IParser<T, IEnumerable<T>> Sequence<T>(this IEnumerable<IParser<T, T>> xs)
+        {
+            IParser<T, IConsList<T>> initial = new ConstantParser<T, IConsList<T>>(ConsList.Nil<T>());
+            return xs.Aggregate(initial, (current, aParser) => current.SelectMany(ts => aParser.Select(t => t.Cons(ts)))).Select(parsers => parsers.AsEnumerable());
+        } 
 
         /// <summary>
         /// ZipWithIndex takes a collection and pairs each element with its index in the collection

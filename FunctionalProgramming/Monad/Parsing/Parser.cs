@@ -1,7 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Remoting.Messaging;
-using System.Security.Permissions;
 using FunctionalProgramming.Basics;
 using System;
 using F = FunctionalProgramming.Basics.BasicFunctions;
@@ -500,6 +498,21 @@ namespace FunctionalProgramming.Monad.Parsing
         }
     }
 
+    public class ConstantParser<TInput, TOutput> : Parser<TInput, TOutput>
+    {
+        private readonly TOutput _constant;
+
+        public ConstantParser(TOutput constant)
+        {
+            _constant = constant;
+        }
+
+        public override IParseResult<TInput, TOutput> Apply(IStream<TInput> reader)
+        {
+            return new SuccessResult<TInput, TOutput>(_constant, reader);
+        }
+    }
+
     /// <summary>
     /// Static class that contains monadic operations for parser combinators.
     /// </summary>
@@ -525,6 +538,13 @@ namespace FunctionalProgramming.Monad.Parsing
             this IParser<TInput, TOutput> parser, Func<TOutput, IParser<TInput, TResult>> f)
         {
             return new BindingParser<TInput, TOutput, TResult>(parser, f);
+        }
+
+        public static IParser<TInput, TSelect> SelectMany<TInput, TOutput, TResult, TSelect>(
+            this IParser<TInput, TOutput> parser, Func<TOutput, IParser<TInput, TResult>> f,
+            Func<TOutput, TResult, TSelect> selector)
+        {
+            return parser.SelectMany(a => f(a).SelectMany(b => new ConstantParser<TInput, TSelect>(selector(a, b))));
         }
     }
 }

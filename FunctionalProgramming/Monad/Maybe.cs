@@ -14,6 +14,11 @@ namespace FunctionalProgramming.Monad
     /// </summary>
     public static class Maybe
     {
+        public static IMaybe<TValue> Pure<TValue>(TValue value) where TValue : struct
+        {
+            return new Just<TValue>(value);    
+        } 
+
         public static IMaybe<TValue> ToMaybe<TValue>(this TValue value)
         {
             return value == null ? Nothing<TValue>() : new Just<TValue>(value);

@@ -34,6 +34,11 @@ namespace FunctionalProgramming.Monad
     /// </summary>
     public static class Io
     {
+        public static Io<T> Pure<T>(T t) where T : struct
+        {
+            return new Io<T>(() => t);
+        }
+
         /// <summary>
         /// "Factory" function that takes a lazy value (represented by a lambda) that wraps effectual code which
         /// yields a value at the end of the universe.

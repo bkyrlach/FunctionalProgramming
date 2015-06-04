@@ -68,6 +68,11 @@ namespace FunctionalProgramming.Monad.Outlaws
             }
         }
 
+        public static Try<T> Pure<T>(T t) where T : struct
+        {
+            return new Success<T>(t);
+        }
+
         /// <summary>
         /// Attempts to execute the supplied lambda, handling failure in a type safe way by returning a value that forces you to 
         /// handle failure scenarios

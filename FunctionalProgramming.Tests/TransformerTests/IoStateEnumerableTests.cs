@@ -17,12 +17,14 @@ namespace FunctionalProgramming.Tests.TransformerTests
             var expectedState = 5;
 
             var program =
-                from x in xs.ToIoStateEnumerable<int, int>()
-                from _1 in State.Mod<int>(i => i + 1).ToIoStateEnumerable()
-                from _2 in Io.Apply(() => Console.WriteLine(x)).ToIoStateEnumerable<int, Unit>()
+                from x in xs.ToIoStateEnumerable<Tuple<int, int>, int>()
+                from _1 in State.Mod<Tuple<int, int>>(pair => Tuple.Create(pair.Item1 + 1, pair.Item2)).ToIoStateEnumerable()
+                where x > 3
+                from _2 in State.Mod<Tuple<int, int>>(pair => Tuple.Create(pair.Item1, pair.Item2 + 1)).ToIoStateEnumerable()
+                from _3 in Io.Apply(() => Console.WriteLine(x)).ToIoStateEnumerable<Tuple<int, int>, Unit>()
                 select x + 1;
 
-            var result = program.Out().UnsafePerformIo().Run(0);
+            var result = program.Out().UnsafePerformIo().Run(Tuple.Create(0, 0));
 
             Assert.AreEqual(expectedState, result.Item1);
             Assert.AreEqual(expectedResult, result.Item2);
