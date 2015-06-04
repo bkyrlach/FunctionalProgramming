@@ -87,6 +87,11 @@ namespace FunctionalProgramming.Monad.Transformer
             return io.Select(t => Try.Attempt(() => t.ToMaybe())).ToIoTryMaybe();
         }
 
+        public static IoTryMaybe<T> ToIoTryMaybe<T>(this Io<Try<T>> io)
+        {
+            return new IoTryMaybe<T>(io.Select(@try => @try.Select(t => t.ToMaybe())));
+        } 
+
         public static IoTryMaybe<TResult> Select<TInitial, TResult>(this IoTryMaybe<TInitial> ioT,
             Func<TInitial, TResult> f)
         {
