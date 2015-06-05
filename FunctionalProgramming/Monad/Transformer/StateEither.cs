@@ -1,4 +1,8 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad.Transformer
 {
@@ -45,6 +49,38 @@ namespace FunctionalProgramming.Monad.Transformer
                     left: l => Tuple.Create(result.Item1, l.AsLeft<TLeft, TResult>()),
                     right: r => f(r).Out().Run(result.Item1));
             }));
+        }
+
+        public StateEither<TState, TLeft, TRight> Or(StateEither<TState, TLeft, TRight> otherState)
+        {
+            return new StateEither<TState, TLeft, TRight>(new State<TState, IEither<TLeft, TRight>>(state =>
+            {
+                var res1 = _self.Run(state);
+                var res2 = otherState.Out().Run(state);
+                var e1 = res1.Item2;
+                var e2 = res2.Item2;
+                return e1.Match(
+                    right: val => Tuple.Create(res1.Item1, val.AsRight<TLeft, TRight>()),
+                    left: _ => e2.Match(
+                        right: val => Tuple.Create(res2.Item1, val.AsRight<TLeft, TRight>()),
+                        left: err => Tuple.Create(res2.Item1, err.AsLeft<TLeft, TRight>())));
+            }));
+        }
+
+        public StateEither<TState, TLeft, TRight> CombineTakeLeft<TOtherRight>(StateEither<TState, TLeft, TOtherRight> otherState)
+        {
+            return new StateEither<TState, TLeft, TRight>(
+                from e1 in _self
+                from e2 in otherState.Out()
+                select e1.CombineTakeLeft(e2));
+        }
+
+        public StateEither<TState, TLeft, TOtherRight> CombineTakeRight<TOtherRight>(StateEither<TState, TLeft, TOtherRight> otherState)
+        {
+            return new StateEither<TState, TLeft, TOtherRight>(
+                from e1 in _self
+                from e2 in otherState.Out()
+                select e1.CombineTakeRight(e2));
         }
     }
 
@@ -94,6 +130,33 @@ namespace FunctionalProgramming.Monad.Transformer
             Func<TRight, TResult, TSelect> selector)
         {
             return stateT.SelectMany(a => f(a).SelectMany(b => selector(a, b).InsertRight<TState, TLeft, TSelect>()));
+        }
+
+        public static StateEither<TState, TLeft, TRight> Or<TState, TLeft, TRight>(
+            this StateEither<TState, TLeft, TRight> left, StateEither<TState, TLeft, TRight> right)
+        {
+            return left.Or(right);
+        }
+
+        public static StateEither<TState, TLeft, TRight> CombineTakeLeft<TState, TLeft, TRight, TOtherRight>(
+            this StateEither<TState, TLeft, TRight> left, StateEither<TState, TLeft, TOtherRight> right)
+        {
+            return left.CombineTakeLeft(right);
+        }
+
+        public static StateEither<TState, TLeft, TOtherRight> CombineTakeRight<TState, TLeft, TRight, TOtherRight>(
+            this StateEither<TState, TLeft, TRight> left, StateEither<TState, TLeft, TOtherRight> right)
+        {
+            return left.CombineTakeRight(right);
+        }
+
+        public static StateEither<TState, TLeft, IEnumerable<TRight>> Many<TState, TLeft, TRight>(
+            this StateEither<TState, TLeft, TRight> stateT)
+        {
+            return
+                from h in stateT
+                from t in stateT.Many().Or(InsertRight<TState, TLeft, IEnumerable<TRight>>(Enumerable.Empty<TRight>()))
+                select h.LiftEnumerable().Concat(t);
         }
     }
 }

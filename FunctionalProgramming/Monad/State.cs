@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net.NetworkInformation;
 using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad
@@ -51,6 +52,11 @@ namespace FunctionalProgramming.Monad
         public static State<TState, TValue> Get<TState, TValue>(this Func<TState, TValue> f)
         {
             return new State<TState, TValue>(s => Tuple.Create(s, f(s)));    
+        }
+
+        public static State<TState, Unit> Put<TState>(this TState newState)
+        {
+            return new State<TState, Unit>(oldState => Tuple.Create(newState, Unit.Only));
         }
 
         public static State<TState, Unit> Mod<TState>(this Func<TState, TState> f)

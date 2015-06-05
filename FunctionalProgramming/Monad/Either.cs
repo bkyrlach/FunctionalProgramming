@@ -109,6 +109,31 @@ namespace FunctionalProgramming.Monad
             return m.SelectMany(a => f(a).SelectMany(b => selector(a, b).AsRight<T1, T4>()));
         }
 
+        public static IEither<T1, T2> Or<T1, T2>(this IEither<T1, T2> left, IEither<T1, T2> right)
+        {
+            return left.Match(
+                right: val => val.AsRight<T1, T2>(),
+                left: _ => right.Match(
+                    left: err => err.AsLeft<T1, T2>(),
+                    right: val => val.AsRight<T1, T2>()));
+        }
+
+        public static IEither<T1, TLeft> CombineTakeLeft<T1, TLeft, TRight>(this IEither<T1, TLeft> left, IEither<T1, TRight> right)
+        {
+            return
+                from leftVal in left
+                from rightVal in right
+                select leftVal;
+        }
+
+        public static IEither<T1, TRight> CombineTakeRight<T1, TLeft, TRight>(this IEither<T1, TLeft> left, IEither<T1, TRight> right)
+        {
+            return
+                from leftval in left
+                from rightVal in right
+                select rightVal;
+        } 
+
         #region BuildApplicative
         public static IEither<TErr, Tuple<T1, T2>> BuildApplicative<TErr, T1, T2>(this IEither<TErr, T1> e1,
             IEither<TErr, T2> e2, IMonoid<TErr> mo)
