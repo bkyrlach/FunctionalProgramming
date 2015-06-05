@@ -26,19 +26,13 @@ namespace FunctionalProgramming.Tests.Parsingtests
         [Test]
         public void TestManyElements()
         {
-            var sw = Stopwatch.StartNew();
-            var bs = Enumerable.Repeat('b', 100000);
-            Console.WriteLine("After enumerating: {0}", sw.ElapsedMilliseconds);
+            var bs = Enumerable.Repeat('b', 10000);
             var bString = bs.MkString();
-            Console.WriteLine("After stringifying: {0}", sw.ElapsedMilliseconds);
             var bParser = bs.Traverse(Parser.Elem);
-            Console.WriteLine("After traversing: {0}", sw.ElapsedMilliseconds);
             var result = bParser.Parse(bString).Select(chars => chars.MkString());
-            Console.WriteLine("After parsing: {0}", sw.ElapsedMilliseconds);
             Assert.AreEqual(bString, result.Match(
                 left: err => err,
                 right: res => res));
-            Console.WriteLine("Total: {0}", sw.ElapsedMilliseconds);
         }
 
         [Test]
