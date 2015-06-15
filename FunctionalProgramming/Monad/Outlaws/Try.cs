@@ -218,6 +218,103 @@ namespace FunctionalProgramming.Monad.Outlaws
                 failure: ex => errorMapping(ex).AsLeft<TErr, TVal>());
         }
 
+        private static readonly Io<Unit> IoUnit = Io.Apply(() => Unit.Only);
+
+        /// <summary>
+        /// Helper function that, given an effectual computation that might compute a value, or might fail, will
+        /// perform a side-effect if that computation fails
+        /// </summary>
+        /// <typeparam name="T">The type of value we are attempting to compute</typeparam>
+        /// <param name="ioT">An effectual computation that might compute a value, or might fail</param>
+        /// <param name="logger">A function that will perform a side effect if the computation fails</param>
+        /// <returns>A value indicating an effectual computation that is only useful for the side-effects performed</returns>
+        public static Io<Unit> LogFailure<T>(this Io<Try<T>> ioT, Func<Exception, Io<Unit>> logger)
+        {
+            return ioT.SelectMany(@try => @try.Match(
+                success: _ => IoUnit,
+                failure: logger));
+        }
+
+        /// <summary>
+        /// Helper function that, given a failed computation, will perform a side effect
+        /// </summary>
+        /// <typeparam name="T">The type of value we are attempting to compute</typeparam>
+        /// <param name="t">A value that might be a successful computation or a failure</param>
+        /// <param name="logger">A function that performs a side effect given some failure</param>
+        /// <returns>A value indicating an effectual computation that is only useful for the side-effects performed</returns>
+        public static Io<Unit> LogFailure<T>(this Try<T> t, Func<Exception, Io<Unit>> logger)
+        {
+            return t.Match(
+                success: _ => IoUnit,
+                failure: logger);
+        }
+
+        /// <summary>
+        /// Helper function that, given a potentially successful computation will perform one side-effect if the computation was
+        /// successful, or another side-effect if the computation was a failure
+        /// </summary>
+        /// <typeparam name="T">The type of value we are attempting to compute</typeparam>
+        /// <param name="t">A value that might be a successful computation or a failure</param>
+        /// <param name="successLogger">A function that performs a side-effect given some value of type T</param>
+        /// <param name="failureLogger">A function that performs a side-effect given an exception</param>
+        /// <returns>A value indicating an effectual computation that is only useful for the side-effects performed</returns>
+        public static Io<Unit> Log<T>(this Try<T> t, Func<T, Io<Unit>> successLogger,
+            Func<Exception, Io<Unit>> failureLogger)
+        {
+            return t.Match(
+                success: successLogger,
+                failure: failureLogger);
+        }
+
+        /// <summary>
+        /// Helper function that given a potentially successful computation that may or may not yield a reuslt, will yield the
+        /// potential value if the computation was succesful, or perform a side-effect if the computation failed
+        /// </summary>
+        /// <typeparam name="T">The type of value we are attempting to compute</typeparam>
+        /// <param name="t">A value that might be a successful computation or a failure, and may not yield a value</param>
+        /// <param name="logger">A function that performs a side-effect given an exception</param>
+        /// <returns>A value indicating an effectual computation that may or may not yield a result</returns>
+        public static Io<IMaybe<T>> GetOrLog<T>(this Try<IMaybe<T>> t, Func<Exception, Io<Unit>> logger)
+        {
+            return t.Match(
+                success: maybeVal => Io.Apply(() => maybeVal),
+                failure: ex => from _ in logger(ex)
+                               select Maybe.Nothing<T>());
+        }
+
+        /// <summary>
+        /// Helper function that given a potentially successful computation, will maybe yield a value, performing a side 
+        /// effect if the computation was a failure
+        /// </summary>
+        /// <typeparam name="T">The type of value we are attempting to compute</typeparam>
+        /// <param name="t">A value that might be a successful computation or a failure</param>
+        /// <param name="logger">A function that performs a side-effect given an exception</param>
+        /// <returns>A value indicating an effectual computation that may or may not yield a result</returns>
+        public static Io<IMaybe<T>> GetOrLog<T>(this Try<T> t, Func<Exception, Io<Unit>> logger)
+        {
+            return t.Match(
+                success: val => Io.Apply(() => val.ToMaybe()),
+                failure: ex => from _ in logger(ex)
+                               select Maybe.Nothing<T>());
+        }
+
+        /// <summary>
+        /// Helper function that, given a potentially successful computation and a reasonable default value, will yield the 
+        /// computed value if successful, or yield the default value and perform a side-effect if a failure
+        /// </summary>
+        /// <typeparam name="T">The type of value we are attempting to compute</typeparam>
+        /// <param name="t">A value that might be a successufl computation or a failure</param>
+        /// <param name="logger">A function that performs a side-effect given an exception</param>
+        /// <param name="defaultValue">A lazily evaluated default</param>
+        /// <returns>A value indicating an effectual computation that will always yield a result</returns>
+        public static Io<T> GetOrLog<T>(this Try<T> t, Func<Exception, Io<Unit>> logger, Func<T> defaultValue)
+        {
+            return t.Match(
+                success: val => Io.Apply(() => val),
+                failure: ex => from _ in logger(ex)
+                               select defaultValue());
+        }
+
         #region BuildApplicative
         public static Try<Tuple<T1,T2>> BuildApplicative<T1,T2>(this Try<T1> try1, Try<T2> try2)
         {

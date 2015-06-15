@@ -1,5 +1,7 @@
 ﻿using FunctionalProgramming.Basics;
 using System;
+using FunctionalProgramming.Monad.Outlaws;
+using FunctionalProgramming.Monad.Transformer;
 
 namespace FunctionalProgramming.Monad
 {
@@ -105,6 +107,44 @@ namespace FunctionalProgramming.Monad
             Func<TValue, TResult, TSelect> selector)
         {
             return m.SelectMany(a => f(a).SelectMany(b => Apply(() => selector(a, b))));
+        }
+
+        public static Io<T> LiftIo<T>(this T t)
+        {
+            return Apply(() => t);
+        }
+
+        /// <summary>
+        /// Helper function that logs (and then discards) potential errors, returning a Maybe instead
+        /// </summary>
+        /// <typeparam name="T">The type of value we attempted to compute</typeparam>
+        /// <param name="io">An effectual computation that might compute a value, or may fail</param>
+        /// <param name="ifFailure">A function that handles errors in an effectual way</param>
+        /// <returns>A value that represents an effectual computation that yields Either 'Just' a 'T, or 'Nothing' if the original computation yields a failure</returns>
+        public static Io<IMaybe<T>> GetOrLog<T>(this Io<Try<T>> io, Func<Exception, Io<Unit>> ifFailure)
+        {
+            return io.SelectMany(t => t.Match(
+                success: val => val.ToIoMaybe().Out(),
+                failure: ex => from _ in ifFailure(ex)
+                               select Maybe.Nothing<T>()));
+        }
+
+        /// <summary>
+        /// Helper function that, given an effectual computation that might fail, or might not yield a result, will
+        /// log potential failures and potentially missing values, returning a Maybe instead
+        /// </summary>
+        /// <typeparam name="T">The type of value we attempted to compute</typeparam>
+        /// <param name="io">An effectual computation that might compute a value, fail, or not compute a value</param>
+        /// <param name="ifFailure">A function that handles errors in an effectual way</param>
+        /// <param name="ifMissing">A function that handles the absence of a result in an effectual way</param>
+        /// <returns>A value that represents an effectual computation that yields Either 'Just' a 'T, or 'Nothing' if the original computation yields a failure or no result</returns>
+        public static Io<IMaybe<T>> GetOrLog<T>(this Io<Try<IMaybe<T>>> io, Func<Exception, Io<Unit>> ifFailure,
+            Func<Io<Unit>> ifMissing)
+        {
+            return io.SelectMany(t => t.GetOrLog(ifFailure).SelectMany(m => m.Match(
+                just: val => val.ToIoMaybe().Out(),
+                nothing: () => from _ in ifMissing()
+                               select Maybe.Nothing<T>())));
         }
     }
 }
