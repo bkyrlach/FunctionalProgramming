@@ -174,6 +174,39 @@ namespace FunctionalProgramming.Monad
                 return "Nothing";
             }
         }
+
+        private static readonly Io<Unit> IoUnit = Io.Apply(() => Unit.Only);
+
+
+        /// <summary>
+        /// Helper that, given a potential value, will perform a side-effect if that value is not present
+        /// </summary>
+        /// <typeparam name="T">The type of value we potentially have</typeparam>
+        /// <param name="m">A potential value</param>
+        /// <param name="logger">A function that performs a side-effect</param>
+        /// <returns>A value representing an effectual computation that is only useful for its side-effects</returns>
+        public static Io<Unit> LogEmpty<T>(this IMaybe<T> m, Func<Io<Unit>> logger)
+        {
+            return m.Match(
+                just: _ => IoUnit,
+                nothing: logger);
+        }
+
+        /// <summary>
+        /// Helper that, given a potential value, will perform a side-effect if that value is present, or
+        /// a different side-effect if that value is not present.
+        /// </summary>
+        /// <typeparam name="T">The type of value we potentially have</typeparam>
+        /// <param name="m">A potential value</param>
+        /// <param name="justLogger">A function that performs a side-effect given a value of type 'T</param>
+        /// <param name="nothingLogger">A function that performs a side-effect</param>
+        /// <returns>A value representing an effectual computation that is only useful for its side-effects</returns>
+        public static Io<Unit> Log<T>(this IMaybe<T> m, Func<T, Io<Unit>> justLogger, Func<Io<Unit>> nothingLogger)
+        {
+            return m.Match(
+                just: justLogger,
+                nothing: nothingLogger);
+        }
     }
 
 }
