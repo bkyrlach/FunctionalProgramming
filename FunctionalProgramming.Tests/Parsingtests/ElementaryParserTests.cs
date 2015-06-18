@@ -15,7 +15,7 @@ namespace FunctionalProgramming.Tests.Parsingtests
         [Test]
         public void TestSingleElement()
         {
-            var input = 'a';
+            const char input = 'a';
             var a = Parser.Elem(input);
             var result = a.Parse('a'.ToString());
             Assert.AreEqual(input.ToString(), result.Match(
@@ -27,7 +27,7 @@ namespace FunctionalProgramming.Tests.Parsingtests
         public void TestManyElements()
         {
             var sw = Stopwatch.StartNew();
-            var bs = Enumerable.Repeat('b', 100000);
+            var bs = Enumerable.Repeat('b', 1000);
             Console.WriteLine("After enumerating: {0}", sw.ElapsedMilliseconds);
             var bString = bs.MkString();
             Console.WriteLine("After stringifying: {0}", sw.ElapsedMilliseconds);
