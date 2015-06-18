@@ -58,13 +58,14 @@ namespace FunctionalProgramming.Monad.Parsing
     {
         public static IEither<string, TOutput> Parse<TInput, TOutput>(this StateEither<ParserState<TInput>, string, TOutput> parser, IEnumerable<TInput> input)
         {
-            var res = parser.Out().Run(new ParserState<TInput>(input.ToArray()));           
-            var isEoF = ParserState<TInput>.IsEoF().Out().Eval(res.Item1).Match(
-                left: BasicFunctions.Const<string, bool>(false),
-                right: BasicFunctions.Identity);
-            return BasicFunctions.If(isEoF,
-                () => res.Item2, 
-                () => "Parser didn't parse all available input".AsLeft<string, TOutput>());
+            return
+                (from parseResult in parser
+                 from allDone in ParserState<TInput>.IsEoF()
+                 from _ in BasicFunctions.EIf(allDone, () => parseResult, () => "Parser didn't parse all available input").ToStateEither<ParserState<TInput>, string, TOutput>()
+                 select _)
+                .Out()
+                .Run(new ParserState<TInput>(input.ToArray()))
+                .Item2;
         }
 
         public static Tuple<ParserState<TInput>, IEither<string, TOutput>> ParseSome<TInput, TOutput>(this StateEither<ParserState<TInput>, string, TOutput> parser, IEnumerable<TInput> input)
