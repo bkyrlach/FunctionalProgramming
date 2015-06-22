@@ -86,6 +86,7 @@
     <Compile Include="Monad\Stream.cs" />
     <Compile Include="Monad\Trampoline.cs" />
     <Compile Include="Monad\Outlaws\Try.cs" />
+    <Compile Include="Monad\Transformer\EitherEnumerable.cs" />
     <Compile Include="Monad\Transformer\EitherMaybe.cs" />
     <Compile Include="Monad\Transformer\IoEither.cs" />
     <Compile Include="Monad\Transformer\IoEitherMaybe.cs" />
