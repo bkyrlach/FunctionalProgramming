@@ -163,6 +163,12 @@ namespace FunctionalProgramming.Basics
         {
             IParser<T, IConsList<T>> initial = new ConstantParser<T, IConsList<T>>(ConsList.Nil<T>());
             return xs.Aggregate(initial, (current, aParser) => current.SelectMany(ts => aParser.Select(t => t.Cons(ts)))).Select(parsers => parsers.AsEnumerable());
+        }
+
+        public static IEither<TLeft, IEnumerable<TRight>> Sequence<TLeft, TRight>(this IEnumerable<IEither<TLeft, TRight>> xs)
+        {
+            var initial = ConsList.Nil<TRight>().AsRight<TLeft, IConsList<TRight>>();
+            return xs.Aggregate(initial, (current, anEither) => current.SelectMany(ts => anEither.Select(t => t.Cons(ts)))).Select(eithers => eithers.AsEnumerable().Reverse());
         } 
 
         /// <summary>
