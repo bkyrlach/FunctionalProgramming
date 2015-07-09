@@ -101,6 +101,13 @@ namespace FunctionalProgramming.Monad
                 nothing: () => logger().Select(u => Nothing<T>()));
         }
 
+        public static IMaybe<T> Or<T>(this IMaybe<T> left, IMaybe<T> right)
+        {
+            return left.Match(
+                just: v => v.ToMaybe(),
+                nothing: () => right);
+        }
+
         /// <summary>
         /// Select out the possible unknowns into a single unknown
         /// </summary>
