@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad.Transformer;
@@ -18,9 +17,9 @@ namespace FunctionalProgramming.Monad.Parsing
                 from i in GetIndex.GetS().ToStateEither<ParserState<T>, string, uint>()
                 from data in GetData.GetS().ToStateEither<ParserState<T>, string, T[]>()
                 from _1 in GetIndex.SetS(i + 1).ToStateEither<ParserState<T>, string, Unit>()
-                from @byte in BasicFunctions.If(i >= data.Length,
-                    () => "Unexpected end of input sequence".InsertLeft<ParserState<T>, string, T>(),
-                    () => data[i].InsertRight<ParserState<T>, string, T>())
+                from @byte in i >= data.Length 
+                    ? "Unexpected end of input sequence".InsertLeft<ParserState<T>, string, T>()
+                    : data[i].InsertRight<ParserState<T>, string, T>()
                 select @byte;
         }
 
@@ -50,7 +49,7 @@ namespace FunctionalProgramming.Monad.Parsing
 
         public ParserState<T> Copy(T[] data = null, uint? index = null)
         {
-            return new ParserState<T>(data ?? _data, index.HasValue ? index.Value : _index);
+            return new ParserState<T>(data ?? _data, index ?? _index);
         } 
     }
 
@@ -63,23 +62,23 @@ namespace FunctionalProgramming.Monad.Parsing
                  from allDone in ParserState<TInput>.IsEoF()
                  from _ in BasicFunctions.EIf(allDone, () => parseResult, () => "Parser didn't parse all available input").ToStateEither<ParserState<TInput>, string, TOutput>()
                  select _)
-                .Out()
+                .Out
                 .Run(new ParserState<TInput>(input.ToArray()))
                 .Item2;
         }
 
         public static Tuple<ParserState<TInput>, IEither<string, TOutput>> ParseSome<TInput, TOutput>(this StateEither<ParserState<TInput>, string, TOutput> parser, IEnumerable<TInput> input)
         {
-            return parser.Out().Run(new ParserState<TInput>(input.ToArray()));
+            return parser.Out.Run(new ParserState<TInput>(input.ToArray()));
         }
 
         public static StateEither<ParserState<TInput>, string, TInput> Elem<TInput>(TInput expected)
         {
             return 
                 from next in ParserState<TInput>.GetNext()
-                from _ in BasicFunctions.If(next.Equals(expected),
-                    () => next.InsertRight<ParserState<TInput>, string, TInput>(),
-                    () => string.Format("Expected {0} but got --> {1} <--", expected, next).InsertLeft<ParserState<TInput>, string, TInput>())
+                from _ in next.Equals(expected) 
+                    ? next.InsertRight<ParserState<TInput>, string, TInput>()
+                    : string.Format("Expected {0} but got --> {1} <--", expected, next).InsertLeft<ParserState<TInput>, string, TInput>()
                 select _;
         }
 
@@ -87,9 +86,9 @@ namespace FunctionalProgramming.Monad.Parsing
         {
             return
                 from next in ParserState<TInput>.GetNext()
-                from _ in BasicFunctions.If(predicate(next),
-                    () => next.InsertRight<ParserState<TInput>, string, TInput>(),
-                    () => string.Format("Expected {0} but got --> {1} <--", expectation, next).InsertLeft<ParserState<TInput>, string, TInput>())
+                from _ in predicate(next)
+                    ? next.InsertRight<ParserState<TInput>, string, TInput>()
+                    : string.Format("Expected {0} but got --> {1} <--", expectation, next).InsertLeft<ParserState<TInput>, string, TInput>()
                 select _;
         }
 

@@ -163,8 +163,23 @@ namespace FunctionalProgramming.Basics
 
         public static StateEither<TState, TLeft, IEnumerable<TRight>>  Sequence<TState, TLeft, TRight>(this IEnumerable<StateEither<TState, TLeft, TRight>> stateTs)
         {
-            var initial = ConsList.Nil<TRight>().InsertRight<TState, TLeft, IConsList<TRight>>();
-            return stateTs.Aggregate(initial, (current, aStateEither) => current.SelectMany(ts => aStateEither.Select(t => t.Cons(ts)))).Select(ts => ts.AsEnumerable().Reverse());
+            return new StateEither<TState, TLeft, IEnumerable<TRight>>(new State<TState, IEither<TLeft, IEnumerable<TRight>>>(s =>
+            {
+                var retval = ConsList.Nil<TRight>().AsRight<TLeft, IConsList<TRight>>();
+                foreach (var state in stateTs)
+                {
+                    var res = state.Out.Run(s);
+                    s = res.Item1;
+                    retval =
+                        from xs in retval
+                        from x in res.Item2
+                        select x.Cons(xs);
+                }
+                return Tuple.Create(s, retval.Select(xs => xs.AsEnumerable().Reverse()));
+            }));
+
+            //var initial = ConsList.Nil<TRight>().InsertRight<TState, TLeft, IConsList<TRight>>();
+            //return stateTs.Aggregate(initial, (current, aStateEither) => current.SelectMany(ts => aStateEither.Select(t => t.Cons(ts)))).Select(ts => ts.AsEnumerable().Reverse());
         }
 
         public static StateEither<TState, TLeft, IEnumerable<TResult>> Traverse<TState, TLeft, TRight, TResult>(

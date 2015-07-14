@@ -8,11 +8,11 @@ namespace FunctionalProgramming.Monad.Transformer
 {
     public sealed class StateEither<TState, TLeft, TRight>
     {
-        private readonly State<TState, IEither<TLeft, TRight>> _self;
+        public readonly State<TState, IEither<TLeft, TRight>> Out;
 
         public StateEither(State<TState, IEither<TLeft, TRight>> state)
         {
-            _self = state;
+            Out = state;
         }
 
         public StateEither(IEither<TLeft, TRight> either) : this(either.Insert<TState, IEither<TLeft, TRight>>())
@@ -20,34 +20,29 @@ namespace FunctionalProgramming.Monad.Transformer
             
         }
 
-        public StateEither(TRight right) : this(right.AsRight<TLeft, TRight>())
+        public StateEither(TRight right) : this(new Right<TLeft, TRight>(right))
         {
             
         }
 
-        public StateEither(TLeft left) : this(left.AsLeft<TLeft, TRight>())
+        public StateEither(TLeft left) : this(new Left<TLeft, TRight>(left))
         {
             
-        }
-
-        public State<TState, IEither<TLeft, TRight>> Out()
-        {
-            return _self;
         }
 
         public StateEither<TState, TLeft, TResult> FMap<TResult>(Func<TRight, TResult> f)
         {
-            return new StateEither<TState, TLeft, TResult>(_self.Select(either => either.Select(f)));
+            return new StateEither<TState, TLeft, TResult>(Out.Select(either => either.Select(f)));
         }
 
         public StateEither<TState, TLeft, TResult> Bind<TResult>(Func<TRight, StateEither<TState, TLeft, TResult>> f)
         {
             return new StateEither<TState, TLeft, TResult>(new State<TState, IEither<TLeft, TResult>>(s =>
             {
-                var result = _self.Run(s);
+                var result = Out.Run(s);
                 return result.Item2.Match(
                     left: l => Tuple.Create(result.Item1, l.AsLeft<TLeft, TResult>()),
-                    right: r => f(r).Out().Run(result.Item1));
+                    right: r => f(r).Out.Run(result.Item1));
             }));
         }
 
@@ -55,8 +50,8 @@ namespace FunctionalProgramming.Monad.Transformer
         {
             return new StateEither<TState, TLeft, TRight>(new State<TState, IEither<TLeft, TRight>>(state =>
             {
-                var res1 = _self.Run(state);
-                var res2 = otherState.Out().Run(state);
+                var res1 = Out.Run(state);
+                var res2 = otherState.Out.Run(state);
                 var e1 = res1.Item2;
                 var e2 = res2.Item2;
                 return e1.Match(
@@ -70,16 +65,16 @@ namespace FunctionalProgramming.Monad.Transformer
         public StateEither<TState, TLeft, TRight> CombineTakeLeft<TOtherRight>(StateEither<TState, TLeft, TOtherRight> otherState)
         {
             return new StateEither<TState, TLeft, TRight>(
-                from e1 in _self
-                from e2 in otherState.Out()
+                from e1 in Out
+                from e2 in otherState.Out
                 select e1.CombineTakeLeft(e2));
         }
 
         public StateEither<TState, TLeft, TOtherRight> CombineTakeRight<TOtherRight>(StateEither<TState, TLeft, TOtherRight> otherState)
         {
             return new StateEither<TState, TLeft, TOtherRight>(
-                from e1 in _self
-                from e2 in otherState.Out()
+                from e1 in Out
+                from e2 in otherState.Out
                 select e1.CombineTakeRight(e2));
         }
     }
@@ -95,7 +90,7 @@ namespace FunctionalProgramming.Monad.Transformer
         public static StateEither<TState, TLeft, TRight> ToStateEither<TState, TLeft, TRight>(
             this State<TState, TRight> state)
         {
-            return new StateEither<TState, TLeft, TRight>(state.Select(right => right.AsRight<TLeft, TRight>()));
+            return new StateEither<TState, TLeft, TRight>(state.Select(right => (IEither<TLeft, TRight>)new Right<TLeft, TRight>(right)));
         }
 
         public static StateEither<TState, TLeft, TRight> ToStateEither<TState, TLeft, TRight>(

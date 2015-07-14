@@ -40,7 +40,7 @@ namespace FunctionalProgramming.Streaming
 
         public static Process<TI, TO> RepeatUntil<TI, TO>(this Process<TI, TO> p, Func<bool> predicate)
         {
-            return p.Concat(() => BasicFunctions.If<Process<TI, TO>>(predicate(), () => new Halt<TI, TO>(End.Only), () => new Cont<TI, TO>(() => p.RepeatUntil(predicate))));
+            return p.Concat(() => predicate() ?  (Process<TI, TO>)new Halt<TI, TO>(End.Only) : new Cont<TI, TO>(() => p.RepeatUntil(predicate)));
         }
 
         public static Process<TI, TI> AwaitAndEmit<TI>(Io<TI> effect)
@@ -115,9 +115,9 @@ namespace FunctionalProgramming.Streaming
                             return result.Await();
                         }), x => x.Match(
                             left: e => new Halt<T, IEither<T1, T2>>(e),
-                            right: i => BasicFunctions.If(isRight,
-                                () => Wye(new Await<T, T1>(Io.Apply(() => tleft.Result), recvl), recvr(i.AsRight<Exception, T>())),
-                                () => Wye(recvl(i.AsRight<Exception, T>()), new Await<T, T2>(Io.Apply(() => tright.Result), recvr)))));
+                            right: i => isRight
+                                ? Wye(new Await<T, T1>(Io.Apply(() => tleft.Result), recvl), recvr(i.AsRight<Exception, T>()))
+                                : Wye(recvl(i.AsRight<Exception, T>()), new Await<T, T2>(Io.Apply(() => tright.Result), recvr))));
                     }));
         }
 
@@ -181,7 +181,7 @@ namespace FunctionalProgramming.Streaming
 
         public static Process<TI, TO> Concat<TI, TO>(this Process<TI, TO> p1, Func<Process<TI, TO>> p2)
         {
-            return p1.OnHalt(ex => BasicFunctions.If<Process<TI, TO>>(ex is End, () => new Cont<TI, TO>(() => Try(p2)), () => new Halt<TI, TO>(ex)));
+            return p1.OnHalt(ex => ex is End ? (Process<TI, TO>)new Cont<TI, TO>(() => Try(p2)) : new Halt<TI, TO>(ex));
         }
 
         public static Process<T, T> Take<T>(int n)
@@ -341,7 +341,7 @@ namespace FunctionalProgramming.Streaming
         public Process<TI, TO2> Kill<TO2>()
         {
             return Match(
-                await: (req, recv) => recv(Streaming.Kill.Only.AsLeft<Exception, TI>()).Drain<TO2>().OnHalt(e => BasicFunctions.If(e is Kill, Process.Halt1<TI, TO2>, () => new Halt<TI, TO2>(e))),
+                await: (req, recv) => recv(Streaming.Kill.Only.AsLeft<Exception, TI>()).Drain<TO2>().OnHalt(e => e is Kill ? Process.Halt1<TI, TO2>() : new Halt<TI, TO2>(e)),
                 halt: e => new Halt<TI, TO2>(e),
                 emit: (h, t) => t.Kill<TO2>(),
                 eval: (effect, next) => next.Kill<TO2>(),
@@ -376,13 +376,13 @@ namespace FunctionalProgramming.Streaming
                 cont: cw => new Cont<TI, TO>(cw.AsFinalizer), 
                 eval: (effect, next) => new Eval<TI, TO>(effect, next.AsFinalizer()), 
                 await: (req, recv) => new Await<TI, TO>(req, either => either.Match(
-                    left: ex => BasicFunctions.If(ex is Kill, AsFinalizer, () => recv(either)),
+                    left: ex => ex is Kill ? AsFinalizer() : recv(either),
                     right: i => recv(i.AsRight<Exception, TI>()))));
         }
 
         public Process<TI, TO> OnComplete(Func<Process<TI, TO>> p)
         {
-            return OnHalt(ex => BasicFunctions.If(ex is End, () => p().AsFinalizer(), () => p().AsFinalizer().Concat(() => new Halt<TI, TO>(ex))));
+            return OnHalt(ex => ex is End ? p().AsFinalizer() : p().AsFinalizer().Concat(() => new Halt<TI, TO>(ex)));
         }
 
         public Process<TI, TO3> Tee<TO2, TO3>(Process<TI, TO2> p2, Process<IEither<TO, TO2>, TO3> tee)

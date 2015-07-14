@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Net.NetworkInformation;
 using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad

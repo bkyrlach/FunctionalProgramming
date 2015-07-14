@@ -3,60 +3,68 @@ using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad
 {
-    public interface IEither<out T1, out T2>
+    public interface IEither<out TLeft, out TRight>
     {
         bool IsRight { get; }
-        T3 Match<T3>(Func<T1, T3> left, Func<T2, T3> right);
+        TMatch Match<TMatch>(Func<TLeft, TMatch> left, Func<TRight, TMatch> right);
+    }
+
+    public abstract class Either<TLeft, TRight> : IEither<TLeft, TRight>
+    {
+        public bool IsRight { get { return this is Right<TLeft, TRight>; } }
+        public TMatch Match<TMatch>(Func<TLeft, TMatch> left, Func<TRight, TMatch> right)
+        {
+            TMatch retval = default(TMatch);
+            if (this is Left<TLeft, TRight>)
+            {
+                var temp = this as Left<TLeft, TRight>;
+                retval = left(temp.Value);
+            }
+            else if (this is Right<TLeft, TRight>)
+            {
+                var temp = this as Right<TLeft, TRight>;
+                retval = right(temp.Value);
+            }
+            else
+            {
+                throw new MatchException(typeof(Either<TLeft, TRight>), GetType());
+            }
+            return retval;
+        }
+    }
+
+    public sealed class Left<TLeft, TRight> : Either<TLeft, TRight>
+    {
+        public readonly TLeft Value;
+        
+        public Left(TLeft value)
+        {
+            Value = value;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("-\\{0}", Value);
+        }
+    }
+
+    public sealed class Right<TLeft, TRight> : Either<TLeft, TRight>
+    {
+        public readonly TRight Value;
+
+        public Right(TRight value)
+        {
+            Value = value;
+        }
+
+        public override string ToString()
+        {
+            return string.Format("/-{0}", Value);
+        }
     }
 
     public static class Either
     {
-        private sealed class Left<T1, T2> : IEither<T1, T2>
-        {
-            private readonly bool _isRight;
-            public readonly T1 Value;
-            public bool IsRight { get { return _isRight; } }
-
-            public Left(T1 value)
-            {
-                _isRight = false;
-                Value = value;
-            }
-
-            public T3 Match<T3>(Func<T1, T3> left, Func<T2, T3> right)
-            {
-                return left(Value);
-            }
-
-            public override string ToString()
-            {
-                return string.Format("-\\{0}", Value);
-            }
-        }
-
-        private sealed class Right<T1, T2> : IEither<T1, T2>
-        {
-            private readonly bool _isRight;
-            public readonly T2 Value;            
-            public bool IsRight { get { return _isRight; } }
-
-            public Right(T2 value)
-            {
-                _isRight = true;
-                Value = value;
-            }
-
-            public T3 Match<T3>(Func<T1, T3> left, Func<T2, T3> right)
-            {
-                return right(Value);
-            }
-
-            public override string ToString()
-            {
-                return string.Format("/-{0}", Value);
-            }
-        }
-
         public static IEither<T1, T2> AsLeft<T1, T2>(this T1 left)
         {
             return new Left<T1, T2>(left);
