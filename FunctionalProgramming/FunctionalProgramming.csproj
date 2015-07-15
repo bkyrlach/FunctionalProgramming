@@ -106,6 +106,7 @@
     <Compile Include="Monad\Transformer\StateEnumerable.cs" />
     <Compile Include="Monad\Transformer\StateTry.cs" />
     <Compile Include="Monad\Transformer\StateTryEnumerable.cs" />
+    <Compile Include="Monad\Transformer\TryEnumerable.cs" />
     <Compile Include="Monad\Transformer\TryMaybe.cs" />
     <Compile Include="Monad\Validation.cs" />
     <Compile Include="Monad\Writer.cs" />

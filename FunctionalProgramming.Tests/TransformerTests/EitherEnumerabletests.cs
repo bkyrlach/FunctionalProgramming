@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Transformer;
+using FunctionalProgramming.Tests.Util;
 using NUnit.Framework;
 
 namespace FunctionalProgramming.Tests.TransformerTests
@@ -10,14 +11,6 @@ namespace FunctionalProgramming.Tests.TransformerTests
     [TestFixture]
     public sealed class EitherEnumerabletests
     {
-        private static bool AreEqual<T>(IEnumerable<T> xs, IEnumerable<T> ys)
-        {
-            var xsList = xs.ToList();
-            var ysList = ys.ToList();
-            return
-                xsList.Count == ysList.Count &&
-                xs.Zip(ys, Tuple.Create).Aggregate(true, (r, pair) => r && pair.Item1.Equals(pair.Item2));
-        }
 
         [Test]
         public void TestIt()
@@ -29,7 +22,7 @@ namespace FunctionalProgramming.Tests.TransformerTests
 
             Assert.IsTrue(result.Match(
                 left: err => false,
-                right: actual => AreEqual(expected, actual)));
+                right: actual => TestUtils.AreEqual(expected, actual)));
         }
 
         [Test]
@@ -54,7 +47,7 @@ namespace FunctionalProgramming.Tests.TransformerTests
 
             Assert.IsTrue(result.Match(
                 left: l => false,
-                right: actual => AreEqual(expected, actual)));
+                right: actual => TestUtils.AreEqual(expected, actual)));
         }
     }
 }

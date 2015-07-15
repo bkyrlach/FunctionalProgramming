@@ -5,6 +5,7 @@ using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Outlaws;
 using FunctionalProgramming.Monad.Transformer;
+using FunctionalProgramming.Tests.Util;
 using NUnit.Framework;
 
 namespace FunctionalProgramming.Tests.TransformerTests
@@ -12,15 +13,6 @@ namespace FunctionalProgramming.Tests.TransformerTests
     [TestFixture]
     class StateTryEnumerableTest
     {
-        private static bool AreEqual<T>(IEnumerable<T> xs, IEnumerable<T> ys)
-        {
-            var xsList = xs.ToList();
-            var ysList = ys.ToList();
-            return
-                xsList.Count == ysList.Count &&
-                xsList.Zip(ysList, Tuple.Create).Aggregate(true, (r, pair) => r && pair.Item1.Equals(pair.Item2));
-        }
-
         [Test]
         public void TestStateTryEnumerable()
         {
@@ -39,7 +31,7 @@ namespace FunctionalProgramming.Tests.TransformerTests
                 success: BasicFunctions.Identity,
                 failure: exception => Enumerable.Empty<int>());
 
-            Assert.IsTrue(AreEqual(expected, actual));
+            Assert.IsTrue(TestUtils.AreEqual(expected, actual));
         }
     }
 }

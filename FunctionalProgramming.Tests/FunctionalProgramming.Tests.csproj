@@ -89,6 +89,8 @@
     <Compile Include="TransformerTests\IoEnumerableTryTests.cs" />
     <Compile Include="TransformerTests\StateEnumerableTests.cs" />
     <Compile Include="TransformerTests\StateTryEnumerableTest.cs" />
+    <Compile Include="TransformerTests\TryEnumerableTests.cs" />
+    <Compile Include="Util\TestUtils.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FunctionalProgramming\FunctionalProgramming.csproj">
@@ -99,6 +101,7 @@
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Choose>
     <When Condition="'$(VisualStudioVersion)' == '10.0' And '$(IsCodedUITest)' == 'True'">
       <ItemGroup>
