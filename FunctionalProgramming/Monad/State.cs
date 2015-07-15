@@ -52,14 +52,11 @@ namespace FunctionalProgramming.Monad
         {
             return new State<TState, TValue>(s => Tuple.Create(s, f(s)));    
         }
-<<<<<<< Updated upstream
-=======
-        
+
         public static State<TState, Unit> Put<TState>(this TState newState)
         {
             return new State<TState, Unit>(oldState => Tuple.Create(newState, Unit.Only));
         }
->>>>>>> Stashed changes
 
         public static State<TState, Unit> Mod<TState>(this Func<TState, TState> f)
         {
