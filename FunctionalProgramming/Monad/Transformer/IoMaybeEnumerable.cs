@@ -48,7 +48,12 @@ namespace FunctionalProgramming.Monad.Transformer
         public static IoMaybeEnumerable<T> ToIoMaybeEnumerable<T>(this IMaybe<T> maybe)
         {
             return new IoMaybeEnumerable<T>(Io.Apply(() => maybe.Select(arg => arg.LiftEnumerable())));
-        } 
+        }
+
+        public static IoMaybeEnumerable<T> ToIoMaybeEnumerable<T>(this Io<IMaybe<T>> ioMaybe)
+        {
+            return new IoMaybeEnumerable<T>(ioMaybe.Select(arg => arg.Select(t => t.LiftEnumerable())));
+        }
 
         public static IoMaybeEnumerable<T> ToIoMaybeEnumerable<T>(this T t)
         {
