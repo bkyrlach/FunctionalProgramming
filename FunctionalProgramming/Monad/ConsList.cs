@@ -55,6 +55,16 @@ namespace FunctionalProgramming.Monad
                 nil: () => ys);
         }
 
+        public static bool Contains<T>(this IConsList<T> xs, T x)
+        {
+            return xs.FoldL(false, (result, next) => result || next.Equals(x));
+        }
+
+        public static IConsList<T> Distinct<T>(this IConsList<T> xs)
+        {
+            return xs.FoldL(Nil<T>(), (result, next) => result.Contains(next) ? result : next.Cons(result)).Reverse();
+        } 
+
         public static IStream<T> ToStream<T>(this IConsList<T> xs)
         {
             return xs.Match(
