@@ -173,18 +173,18 @@ namespace FunctionalProgramming.Basics
             return xs.Aggregate(initial, (current, anEither) => current.SelectMany(ts => anEither.Select(t => t.Cons(ts)))).Select(eithers => eithers.AsEnumerable().Reverse());
         }
 
-        public static IoState<TState, IEnumerable<TValue>> Sequence<TState, TValue>(
-            this IEnumerable<IoState<TState, TValue>> ioTs)
+        public static StateIo<TState, IEnumerable<TValue>> Sequence<TState, TValue>(
+            this IEnumerable<StateIo<TState, TValue>> stateTs)
         {
-            var initial = ConsList.Nil<TValue>().ToIoState<TState, IConsList<TValue>>();
+            var initial = ConsList.Nil<TValue>().ToStateIo<TState, IConsList<TValue>>();
             return
-                ioTs.Aggregate(initial,
+                stateTs.Aggregate(initial,
                     (current, anIoState) => current.SelectMany(ts => anIoState.Select(t => t.Cons(ts))))
                     .Select(ioStates => ioStates.AsEnumerable().Reverse());
         }
 
-        public static IoState<TState, IEnumerable<TValue>> Traverse<TState, TInitial, TValue>(
-            this IEnumerable<TInitial> xs, Func<TInitial, IoState<TState, TValue>> f)
+        public static StateIo<TState, IEnumerable<TValue>> Traverse<TState, TInitial, TValue>(
+            this IEnumerable<TInitial> xs, Func<TInitial, StateIo<TState, TValue>> f)
         {
             return xs.Select(f).Sequence();
         }

@@ -103,7 +103,7 @@
     <Compile Include="Monad\Transformer\ReaderEither.cs" />
     <Compile Include="Monad\Transformer\ReaderTry.cs" />
     <Compile Include="Monad\Transformer\StateEither.cs" />
-    <Compile Include="Monad\Transformer\IoState.cs" />
+    <Compile Include="Monad\Transformer\StateIo.cs" />
     <Compile Include="Monad\Transformer\StateEnumerable.cs" />
     <Compile Include="Monad\Transformer\StateTry.cs" />
     <Compile Include="Monad\Transformer\StateTryEnumerable.cs" />
