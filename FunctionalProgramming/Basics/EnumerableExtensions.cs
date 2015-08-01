@@ -5,8 +5,10 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using FunctionalProgramming.Monad.Parsing;
+using FunctionalProgramming.Monad.Transformer;
 
 namespace FunctionalProgramming.Basics
 {
@@ -169,7 +171,23 @@ namespace FunctionalProgramming.Basics
         {
             var initial = ConsList.Nil<TRight>().AsRight<TLeft, IConsList<TRight>>();
             return xs.Aggregate(initial, (current, anEither) => current.SelectMany(ts => anEither.Select(t => t.Cons(ts)))).Select(eithers => eithers.AsEnumerable().Reverse());
-        } 
+        }
+
+        public static IoState<TState, IEnumerable<TValue>> Sequence<TState, TValue>(
+            this IEnumerable<IoState<TState, TValue>> ioTs)
+        {
+            var initial = ConsList.Nil<TValue>().ToIoState<TState, IConsList<TValue>>();
+            return
+                ioTs.Aggregate(initial,
+                    (current, anIoState) => current.SelectMany(ts => anIoState.Select(t => t.Cons(ts))))
+                    .Select(ioStates => ioStates.AsEnumerable().Reverse());
+        }
+
+        public static IoState<TState, IEnumerable<TValue>> Traverse<TState, TInitial, TValue>(
+            this IEnumerable<TInitial> xs, Func<TInitial, IoState<TState, TValue>> f)
+        {
+            return xs.Select(f).Sequence();
+        }
 
         /// <summary>
         /// ZipWithIndex takes a collection and pairs each element with its index in the collection
