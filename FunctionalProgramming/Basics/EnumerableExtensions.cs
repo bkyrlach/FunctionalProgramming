@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using FunctionalProgramming.Monad.Parsing;
 using FunctionalProgramming.Monad.Transformer;
@@ -186,6 +187,28 @@ namespace FunctionalProgramming.Basics
             this IEnumerable<TRight> stateTs, Func<TRight, StateEither<TState, TLeft, TResult>> f)
         {
             return stateTs.Select(f).Sequence();
+        }
+
+        public static IEither<TLeft, IEnumerable<TRight>> Sequence<TLeft, TRight>(this IEnumerable<IEither<TLeft, TRight>> xs)
+        {
+            var initial = ConsList.Nil<TRight>().AsRight<TLeft, IConsList<TRight>>();
+            return xs.Aggregate(initial, (current, anEither) => current.SelectMany(ts => anEither.Select(t => t.Cons(ts)))).Select(eithers => eithers.AsEnumerable().Reverse());
+        }
+
+        public static StateIo<TState, IEnumerable<TValue>> Sequence<TState, TValue>(
+            this IEnumerable<StateIo<TState, TValue>> stateTs)
+        {
+            var initial = ConsList.Nil<TValue>().ToStateIo<TState, IConsList<TValue>>();
+            return
+                stateTs.Aggregate(initial,
+                    (current, anIoState) => current.SelectMany(ts => anIoState.Select(t => t.Cons(ts))))
+                    .Select(ioStates => ioStates.AsEnumerable().Reverse());
+        }
+
+        public static StateIo<TState, IEnumerable<TValue>> Traverse<TState, TInitial, TValue>(
+            this IEnumerable<TInitial> xs, Func<TInitial, StateIo<TState, TValue>> f)
+        {
+            return xs.Select(f).Sequence();
         }
 
         /// <summary>

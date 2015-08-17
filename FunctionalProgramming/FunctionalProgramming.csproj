@@ -84,6 +84,7 @@
     <Compile Include="Monad\Stream.cs" />
     <Compile Include="Monad\Trampoline.cs" />
     <Compile Include="Monad\Outlaws\Try.cs" />
+    <Compile Include="Monad\Transformer\EitherEnumerable.cs" />
     <Compile Include="Monad\Transformer\EitherMaybe.cs" />
     <Compile Include="Monad\Transformer\IoEither.cs" />
     <Compile Include="Monad\Transformer\IoEitherMaybe.cs" />
@@ -91,6 +92,7 @@
     <Compile Include="Monad\Transformer\IoEnumerableMaybe.cs" />
     <Compile Include="Monad\Transformer\IoEnumerableTry.cs" />
     <Compile Include="Monad\Transformer\IoMaybe.cs" />
+    <Compile Include="Monad\Transformer\IoMaybeEnumerable.cs" />
     <Compile Include="Monad\Transformer\IoStateEither.cs" />
     <Compile Include="Monad\Transformer\IoStateEnumerable.cs" />
     <Compile Include="Monad\Transformer\IoStateTry.cs" />
@@ -99,9 +101,11 @@
     <Compile Include="Monad\Transformer\ReaderEither.cs" />
     <Compile Include="Monad\Transformer\ReaderTry.cs" />
     <Compile Include="Monad\Transformer\StateEither.cs" />
-    <Compile Include="Monad\Transformer\IoState.cs" />
+    <Compile Include="Monad\Transformer\StateIo.cs" />
     <Compile Include="Monad\Transformer\StateEnumerable.cs" />
     <Compile Include="Monad\Transformer\StateTry.cs" />
+    <Compile Include="Monad\Transformer\StateTryEnumerable.cs" />
+    <Compile Include="Monad\Transformer\TryEnumerable.cs" />
     <Compile Include="Monad\Transformer\TryMaybe.cs" />
     <Compile Include="Monad\Validation.cs" />
     <Compile Include="Monad\Writer.cs" />

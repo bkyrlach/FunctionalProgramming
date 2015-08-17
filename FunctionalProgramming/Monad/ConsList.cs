@@ -55,6 +55,16 @@ namespace FunctionalProgramming.Monad
                 nil: () => ys);
         }
 
+        public static bool Contains<T>(this IConsList<T> xs, T x)
+        {
+            return xs.FoldL(false, (result, next) => result || next.Equals(x));
+        }
+
+        public static IConsList<T> Distinct<T>(this IConsList<T> xs)
+        {
+            return xs.FoldL(Nil<T>(), (result, next) => result.Contains(next) ? result : next.Cons(result)).Reverse();
+        } 
+
         public static IStream<T> ToStream<T>(this IConsList<T> xs)
         {
             return xs.Match(
@@ -87,7 +97,12 @@ namespace FunctionalProgramming.Monad
             Func<TInitial, IConsList<TResult>> f, Func<TInitial, TResult, TSelect> selector)
         {
             return xs.SelectMany(a => f(a).SelectMany(b => selector(a, b).LiftList()));
-        }     
+        }
+
+        public static IConsList<T> Where<T>(this IConsList<T> xs, Func<T, bool> predicate)
+        {
+            return xs.FoldL(Nil<T>(), (results, next) => predicate(next) ? next.Cons(results) : results).Reverse();
+        } 
 
         public static TResult FoldL<TValue, TResult>(this IConsList<TValue> xs, TResult initial,
             Func<TResult, TValue, TResult> f)

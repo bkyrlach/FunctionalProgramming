@@ -42,20 +42,20 @@ namespace FunctionalProgramming.Tests
         }
 
 
-        private static Io<State<int, Unit>> Count(int n)
+        private static StateIo<int, Unit> Count(int n)
         {
             return
-                (from _1 in State.Mod<int>(i => i + 1).ToIoState()
-                 from _2 in Io.Apply(() => Console.WriteLine(n)).ToIoState<int, Unit>()
-                 select Unit.Only).Out();
+                from _1 in State.Mod<int>(i => i + 1).ToStateIo()
+                from _2 in Io.Apply(() => Console.WriteLine(n)).ToStateIo<int, Unit>()
+                select Unit.Only;
         }
 
         [Test]
-        public void TestTraverseIoState()
+        public void TestTraverseStateIo()
         {
             var xs = new[] {1, 2, 3, 4, 5};
 
-            var result = xs.Select(Count).Sequence().Select(states => states.Sequence()).UnsafePerformIo().Run(0);
+            var result = xs.Select(Count).Sequence().RunIo(0).UnsafePerformIo();
             Assert.AreEqual(5, result.Item1);           
         }
     }
