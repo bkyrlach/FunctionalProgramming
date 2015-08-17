@@ -1,4 +1,5 @@
-﻿using FunctionalProgramming.Monad;
+﻿using System.Net.NetworkInformation;
+using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Outlaws;
 using System;
 using System.Collections.Generic;
@@ -161,10 +162,31 @@ namespace FunctionalProgramming.Basics
             return xs.Select(f).Sequence();
         }
 
-        public static IParser<T, IEnumerable<T>> Sequence<T>(this IEnumerable<IParser<T, T>> xs)
+        public static StateEither<TState, TLeft, IEnumerable<TRight>>  Sequence<TState, TLeft, TRight>(this IEnumerable<StateEither<TState, TLeft, TRight>> stateTs)
         {
-            IParser<T, IConsList<T>> initial = new ConstantParser<T, IConsList<T>>(ConsList.Nil<T>());
-            return xs.Aggregate(initial, (current, aParser) => current.SelectMany(ts => aParser.Select(t => t.Cons(ts)))).Select(parsers => parsers.AsEnumerable());
+            return new StateEither<TState, TLeft, IEnumerable<TRight>>(new State<TState, IEither<TLeft, IEnumerable<TRight>>>(s =>
+            {
+                var retval = ConsList.Nil<TRight>().AsRight<TLeft, IConsList<TRight>>();
+                foreach (var state in stateTs)
+                {
+                    var res = state.Out.Run(s);
+                    s = res.Item1;
+                    retval =
+                        from xs in retval
+                        from x in res.Item2
+                        select x.Cons(xs);
+                }
+                return Tuple.Create(s, retval.Select(xs => xs.AsEnumerable().Reverse()));
+            }));
+
+            //var initial = ConsList.Nil<TRight>().InsertRight<TState, TLeft, IConsList<TRight>>();
+            //return stateTs.Aggregate(initial, (current, aStateEither) => current.SelectMany(ts => aStateEither.Select(t => t.Cons(ts)))).Select(ts => ts.AsEnumerable().Reverse());
+        }
+
+        public static StateEither<TState, TLeft, IEnumerable<TResult>> Traverse<TState, TLeft, TRight, TResult>(
+            this IEnumerable<TRight> stateTs, Func<TRight, StateEither<TState, TLeft, TResult>> f)
+        {
+            return stateTs.Select(f).Sequence();
         }
 
         public static IEither<TLeft, IEnumerable<TRight>> Sequence<TLeft, TRight>(this IEnumerable<IEither<TLeft, TRight>> xs)
@@ -223,8 +245,7 @@ namespace FunctionalProgramming.Basics
         /// <returns>A string that is the result of concatenating the characters together</returns>
         public static string MkString(this IEnumerable<char> chars)
         {
-            var sm = StringMonoid.Only;
-            return chars.Select(c => c.ToString(CultureInfo.InvariantCulture)).Aggregate(sm.MZero, sm.MAppend);
+            return new string(chars.ToArray());
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using FunctionalProgramming.Monad;
 using NUnit.Framework;
@@ -44,6 +45,17 @@ namespace FunctionalProgramming.Tests.MonadTests
         {
             var actual = 1.Cons(2.Cons(3.Cons(ConsList.Nil<int>()))).AsEnumerable();
             Assert.AreEqual(expected, actual);
+        }
+
+        [Test]
+        public void TestAsEnumerable()
+        {
+            var expected = Enumerable.Range(0, 10000);
+            IConsList<int> xs = expected.ToConsList();
+            var sw = Stopwatch.StartNew();
+            var enumerable = xs.AsEnumerable();
+            Assert.AreEqual(enumerable, expected);
+            Console.WriteLine(sw.ElapsedMilliseconds);
         }
     }
 }

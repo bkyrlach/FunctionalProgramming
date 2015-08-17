@@ -56,11 +56,11 @@ namespace FunctionalProgramming.Tests.StreamingTests
 
         private Process<T, T> ListToProcess<T>(IEnumerable<T> xs)
         {
-            return BasicFunctions.If(xs.Any(),
-                () => new Await<T, T>(Io.Apply(() => xs.First()), either => either.Match<Process<T, T>>(
+            return (xs.Any()
+                ? new Await<T, T>(Io.Apply(() => xs.First()), either => either.Match<Process<T, T>>(
                     left: e => new Halt<T, T>(e),
-                    right: x => new Emit<T, T>(x, ListToProcess(xs.Skip(1))))),
-                Process.Halt1<T, T>);
+                    right: x => new Emit<T, T>(x, ListToProcess(xs.Skip(1)))))
+                : Process.Halt1<T, T>());
         }
 
         [Test]
@@ -88,13 +88,13 @@ namespace FunctionalProgramming.Tests.StreamingTests
 
         private Process<T, T> Delayed<T>(IEnumerable<T> ints)
         {
-            return BasicFunctions.If(ints.Any(),
-                () => Process.Delay<T, T>((uint)R.Next(25, 101)).Concat(() => new Await<T, T>(
+            return ints.Any() 
+                ? Process.Delay<T, T>((uint)R.Next(25, 101)).Concat(() => new Await<T, T>(
                     Io.Apply(() => ints.First()), 
                     either => either.Match<Process<T, T>>(
                         left: e => new Halt<T, T>(e),
-                        right: x => new Emit<T, T>(x))).Concat(() => Delayed(ints.Skip(1)))),
-                Process.Halt1<T, T>);
+                        right: x => new Emit<T, T>(x))).Concat(() => Delayed(ints.Skip(1))))
+                : Process.Halt1<T, T>();
         }
 
         [Test]

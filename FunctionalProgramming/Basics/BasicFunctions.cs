@@ -10,20 +10,6 @@ namespace FunctionalProgramming.Basics
     public static class BasicFunctions
     {
         /// <summary>
-        /// An implementation of the C# keyword "if" that allows cleaner expressions than the ternary operator in
-        /// some cases. If the predicate holds, then consequent, else alternative.
-        /// </summary>
-        /// <typeparam name="TResult">The type yielded from the consequent and alternative</typeparam>
-        /// <param name="predicate">A hypothesis expressed as a boolean</param>
-        /// <param name="consequent">The conclusion we can draw from the predicate holding</param>
-        /// <param name="alternative">The conclusion we can draw from the predicate failing to hold</param>
-        /// <returns>The value computed from the relevant lambda based on if the predicate was satisfied</returns>
-        public static TResult If<TResult>(bool predicate, Func<TResult> consequent, Func<TResult> alternative)
-        {
-            return predicate ? consequent() : alternative();
-        }
-
-        /// <summary>
         /// Convenience function for returning disparate types as a result of satisfying (or failing to satisfy) a predicate.
         /// This function returns a disjoint union TLeft \/ TRight
         /// </summary>
