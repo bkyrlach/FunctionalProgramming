@@ -14,19 +14,22 @@ namespace FunctionalProgramming.Monad.Transformer
             Out = state;
         }
 
-        public StateEither(IEither<TLeft, TRight> either) : this(either.Insert<TState, IEither<TLeft, TRight>>())
+        public StateEither(IEither<TLeft, TRight> either)
+            : this(either.Insert<TState, IEither<TLeft, TRight>>())
         {
-            
+
         }
 
-        public StateEither(TRight right) : this(new Right<TLeft, TRight>(right))
+        public StateEither(TRight right)
+            : this(new Right<TLeft, TRight>(right))
         {
-            
+
         }
 
-        public StateEither(TLeft left) : this(new Left<TLeft, TRight>(left))
+        public StateEither(TLeft left)
+            : this(new Left<TLeft, TRight>(left))
         {
-            
+
         }
 
         public StateEither<TState, TLeft, TResult> FMap<TResult>(Func<TRight, TResult> f)
@@ -151,6 +154,13 @@ namespace FunctionalProgramming.Monad.Transformer
                 from h in stateT
                 from t in stateT.Many().Or(InsertRight<TState, TLeft, IEnumerable<TRight>>(Enumerable.Empty<TRight>()))
                 select h.LiftEnumerable().Concat(t);
+        }
+
+        public static StateEither<TState, TLeft, IEnumerable<TRight>> Some<TState, TLeft, TRight>(this StateEither<TState, TLeft, TRight> stateT)
+        {
+            return from first in stateT
+                   from rest in stateT.Many()
+                   select first.LiftEnumerable().Concat(rest);
         }
     }
 }
