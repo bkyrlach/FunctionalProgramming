@@ -8,16 +8,16 @@ namespace FunctionalProgramming.Monad.Parsing
 {
     public sealed class ParserState<T>
     {
-        public static readonly Lens<ParserState<T>, T[]> GetData = new Lens<ParserState<T>, T[]>((state, data) => state.Copy(data: data), state => state._data);
-        public static readonly Lens<ParserState<T>, uint> GetIndex = new Lens<ParserState<T>, uint>((state, index) => state.Copy(index: index), state => state._index);
+        public static readonly Lens<ParserState<T>, T[]> Data = new Lens<ParserState<T>, T[]>((state, data) => state.Copy(data: data), state => state._data);
+        public static readonly Lens<ParserState<T>, uint> Index = new Lens<ParserState<T>, uint>((state, index) => state.Copy(index: index), state => state._index);
 
         public static StateEither<ParserState<T>, string, T> GetNext()
         {
             return
-                from i in GetIndex.GetS().ToStateEither<ParserState<T>, string, uint>()
-                from data in GetData.GetS().ToStateEither<ParserState<T>, string, T[]>()
-                from _1 in GetIndex.SetS(i + 1).ToStateEither<ParserState<T>, string, Unit>()
-                from @byte in i >= data.Length 
+                from i in Index.GetS().ToStateEither<ParserState<T>, string, uint>()
+                from data in Data.GetS().ToStateEither<ParserState<T>, string, T[]>()
+                from _1 in Index.SetS(i + 1).ToStateEither<ParserState<T>, string, Unit>()
+                from @byte in i >= data.Length
                     ? "Unexpected end of input sequence".InsertLeft<ParserState<T>, string, T>()
                     : data[i].InsertRight<ParserState<T>, string, T>()
                 select @byte;
@@ -26,8 +26,8 @@ namespace FunctionalProgramming.Monad.Parsing
         public static StateEither<ParserState<T>, string, bool> IsEoF()
         {
             return
-                (from i in GetIndex.GetS()
-                 from data in GetData.GetS()
+                (from i in Index.GetS()
+                 from data in Data.GetS()
                  select (i >= data.Length).AsRight<string, bool>())
                 .ToStateEither();
         }
@@ -50,7 +50,7 @@ namespace FunctionalProgramming.Monad.Parsing
         public ParserState<T> Copy(T[] data = null, uint? index = null)
         {
             return new ParserState<T>(data ?? _data, index ?? _index);
-        } 
+        }
     }
 
     public static class Parser
@@ -74,9 +74,9 @@ namespace FunctionalProgramming.Monad.Parsing
 
         public static StateEither<ParserState<TInput>, string, TInput> Elem<TInput>(TInput expected)
         {
-            return 
+            return
                 from next in ParserState<TInput>.GetNext()
-                from _ in next.Equals(expected) 
+                from _ in next.Equals(expected)
                     ? next.InsertRight<ParserState<TInput>, string, TInput>()
                     : string.Format("Expected {0} but got --> {1} <--", expected, next).InsertLeft<ParserState<TInput>, string, TInput>()
                 select _;
@@ -116,6 +116,21 @@ namespace FunctionalProgramming.Monad.Parsing
             this StateEither<ParserState<TInput>, string, TOutput> parser)
         {
             return parser.Select(val => val.ToMaybe()).Or(Pure<TInput, IMaybe<TOutput>>(Maybe.Nothing<TOutput>()));
+        }
+
+        public static StateEither<ParserState<TInput>, string, Unit> EoF<TInput>()
+        {
+            return from isEoF in ParserState<TInput>.IsEoF()
+                   from result in BasicFunctions.EIf(isEoF, () => Unit.Only, () => "Expected EoF but more input remains").ToStateEither<ParserState<TInput>, string, Unit>()
+                   select result;
+        }
+
+        public static StateEither<ParserState<TInput>, string, TOutput> WithoutConsuming<TInput, TOutput>(this StateEither<ParserState<TInput>, string, TOutput> parser)
+        {
+            return from i in ParserState<TInput>.Index.GetS().ToStateEither<ParserState<TInput>, string, uint>()
+                   from result in parser
+                   from _1 in ParserState<TInput>.Index.SetS(i).ToStateEither<ParserState<TInput>, string, Unit>()
+                   select result;
         }
     }
 }
