@@ -83,20 +83,17 @@ namespace FunctionalProgramming.Monad.Transformer
 
     public static class StateEither
     {
-        public static StateEither<TState, TLeft, TRight> ToStateEither<TState, TLeft, TRight>(
-            this State<TState, IEither<TLeft, TRight>> state)
+        public static StateEither<TState, TLeft, TRight> ToStateEither<TState, TLeft, TRight>(this State<TState, IEither<TLeft, TRight>> state)
         {
             return new StateEither<TState, TLeft, TRight>(state);
         }
 
-        public static StateEither<TState, TLeft, TRight> ToStateEither<TState, TLeft, TRight>(
-            this State<TState, TRight> state)
+        public static StateEither<TState, TLeft, TRight> ToStateEither<TState, TLeft, TRight>(this State<TState, TRight> state)
         {
             return new StateEither<TState, TLeft, TRight>(state.Select(right => (IEither<TLeft, TRight>)new Right<TLeft, TRight>(right)));
         }
 
-        public static StateEither<TState, TLeft, TRight> ToStateEither<TState, TLeft, TRight>(
-            this IEither<TLeft, TRight> either)
+        public static StateEither<TState, TLeft, TRight> ToStateEither<TState, TLeft, TRight>(this IEither<TLeft, TRight> either)
         {
             return new StateEither<TState, TLeft, TRight>(either);
         }
@@ -116,39 +113,32 @@ namespace FunctionalProgramming.Monad.Transformer
             return stateT.FMap(f);
         }
 
-        public static StateEither<TState, TLeft, TResult> SelectMany<TState, TLeft, TRight, TResult>(
-            this StateEither<TState, TLeft, TRight> stateT, Func<TRight, StateEither<TState, TLeft, TResult>> f)
+        public static StateEither<TState, TLeft, TResult> SelectMany<TState, TLeft, TRight, TResult>(this StateEither<TState, TLeft, TRight> stateT, Func<TRight, StateEither<TState, TLeft, TResult>> f)
         {
             return stateT.Bind(f);
         }
 
-        public static StateEither<TState, TLeft, TSelect> SelectMany<TState, TLeft, TRight, TResult, TSelect>(
-            this StateEither<TState, TLeft, TRight> stateT, Func<TRight, StateEither<TState, TLeft, TResult>> f,
-            Func<TRight, TResult, TSelect> selector)
+        public static StateEither<TState, TLeft, TSelect> SelectMany<TState, TLeft, TRight, TResult, TSelect>(this StateEither<TState, TLeft, TRight> stateT, Func<TRight, StateEither<TState, TLeft, TResult>> f, Func<TRight, TResult, TSelect> selector)
         {
             return stateT.SelectMany(a => f(a).SelectMany(b => selector(a, b).InsertRight<TState, TLeft, TSelect>()));
         }
 
-        public static StateEither<TState, TLeft, TRight> Or<TState, TLeft, TRight>(
-            this StateEither<TState, TLeft, TRight> left, StateEither<TState, TLeft, TRight> right)
+        public static StateEither<TState, TLeft, TRight> Or<TState, TLeft, TRight>(this StateEither<TState, TLeft, TRight> left, StateEither<TState, TLeft, TRight> right)
         {
             return left.Or(right);
         }
 
-        public static StateEither<TState, TLeft, TRight> CombineTakeLeft<TState, TLeft, TRight, TOtherRight>(
-            this StateEither<TState, TLeft, TRight> left, StateEither<TState, TLeft, TOtherRight> right)
+        public static StateEither<TState, TLeft, TRight> CombineTakeLeft<TState, TLeft, TRight, TOtherRight>(this StateEither<TState, TLeft, TRight> left, StateEither<TState, TLeft, TOtherRight> right)
         {
             return left.CombineTakeLeft(right);
         }
 
-        public static StateEither<TState, TLeft, TOtherRight> CombineTakeRight<TState, TLeft, TRight, TOtherRight>(
-            this StateEither<TState, TLeft, TRight> left, StateEither<TState, TLeft, TOtherRight> right)
+        public static StateEither<TState, TLeft, TOtherRight> CombineTakeRight<TState, TLeft, TRight, TOtherRight>(this StateEither<TState, TLeft, TRight> left, StateEither<TState, TLeft, TOtherRight> right)
         {
             return left.CombineTakeRight(right);
         }
 
-        public static StateEither<TState, TLeft, IEnumerable<TRight>> Many<TState, TLeft, TRight>(
-            this StateEither<TState, TLeft, TRight> stateT)
+        public static StateEither<TState, TLeft, IEnumerable<TRight>> Many<TState, TLeft, TRight>(this StateEither<TState, TLeft, TRight> stateT)
         {
             return
                 from h in stateT
