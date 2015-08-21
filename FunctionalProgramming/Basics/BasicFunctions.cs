@@ -88,7 +88,7 @@ namespace FunctionalProgramming.Basics
         /// <param name="source">An 'IDisposable' that will be disposed after body is invoked</param>
         /// <param name="body">Statements to execute before disposing of source</param>
         /// <returns>A value that represents an effectual computation that is only useful for its side-effects</returns>
-        public static Io<Unit> Using(Func<IDisposable> source, Action<IDisposable> body)
+        public static Io<Unit> Using<T>(Func<T> source, Action<T> body) where T : IDisposable
         {
             return Io.Apply(() =>
             {
@@ -96,6 +96,7 @@ namespace FunctionalProgramming.Basics
                 {
                     body(resource);
                 }
+
                 return Unit.Only;
             });
         }
