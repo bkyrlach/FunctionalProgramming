@@ -52,15 +52,18 @@ namespace FunctionalProgramming.Monad.Transformer
         {
             return new StateEither<TState, TLeft, TRight>(new State<TState, IEither<TLeft, TRight>>(state =>
             {
-                var res1 = Out.Run(state);
-                var res2 = otherState.Out.Run(state);
-                var e1 = res1.Item2;
-                var e2 = res2.Item2;
+                var res1 = Out.Run(state);                
+                var e1 = res1.Item2;                
                 return e1.Match(
                     right: val => Tuple.Create(res1.Item1, val.AsRight<TLeft, TRight>()),
-                    left: _ => e2.Match(
-                        right: val => Tuple.Create(res2.Item1, val.AsRight<TLeft, TRight>()),
-                        left: err => Tuple.Create(res2.Item1, err.AsLeft<TLeft, TRight>())));
+                    left: _ => 
+                    {
+                        var res2 = otherState.Out.Run(state);
+                        var e2 = res2.Item2;
+                        return e2.Match(
+                            right: val => Tuple.Create(res2.Item1, val.AsRight<TLeft, TRight>()),
+                            left: err => Tuple.Create(res2.Item1, err.AsLeft<TLeft, TRight>()));
+                    });
             }));
         }
 
@@ -141,12 +144,15 @@ namespace FunctionalProgramming.Monad.Transformer
         public static StateEither<TState, TLeft, IEnumerable<TRight>> Many<TState, TLeft, TRight>(this StateEither<TState, TLeft, TRight> stateT)
         {
             return
-                from h in stateT
-                from t in stateT.Many().Or(InsertRight<TState, TLeft, IEnumerable<TRight>>(Enumerable.Empty<TRight>()))
-                select h.LiftEnumerable().Concat(t);
+                (from e in stateT.Out
+                 from result in e.Match(
+                     left: err => Enumerable.Empty<TRight>().AsRight<TLeft, IEnumerable<TRight>>().Insert<TState, IEither<TLeft, IEnumerable<TRight>>>(),
+                     right: h => stateT.Many().Select(t => h.LiftEnumerable().Concat(t)).Out)
+                 select result)
+                .ToStateEither<TState, TLeft, IEnumerable<TRight>>();
         }
 
-        public static StateEither<TState, TLeft, IEnumerable<TRight>> Some<TState, TLeft, TRight>(this StateEither<TState, TLeft, TRight> stateT)
+        public static StateEither<TState, TLeft, IEnumerable<TRight>> Many1<TState, TLeft, TRight>(this StateEither<TState, TLeft, TRight> stateT)
         {
             return from first in stateT
                    from rest in stateT.Many()

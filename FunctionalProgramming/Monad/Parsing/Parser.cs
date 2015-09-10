@@ -11,16 +11,21 @@ namespace FunctionalProgramming.Monad.Parsing
         public static readonly Lens<ParserState<T>, T[]> Data = new Lens<ParserState<T>, T[]>((state, data) => state.Copy(data: data), state => state._data);
         public static readonly Lens<ParserState<T>, uint> Index = new Lens<ParserState<T>, uint>((state, index) => state.Copy(index: index), state => state._index);
 
-        public static StateEither<ParserState<T>, string, T> GetNext()
+        public static StateEither<ParserState<T>, string, T> Peek()
         {
             return
                 from i in Index.GetS().ToStateEither<ParserState<T>, string, uint>()
                 from data in Data.GetS().ToStateEither<ParserState<T>, string, T[]>()
-                from _1 in Index.SetS(i + 1).ToStateEither<ParserState<T>, string, Unit>()
                 from @byte in i >= data.Length
                     ? "Unexpected end of input sequence".InsertLeft<ParserState<T>, string, T>()
                     : data[i].InsertRight<ParserState<T>, string, T>()
                 select @byte;
+        }
+
+        public static StateEither<ParserState<T>, string, uint> MoveNext()
+        {
+            return
+                Index.ModS(n => n + 1).ToStateEither<ParserState<T>, string, uint>();
         }
 
         public static StateEither<ParserState<T>, string, bool> IsEoF()
@@ -75,21 +80,23 @@ namespace FunctionalProgramming.Monad.Parsing
         public static StateEither<ParserState<TInput>, string, TInput> Elem<TInput>(TInput expected)
         {
             return
-                from next in ParserState<TInput>.GetNext()
-                from _ in next.Equals(expected)
-                    ? next.InsertRight<ParserState<TInput>, string, TInput>()
+                from next in ParserState<TInput>.Peek()
+                from result in next.Equals(expected)
+                    ? from _1 in ParserState<TInput>.MoveNext()
+                      select next
                     : string.Format("Expected {0} but got --> {1} <--", expected, next).InsertLeft<ParserState<TInput>, string, TInput>()
-                select _;
+                select result;
         }
 
         public static StateEither<ParserState<TInput>, string, TInput> ElemWhere<TInput>(Func<TInput, bool> predicate, string expectation)
         {
             return
-                from next in ParserState<TInput>.GetNext()
-                from _ in predicate(next)
-                    ? next.InsertRight<ParserState<TInput>, string, TInput>()
+                from next in ParserState<TInput>.Peek()
+                from result in predicate(next)
+                    ? from _1 in ParserState<TInput>.MoveNext()
+                      select next
                     : string.Format("Expected {0} but got --> {1} <--", expectation, next).InsertLeft<ParserState<TInput>, string, TInput>()
-                select _;
+                select result;
         }
 
         public static StateEither<ParserState<TInput>, string, IEnumerable<TOutput>> Repeat<TInput, TOutput>(
