@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using FunctionalProgramming.Basics;
 using FunctionalProgramming.Helpers;
 
@@ -146,7 +148,21 @@ namespace FunctionalProgramming.Monad
         public static IEither<TLeft, Unit> Unless<TLeft>(this TLeft failure, bool conditional)
         {
             return BasicFunctions.EIf(conditional, () => Unit.Only, () => failure);
-        }  
+        }
+
+        public static IEnumerable<TRight> KeepRights<TLeft, TRight>(this IEnumerable<IEither<TLeft, TRight>> xs)
+        {
+            return xs.SelectMany(x => x.Match(
+                left: l => Enumerable.Empty<TRight>(),
+                right: r => r.LiftEnumerable()));
+        }
+
+        public static IEnumerable<TLeft> KeepLefts<TLeft, TRight>(this IEnumerable<IEither<TLeft, TRight>> xs)
+        {
+            return xs.SelectMany(x => x.Match(
+                left: l => l.LiftEnumerable(),
+                right: r => Enumerable.Empty<TLeft>()));
+        } 
 
         #region ApplicativeStuff
         public static IEither<TErr, Tuple<T1, T2>> With<TErr, T1, T2>(this IEither<TErr, T1> e1,

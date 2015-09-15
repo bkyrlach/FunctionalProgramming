@@ -124,7 +124,7 @@ namespace FunctionalProgramming.Monad
         public static Io<IMaybe<T>> GetOrLog<T>(this Io<Try<T>> io, Func<Exception, Io<Unit>> ifFailure)
         {
             return io.SelectMany(t => t.Match(
-                success: val => val.ToIoMaybe().Out(),
+                success: val => val.ToIoMaybe().Out,
                 failure: ex => from _ in ifFailure(ex)
                                select Maybe.Nothing<T>()));
         }
@@ -142,7 +142,7 @@ namespace FunctionalProgramming.Monad
             Func<Io<Unit>> ifMissing)
         {
             return io.SelectMany(t => t.GetOrLog(ifFailure).SelectMany(m => m.Match(
-                just: val => val.ToIoMaybe().Out(),
+                just: val => val.ToIoMaybe().Out,
                 nothing: () => from _ in ifMissing()
                                select Maybe.Nothing<T>())));
         }

@@ -1,6 +1,9 @@
 ﻿using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad.Outlaws;
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using FunctionalProgramming.Helpers;
 
 namespace FunctionalProgramming.Monad
 {
@@ -28,6 +31,13 @@ namespace FunctionalProgramming.Monad
         public static IMaybe<TValue> Nothing<TValue>()
         {
             return new Nadda<TValue>();
+        }
+
+        public static IEnumerable<T> KeepSome<T>(this IEnumerable<IMaybe<T>> xs)
+        {
+            return xs.SelectMany(x => x.Match(
+                just: t => t.LiftEnumerable(),
+                nothing: Enumerable.Empty<T>));
         }
 
         public static IMaybe<T> Where<T>(this IMaybe<T> m, Func<T, bool> predicate)
@@ -214,6 +224,92 @@ namespace FunctionalProgramming.Monad
                 just: justLogger,
                 nothing: nothingLogger);
         }
+
+        #region ApplicativeStuff
+        public static IMaybe<Tuple<T1, T2>> With<T1, T2>(this IMaybe<T1> m1,
+            IMaybe<T2> m2)
+        {
+            return from t1 in m1
+                   from t2 in m2
+                   select Tuple.Create(t1, t2);
+        }
+
+        public static IMaybe<Tuple<T1, T2, T3>> With<T1, T2, T3>(this IMaybe<Tuple<T1, T2>> m1,
+            IMaybe<T3> m2)
+        {
+            return from tuple in m1
+                   from t3 in m2
+                   select Tuple.Create(tuple.Item1, tuple.Item2, t3);
+        }
+
+        public static IMaybe<Tuple<T1, T2, T3, T4>> With<T1, T2, T3, T4>(this IMaybe<Tuple<T1, T2, T3>> m1,
+            IMaybe<T4> m2)
+        {
+            return from tuple in m1
+                   from t4 in m2
+                   select Tuple.Create(tuple.Item1, tuple.Item2, tuple.Item3, t4);
+        }
+
+        public static IMaybe<Tuple<T1, T2, T3, T4, T5>> With<T1, T2, T3, T4, T5>(this IMaybe<Tuple<T1, T2, T3, T4>> m1,
+            IMaybe<T5> m2)
+        {
+            return from tuple in m1
+                   from t5 in m2
+                   select Tuple.Create(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, t5);
+        }
+
+        public static IMaybe<Tuple<T1, T2, T3, T4, T5, T6>> With<T1, T2, T3, T4, T5, T6>(this IMaybe<Tuple<T1, T2, T3, T4, T5>> m1,
+            IMaybe<T6> m2)
+        {
+            return from tuple in m1
+                   from t6 in m2
+                   select Tuple.Create(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, t6);
+        }
+
+        public static IMaybe<Tuple<T1, T2, T3, T4, T5, T6, T7>> With<T1, T2, T3, T4, T5, T6, T7>(this IMaybe<Tuple<T1, T2, T3, T4, T5, T6>> m1,
+            IMaybe<T7> m2)
+        {
+            return from tuple in m1
+                   from t7 in m2
+                   select Tuple.Create(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6, t7);
+        }
+
+        public static IMaybe<TResult> Apply<T1, T2, TResult>(this IMaybe<Tuple<T1, T2>> m, Func<T1, T2, TResult> f)
+        {
+            return from tuple in m
+                   select tuple.Apply(f);
+        }
+
+        public static IMaybe<TResult> Apply<T1, T2, T3, TResult>(this IMaybe<Tuple<T1, T2, T3>> m, Func<T1, T2, T3, TResult> f)
+        {
+            return from tuple in m
+                   select tuple.Apply(f);
+        }
+
+        public static IMaybe<TResult> Apply<T1, T2, T3, T4, TResult>(this IMaybe<Tuple<T1, T2, T3, T4>> m, Func<T1, T2, T3, T4, TResult> f)
+        {
+            return from tuple in m
+                   select tuple.Apply(f);
+        }
+
+        public static IMaybe<TResult> Apply<T1, T2, T3, T4, T5, TResult>(this IMaybe<Tuple<T1, T2, T3, T4, T5>> m, Func<T1, T2, T3, T4, T5, TResult> f)
+        {
+            return from tuple in m
+                   select tuple.Apply(f);
+        }
+
+        public static IMaybe<TResult> Apply<T1, T2, T3, T4, T5, T6, TResult>(this IMaybe<Tuple<T1, T2, T3, T4, T5, T6>> m, Func<T1, T2, T3, T4, T5, T6, TResult> f)
+        {
+            return from tuple in m
+                   select tuple.Apply(f);
+        }
+
+        public static IMaybe<TResult> Apply<T1, T2, T3, T4, T5, T6, T7, TResult>(this IMaybe<Tuple<T1, T2, T3, T4, T5, T6, T7>> m, Func<T1, T2, T3, T4, T5, T6, T7, TResult> f)
+        {
+            return from tuple in m
+                   select tuple.Apply(f);
+        }
+        #endregion
     }
 
 }
