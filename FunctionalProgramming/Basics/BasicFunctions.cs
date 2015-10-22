@@ -111,6 +111,28 @@ namespace FunctionalProgramming.Basics
             return Try.Attempt(() => (T) o).AsMaybe();
         }
 
+        /// <summary>
+        /// Convenience function for deciding to evaluate an io or return an io maybe unit.
+        /// </summary>
+        /// <param name="predicate">A hypothesis expressed as a boolean</param>
+        /// <param name="io">Io</param>
+        /// <returns>If predicate evaluates to true then the io is applied or an io is applied on maybe a unit.</returns>
+        public static Io<IMaybe<Unit>> IfTrue(bool predicate, Io<IMaybe<Unit>> io)
+        {
+            return predicate ? io : Io.Apply(() => Unit.Only.ToMaybe());
+        }
+
+        /// <summary>
+        /// Convenience function for deciding to evaluate an io or return an io unit.
+        /// </summary>
+        /// <param name="predicate">A hypothesis expressed as a boolean</param>
+        /// <param name="io">Io</param>
+        /// <returns>If predicate evaluates to true then the io is applied or an io is applied on a unit.</returns>
+        public static Io<Unit> IfTrue(bool predicate, Io<Unit> io)
+        {
+            return predicate ? io : Io.Apply(() => Unit.Only);
+        } 
+
         #region Const
         /// <summary>
         /// Ignores its input to return the supplied constant instead. 
