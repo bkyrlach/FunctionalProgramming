@@ -34,6 +34,24 @@ namespace FunctionalProgramming.Monad
             }
             return retval;
         }
+
+        public void UnsafeMatch(Action<TLeft> left, Action<TRight> right)
+        {
+            if (this is Left<TLeft, TRight>)
+            {
+                var temp = this as Left<TLeft, TRight>;
+                left(temp.Value);
+            }
+            else if (this is Right<TLeft, TRight>)
+            {
+                var temp = this as Right<TLeft, TRight>;
+                right(temp.Value);
+            }
+            else
+            {
+                throw new MatchException(typeof(Either<TLeft, TRight>), GetType());
+            }
+        }
     }
 
     public sealed class Left<TLeft, TRight> : Either<TLeft, TRight>

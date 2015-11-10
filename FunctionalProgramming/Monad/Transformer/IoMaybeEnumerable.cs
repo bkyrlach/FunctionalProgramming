@@ -7,11 +7,11 @@ namespace FunctionalProgramming.Monad.Transformer
 {
     public sealed class IoMaybeEnumerable<T>
     {
-        private readonly Io<IMaybe<IEnumerable<T>>> _self;
+        public readonly Io<IMaybe<IEnumerable<T>>> Out;
 
         public IoMaybeEnumerable(Io<IMaybe<IEnumerable<T>>> io)
         {
-            _self = io;
+            Out = io;
         }
 
         public IoMaybeEnumerable(T t)
@@ -22,19 +22,14 @@ namespace FunctionalProgramming.Monad.Transformer
 
         public IoMaybeEnumerable<TResult> FMap<TResult>(Func<T, TResult> f)
         {
-            return new IoMaybeEnumerable<TResult>(_self.Select(m => m.Select(enumerable => enumerable.Select(f))));
-        }
-
-        public Io<IMaybe<IEnumerable<T>>> Out()
-        {
-            return _self;
+            return new IoMaybeEnumerable<TResult>(Out.Select(m => m.Select(enumerable => enumerable.Select(f))));
         }
 
         public IoMaybeEnumerable<TResult> Bind<TResult>(Func<T, IoMaybeEnumerable<TResult>> f)
         {
-            return new IoMaybeEnumerable<TResult>(_self.SelectMany(m => m.Match(
-                just: enumerable => enumerable.Select(arg => f(arg).Out()).Sequence().Select(maybes => maybes.Sequence().Select(e => e.SelectMany(BasicFunctions.Identity))),
-                nothing: () => IoMaybeEnumerable.NothingIo<TResult>().Out())));
+            return new IoMaybeEnumerable<TResult>(Out.SelectMany(m => m.Match(
+                just: enumerable => enumerable.Select(arg => f(arg).Out).Sequence().Select(maybes => maybes.Sequence().Select(e => e.SelectMany(BasicFunctions.Identity))),
+                nothing: () => IoMaybeEnumerable.NothingIo<TResult>().Out)));
         }
     }
 
@@ -77,7 +72,7 @@ namespace FunctionalProgramming.Monad.Transformer
 
         public static IoMaybeEnumerable<T> Where<T>(this IoMaybeEnumerable<T> ioT, Func<T, bool> predicate)
         {
-            return new IoMaybeEnumerable<T>(ioT.Out().Select(m => m.Select(enumerable => enumerable.Where(predicate))));
+            return new IoMaybeEnumerable<T>(ioT.Out.Select(m => m.Select(enumerable => enumerable.Where(predicate))));
         }
 
         public static IoMaybeEnumerable<TResult> Select<TInitial, TResult>(this IoMaybeEnumerable<TInitial> ioT, Func<TInitial, TResult> f)

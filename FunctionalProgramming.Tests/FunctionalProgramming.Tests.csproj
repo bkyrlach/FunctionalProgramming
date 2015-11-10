@@ -89,6 +89,7 @@
     <Compile Include="TransformerTests\IoEnumerableTests.cs" />
     <Compile Include="StreamingTests\StreamingTests.cs" />
     <Compile Include="TransformerTests\IoEnumerableTryTests.cs" />
+    <Compile Include="TransformerTests\IoTryTests.cs" />
     <Compile Include="TransformerTests\StateEnumerableTests.cs" />
     <Compile Include="TransformerTests\StateIoTests.cs" />
     <Compile Include="TransformerTests\StateTryEnumerableTest.cs" />

@@ -16,7 +16,7 @@ namespace FunctionalProgramming.Tests.TransformerTests
             var program =
                 (from i in testSequence.ToStateEnumerable<int, int>()
                 from _ in State.Mod<int>(sum => sum + 1).ToStateEnumerable()
-                select i + 1).Out();
+                select i + 1).Out;
 
             var actual = program.Run(0);
             Console.WriteLine(actual.Item2.Select(n => n.ToString()).Aggregate((r, s) => string.Format("{0}, {1}", r, s)));

@@ -7,11 +7,11 @@ namespace FunctionalProgramming.Monad.Transformer
 {
     public sealed class StateEnumerable<TState, TValue>
     {
-        private readonly State<TState, IEnumerable<TValue>> _self;
+        public readonly State<TState, IEnumerable<TValue>> Out;
 
         public StateEnumerable(State<TState, IEnumerable<TValue>> state)
         {
-            _self = state;
+            Out = state;
         }
 
         public StateEnumerable(IEnumerable<TValue> values) : this(values.Insert<TState, IEnumerable<TValue>>())
@@ -29,24 +29,19 @@ namespace FunctionalProgramming.Monad.Transformer
             
         }
 
-        public State<TState, IEnumerable<TValue>> Out()
-        {
-            return _self;
-        }
-
         public StateEnumerable<TState, TResult> FMap<TResult>(Func<TValue, TResult> f)
         {
-            return new StateEnumerable<TState, TResult>(_self.Select(values => values.Select(f)));
+            return new StateEnumerable<TState, TResult>(Out.Select(values => values.Select(f)));
         }
 
         public StateEnumerable<TState, TResult> Bind<TResult>(Func<TValue, StateEnumerable<TState, TResult>> f)
         {
-            return new StateEnumerable<TState, TResult>(_self.SelectMany(values => values.Select(v => f(v).Out()).Sequence().Select(enumerable => enumerable.SelectMany(BasicFunctions.Identity))));
+            return new StateEnumerable<TState, TResult>(Out.SelectMany(values => values.Traverse(v => f(v).Out).Select(enumerable => enumerable.SelectMany(BasicFunctions.Identity))));
         }
 
         public StateEnumerable<TState, TValue> Keep(Func<TValue, bool> predicate)
         {
-            return new StateEnumerable<TState, TValue>(_self.Select(values => values.Where(predicate)));
+            return new StateEnumerable<TState, TValue>(Out.Select(values => values.Where(predicate)));
         }
     }
 

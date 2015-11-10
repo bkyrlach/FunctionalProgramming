@@ -178,9 +178,10 @@ namespace FunctionalProgramming.Monad
             public override bool Equals(object obj)
             {
                 var retval = false;
-                if (obj is NonEmptyList<T>)
+                var list = obj as NonEmptyList<T>;
+                if (list != null)
                 {
-                    var ol = obj as NonEmptyList<T>;
+                    var ol = list;
                     retval = Head.Equals(ol.Head) && Tail.Equals(ol.Tail);
                 }
                 return retval;

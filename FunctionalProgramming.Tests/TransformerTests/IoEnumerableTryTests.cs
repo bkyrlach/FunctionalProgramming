@@ -26,7 +26,7 @@ namespace FunctionalProgramming.Tests.TransformerTests
 
             var pgm = (from x in xs
                 from _ in PutStrLn(x).ToIoEnumerableTry()
-                select x + 3).Out();
+                select x + 3).Out;
 
             var res = pgm.UnsafePerformIo();
         }

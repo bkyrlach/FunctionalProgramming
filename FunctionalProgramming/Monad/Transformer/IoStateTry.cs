@@ -5,11 +5,11 @@ namespace FunctionalProgramming.Monad.Transformer
 {
     public class IoStateTry<TState, TValue>
     {
-        private readonly Io<State<TState, Try<TValue>>> _self;
+        public readonly Io<State<TState, Try<TValue>>> Out;
 
         public IoStateTry(Io<State<TState, Try<TValue>>> io)
         {
-            _self = io;
+            Out = io;
         }
 
         public IoStateTry(State<TState, Try<TValue>> state)
@@ -30,23 +30,18 @@ namespace FunctionalProgramming.Monad.Transformer
             
         }
 
-        public Io<State<TState, Try<TValue>>> Out()
-        {
-            return _self;
-        }
-
         public IoStateTry<TState, TResult> FMap<TResult>(Func<TValue, TResult> f)
         {
-            return new IoStateTry<TState, TResult>(_self.Select(state => state.Select(@try => @try.Select(f))));
+            return new IoStateTry<TState, TResult>(Out.Select(state => state.Select(@try => @try.Select(f))));
         }
 
         public IoStateTry<TState, TResult> Bind<TResult>(Func<TValue, IoStateTry<TState, TResult>> f)
         {
-            return new IoStateTry<TState, TResult>(_self.SelectMany(state => Io.Apply(() => new State<TState, Try<TResult>>(s =>
+            return new IoStateTry<TState, TResult>(Out.SelectMany(state => Io.Apply(() => new State<TState, Try<TResult>>(s =>
             {
                 var result = state.Run(s);
                 return result.Item2.Match(
-                    success: val => f(val).Out().UnsafePerformIo().Run(result.Item1),
+                    success: val => f(val).Out.UnsafePerformIo().Run(result.Item1),
                     failure: ex => Tuple.Create(result.Item1, ex.Fail<TResult>()));
             }))));
         }

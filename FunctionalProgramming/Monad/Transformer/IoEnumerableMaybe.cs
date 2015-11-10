@@ -1,19 +1,17 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad.Transformer
 {
     public sealed class IoEnumerableMaybe<T>
     {
-        private readonly Io<IEnumerable<IMaybe<T>>> _self;
+        public readonly Io<IEnumerable<IMaybe<T>>> Out;
 
         public IoEnumerableMaybe(Io<IEnumerable<IMaybe<T>>> io)
         {
-            _self = io;
+            Out = io;
         }
 
         public IoEnumerableMaybe(IEnumerable<IMaybe<T>> maybes) : this(Io.Apply(() => maybes))
@@ -31,25 +29,20 @@ namespace FunctionalProgramming.Monad.Transformer
             
         }
 
-        public Io<IEnumerable<IMaybe<T>>> Out()
-        {
-            return _self;
-        }
-
         public IoEnumerableMaybe<T> Keep(Func<T, bool> predicate)
         {
-            return new IoEnumerableMaybe<T>(_self.Select(maybes => maybes.Select(maybe => maybe.Where(predicate))));
+            return new IoEnumerableMaybe<T>(Out.Select(maybes => maybes.Select(maybe => maybe.Where(predicate))));
         }
 
         public IoEnumerableMaybe<TResult> FMap<TResult>(Func<T, TResult> f)
         {
-            return new IoEnumerableMaybe<TResult>(_self.Select(maybes => maybes.Select(maybe => maybe.Select(f))));
+            return new IoEnumerableMaybe<TResult>(Out.Select(maybes => maybes.Select(maybe => maybe.Select(f))));
         }
 
         public IoEnumerableMaybe<TResult> Bind<TResult>(Func<T, IoEnumerableMaybe<TResult>> f)
         {
-            return new IoEnumerableMaybe<TResult>(_self.SelectMany(maybes => maybes.Select(maybe => maybe.Match(
-                just: v => f(v).Out(),
+            return new IoEnumerableMaybe<TResult>(Out.SelectMany(maybes => maybes.Select(maybe => maybe.Match(
+                just: v => f(v).Out,
                 nothing: () => Io.Apply(() => Enumerable.Empty<IMaybe<TResult>>())))
                 .Sequence()
                 .Select(x => x.SelectMany(BasicFunctions.Identity))));

@@ -4,11 +4,11 @@ namespace FunctionalProgramming.Monad.Transformer
 {
     public sealed class ReaderEither<TEnvironment, TLeft, TRight>
     {
-        private readonly Reader<TEnvironment, IEither<TLeft, TRight>> _self;
+        public readonly Reader<TEnvironment, IEither<TLeft, TRight>> Out;
 
         public ReaderEither(Reader<TEnvironment, IEither<TLeft, TRight>> self)
         {
-            _self = self;
+            Out = self;
         }
 
         public ReaderEither(IEither<TLeft, TRight> either) : this(new Reader<TEnvironment, IEither<TLeft, TRight>>(env => either))
@@ -26,22 +26,17 @@ namespace FunctionalProgramming.Monad.Transformer
             
         }
 
-        public Reader<TEnvironment, IEither<TLeft, TRight>> Out()
-        {
-            return _self;
-        }
-
         public ReaderEither<TEnvironment, TLeft, TResult> FMap<TResult>(Func<TRight, TResult> f)
         {
-            return new ReaderEither<TEnvironment, TLeft, TResult>(_self.Select(either => either.Select(f)));
+            return new ReaderEither<TEnvironment, TLeft, TResult>(Out.Select(either => either.Select(f)));
         }
 
         public ReaderEither<TEnvironment, TLeft, TResult> Bind<TResult>(
             Func<TRight, ReaderEither<TEnvironment, TLeft, TResult>> f)
         {
-            return new ReaderEither<TEnvironment, TLeft, TResult>(_self.SelectMany(either => either.Match(
+            return new ReaderEither<TEnvironment, TLeft, TResult>(Out.SelectMany(either => either.Match(
                 left: l => new Reader<TEnvironment, IEither<TLeft, TResult>>(env => l.AsLeft<TLeft, TResult>()),
-                right: r => f(r).Out())));
+                right: r => f(r).Out)));
         }
     }
 

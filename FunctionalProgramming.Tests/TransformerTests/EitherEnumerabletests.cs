@@ -18,7 +18,7 @@ namespace FunctionalProgramming.Tests.TransformerTests
             var initial = new[] {1, 2, 3};
             var expected = initial.Select(x => x + 1);
             var xs = new EitherEnumerable<string, int>(initial.AsRight<string, IEnumerable<int>>());
-            var result = xs.Select(x => x + 1).Out();
+            var result = xs.Select(x => x + 1).Out;
 
             Assert.IsTrue(result.Match(
                 left: err => false,
@@ -38,7 +38,7 @@ namespace FunctionalProgramming.Tests.TransformerTests
                 (from x in val1
                  from y in val2
                  select x + y)
-                .Out();
+                .Out;
 
             var expected =
                 from x in initial

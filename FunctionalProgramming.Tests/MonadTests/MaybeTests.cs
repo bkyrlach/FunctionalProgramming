@@ -1,4 +1,6 @@
-﻿using FunctionalProgramming.Monad;
+﻿using System;
+using System.Linq;
+using FunctionalProgramming.Monad;
 using NUnit.Framework;
 
 namespace FunctionalProgramming.Tests.MonadTests
@@ -64,6 +66,19 @@ namespace FunctionalProgramming.Tests.MonadTests
             var expected = 4.ToMaybe();
             var result = Maybe.Nothing<int>();
             Assert.AreNotEqual(expected, result);
+        }
+
+        [Test]
+        public void TestKeepSome()
+        {
+            var expected = new[] {1, 2, 3, 4};
+            var test = new[]
+            {
+                1.ToMaybe()
+            };
+
+            var result = test.KeepSome();
+            result.ToList().ForEach(Console.WriteLine);
         }
     }
 }

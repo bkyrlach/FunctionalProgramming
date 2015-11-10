@@ -5,11 +5,11 @@ namespace FunctionalProgramming.Monad.Transformer
 {
     public class ReaderTry<TEnvironment, TValue>
     {
-        private readonly Reader<TEnvironment, Try<TValue>> _self;
+        public readonly Reader<TEnvironment, Try<TValue>> Out;
 
         public ReaderTry(Reader<TEnvironment, Try<TValue>> self)
         {
-            _self = self;
+            Out = self;
         }
 
         public ReaderTry(Try<TValue> @try) : this(new Reader<TEnvironment, Try<TValue>>(env => @try))
@@ -22,20 +22,15 @@ namespace FunctionalProgramming.Monad.Transformer
             
         }
 
-        public Reader<TEnvironment, Try<TValue>> Out()
-        {
-            return _self;
-        }
-
         public ReaderTry<TEnvironment, TResult> FMap<TResult>(Func<TValue, TResult> f)
         {
-            return new ReaderTry<TEnvironment, TResult>(_self.Select(@try => @try.Select(f)));
+            return new ReaderTry<TEnvironment, TResult>(Out.Select(@try => @try.Select(f)));
         }
 
         public ReaderTry<TEnvironment, TResult> Bind<TResult>(Func<TValue, ReaderTry<TEnvironment, TResult>> f)
         {
-            return new ReaderTry<TEnvironment, TResult>(_self.SelectMany(@try => @try.Match(
-                success: v => f(v).Out(),
+            return new ReaderTry<TEnvironment, TResult>(Out.SelectMany(@try => @try.Match(
+                success: v => f(v).Out,
                 failure: ex => new Reader<TEnvironment, Try<TResult>>(env => ex.Fail<TResult>()))));
         }
     }

@@ -211,6 +211,17 @@ namespace FunctionalProgramming.Basics
             return xs.Select(f).Sequence();
         }
 
+        public static IoTry<IEnumerable<T>> Sequence<T>(this IEnumerable<IoTry<T>> ioTs)
+        {
+            var initial = Io.Apply(() => ConsList.Nil<T>()).ToIoTry();
+            return ioTs.Aggregate(initial, (current, maybe) => current.SelectMany(ts => maybe.Select(t => t.Cons(ts)))).Select(xs => xs.AsEnumerable());
+        }
+
+        public static IoTry<IEnumerable<T2>> Traverse<T1, T2>(this IEnumerable<T1> ioTs, Func<T1, IoTry<T2>> f)
+        {
+            return ioTs.Select(f).Sequence();
+        }
+
         /// <summary>
         /// ZipWithIndex takes a collection and pairs each element with its index in the collection
         /// </summary>

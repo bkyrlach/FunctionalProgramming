@@ -17,7 +17,7 @@ namespace FunctionalProgramming.Tests.TransformerTests
             var actual =
                 (from i in inputSequence.ToIoEnumerable()
                 from _ in Io.Apply(() => actualEffectualResult += 1).ToIoEnumerable()
-                select i + 1).Out().UnsafePerformIo();
+                select i + 1).Out.UnsafePerformIo();
 
             Assert.AreEqual(expectedEffectualResult, actualEffectualResult);
             Assert.AreEqual(expectedResult, actual);

@@ -7,11 +7,11 @@ namespace FunctionalProgramming.Monad.Transformer
 {
     public class IoEnumerable<T>
     {
-        private readonly Io<IEnumerable<T>> _self;
+        public readonly Io<IEnumerable<T>> Out;
 
         public IoEnumerable(Io<IEnumerable<T>> io)
         {
-            _self = io;
+            Out = io;
         }
 
         public IoEnumerable(IEnumerable<T> ts) : this(Io.Apply(() => ts))
@@ -19,24 +19,19 @@ namespace FunctionalProgramming.Monad.Transformer
             
         }
 
-        public Io<IEnumerable<T>> Out()
-        {
-            return _self;
-        }
-
         public IoEnumerable<T> Keep(Func<T, bool> predicate)
         {
-            return new IoEnumerable<T>(_self.Select(enumerable => enumerable.Where(predicate)));
+            return new IoEnumerable<T>(Out.Select(enumerable => enumerable.Where(predicate)));
         }
 
         public IoEnumerable<TResult> FMap<TResult>(Func<T, TResult> f)
         {
-            return new IoEnumerable<TResult>(_self.Select(ts => ts.Select(f)));
+            return new IoEnumerable<TResult>(Out.Select(ts => ts.Select(f)));
         }
 
         public IoEnumerable<TResult> Bind<TResult>(Func<T, IoEnumerable<TResult>> f)
         {
-            return new IoEnumerable<TResult>(_self.SelectMany(ts => ts.Select(t => f(t).Out()).Sequence().Select(x => x.SelectMany(BasicFunctions.Identity))));
+            return new IoEnumerable<TResult>(Out.SelectMany(ts => ts.Select(t => f(t).Out).Sequence().Select(x => x.SelectMany(BasicFunctions.Identity))));
         }
     }
 

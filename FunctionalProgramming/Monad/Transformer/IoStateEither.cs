@@ -4,11 +4,11 @@ namespace FunctionalProgramming.Monad.Transformer
 {
     public sealed class IoStateEither<TState, TLeft, TRight>
     {
-        private readonly Io<State<TState, IEither<TLeft, TRight>>> _self;
+        public readonly Io<State<TState, IEither<TLeft, TRight>>> Out;
 
         public IoStateEither(Io<State<TState, IEither<TLeft, TRight>>> state)
         {
-            _self = state;
+            Out = state;
         }
 
         public IoStateEither(State<TState, IEither<TLeft, TRight>> state) : this(Io.Apply(() => state))
@@ -32,24 +32,19 @@ namespace FunctionalProgramming.Monad.Transformer
             
         }
 
-        public Io<State<TState, IEither<TLeft, TRight>>> Out()
-        {
-            return _self;
-        }
-
         public IoStateEither<TState, TLeft, TResult> FMap<TResult>(Func<TRight, TResult> f)
         {
-            return new IoStateEither<TState, TLeft, TResult>(_self.Select(state => state.Select(either => either.Select(f))));
+            return new IoStateEither<TState, TLeft, TResult>(Out.Select(state => state.Select(either => either.Select(f))));
         }
 
         public IoStateEither<TState, TLeft, TResult> Bind<TResult>(Func<TRight, IoStateEither<TState, TLeft, TResult>> f)
         {
-            return new IoStateEither<TState, TLeft, TResult>(_self.SelectMany(state => Io.Apply(() => new State<TState, IEither<TLeft, TResult>>(s =>
+            return new IoStateEither<TState, TLeft, TResult>(Out.SelectMany(state => Io.Apply(() => new State<TState, IEither<TLeft, TResult>>(s =>
             {
                 var result = state.Run(s);
                 return result.Item2.Match(
                     left: l => Tuple.Create(result.Item1, l.AsLeft<TLeft, TResult>()),
-                    right: r => f(r).Out().UnsafePerformIo().Run(result.Item1));
+                    right: r => f(r).Out.UnsafePerformIo().Run(result.Item1));
             }))));
         }
     }

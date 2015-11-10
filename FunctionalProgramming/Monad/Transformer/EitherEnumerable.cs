@@ -7,11 +7,11 @@ namespace FunctionalProgramming.Monad.Transformer
 {
     public class EitherEnumerable<TLeft, TRight>
     {
-        private readonly IEither<TLeft, IEnumerable<TRight>> _self;
+        public readonly IEither<TLeft, IEnumerable<TRight>> Out;
  
         public EitherEnumerable(IEither<TLeft, IEnumerable<TRight>> either)
         {
-            _self = either;
+            Out = either;
         }
 
         public EitherEnumerable(IEnumerable<TRight> xs) : this(xs.AsRight<TLeft, IEnumerable<TRight>>())
@@ -24,20 +24,15 @@ namespace FunctionalProgramming.Monad.Transformer
             
         }
 
-        public IEither<TLeft, IEnumerable<TRight>> Out()
-        {
-            return _self;
-        }
-
         public EitherEnumerable<TLeft, TResult> FMap<TResult>(Func<TRight, TResult> f)
         {
-            return new EitherEnumerable<TLeft, TResult>(_self.Select(xs => xs.Select(f)));
+            return new EitherEnumerable<TLeft, TResult>(Out.Select(xs => xs.Select(f)));
         }
 
         public EitherEnumerable<TLeft, TResult> Bind<TResult>(Func<TRight, EitherEnumerable<TLeft, TResult>> f)
         {
-            return new EitherEnumerable<TLeft, TResult>(_self.Match(
-                right: xs => xs.Select(x => f(x).Out()).Sequence().Select(ys => ys.SelectMany(BasicFunctions.Identity)),
+            return new EitherEnumerable<TLeft, TResult>(Out.Match(
+                right: xs => xs.Select(x => f(x).Out).Sequence().Select(ys => ys.SelectMany(BasicFunctions.Identity)),
                 left: l => l.AsLeft<TLeft, IEnumerable<TResult>>()));
         } 
     }

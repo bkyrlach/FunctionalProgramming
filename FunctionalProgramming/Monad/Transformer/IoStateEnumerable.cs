@@ -8,11 +8,11 @@ namespace FunctionalProgramming.Monad.Transformer
 {
     public sealed class IoStateEnumerable<TState, TValue>
     {
-        private readonly Io<State<TState, IEnumerable<TValue>>> _self;
+        public readonly Io<State<TState, IEnumerable<TValue>>> Out;
 
         public IoStateEnumerable(Io<State<TState, IEnumerable<TValue>>> io)
         {
-            _self = io;
+            Out = io;
         }
 
         public IoStateEnumerable(State<TState, IEnumerable<TValue>> state) : this(Io.Apply(() => state))
@@ -38,24 +38,19 @@ namespace FunctionalProgramming.Monad.Transformer
 
         }
 
-        public Io<State<TState, IEnumerable<TValue>>> Out()
-        {
-            return _self;
-        }
-
         public IoStateEnumerable<TState, TResult> FMap<TResult>(Func<TValue, TResult> f)
         {
-            return new IoStateEnumerable<TState, TResult>(_self.Select(state => state.Select(values => values.Select(f))));
+            return new IoStateEnumerable<TState, TResult>(Out.Select(state => state.Select(values => values.Select(f))));
         }
 
         public IoStateEnumerable<TState, TResult> Bind<TResult>(Func<TValue, IoStateEnumerable<TState, TResult>> f)
         {
-            return new IoStateEnumerable<TState, TResult>(_self.Select(state => state.SelectMany(xs => xs.Select(x => f(x).Out()).Sequence().Select(states => states.Sequence()).UnsafePerformIo()).Select(xs => xs.SelectMany(BasicFunctions.Identity))));
+            return new IoStateEnumerable<TState, TResult>(Out.Select(state => state.SelectMany(xs => xs.Select(x => f(x).Out).Sequence().Select(states => states.Sequence()).UnsafePerformIo()).Select(xs => xs.SelectMany(BasicFunctions.Identity))));
         }
 
         public IoStateEnumerable<TState, TValue> Keep(Func<TValue, bool> predicate)
         {
-            return new IoStateEnumerable<TState, TValue>(_self.Select(state => state.Select(values => values.Where(predicate))));
+            return new IoStateEnumerable<TState, TValue>(Out.Select(state => state.Select(values => values.Where(predicate))));
         }
     }
 

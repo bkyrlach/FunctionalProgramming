@@ -8,11 +8,11 @@ namespace FunctionalProgramming.Monad.Transformer
 {
     public class IoEnumerableTry<T>
     {
-        private readonly Io<IEnumerable<Try<T>>> _self;
+        public readonly Io<IEnumerable<Try<T>>> Out;
 
         public IoEnumerableTry(Io<IEnumerable<Try<T>>> io)
         {
-            _self = io;
+            Out = io;
         }
 
         public IoEnumerableTry(IEnumerable<Try<T>> tries) : this(Io.Apply(() => tries))
@@ -25,20 +25,15 @@ namespace FunctionalProgramming.Monad.Transformer
             
         }
 
-        public Io<IEnumerable<Try<T>>> Out()
-        {
-            return _self;
-        }
-
         public IoEnumerableTry<TResult> FMap<TResult>(Func<T, TResult> f)
         {
-            return new IoEnumerableTry<TResult>(_self.Select(tries => tries.Select(@try => @try.Select(f))));
+            return new IoEnumerableTry<TResult>(Out.Select(tries => tries.Select(@try => @try.Select(f))));
         }
 
         public IoEnumerableTry<TResult> Bind<TResult>(Func<T, IoEnumerableTry<TResult>> f)
         {
-            return new IoEnumerableTry<TResult>(_self.SelectMany(tries => tries.Select(@try => @try.Match(
-                success: val => f(val).Out(),
+            return new IoEnumerableTry<TResult>(Out.SelectMany(tries => tries.Select(@try => @try.Match(
+                success: val => f(val).Out,
                 failure: ex => Io.Apply(() => ex.Fail<TResult>().LiftEnumerable())))
                 .Sequence()
                 .Select(x => x.SelectMany(BasicFunctions.Identity))));

@@ -6,11 +6,11 @@ namespace FunctionalProgramming.Monad.Transformer
 {
     public class IoTryMaybe<T>
     {
-        private readonly Io<Try<IMaybe<T>>> _self;
+        public readonly Io<Try<IMaybe<T>>> Out;
 
         public IoTryMaybe(Io<Try<IMaybe<T>>> io)
         {
-            _self = io;
+            Out = io;
         }
 
         public IoTryMaybe(Try<IMaybe<T>> aTry)
@@ -32,26 +32,21 @@ namespace FunctionalProgramming.Monad.Transformer
 
         public IoTryMaybe<TResult> FMap<TResult>(Func<T, TResult> f)
         {
-            return new IoTryMaybe<TResult>(_self.Select(t => t.Select(m => m.Select(f))));
-        }
-
-        public Io<Try<IMaybe<T>>> Out()
-        {
-            return _self;
+            return new IoTryMaybe<TResult>(Out.Select(t => t.Select(m => m.Select(f))));
         }
 
         public IoTryMaybe<TResult> Bind<TResult>(Func<T, IoTryMaybe<TResult>> f)
         {
-            return new IoTryMaybe<TResult>(_self.SelectMany(t => t.Match(
+            return new IoTryMaybe<TResult>(Out.SelectMany(t => t.Match(
                 success: m => m.Match(
-                    just: v => f(v).Out(),
+                    just: v => f(v).Out,
                     nothing: () => Io.Apply(() => Try.Attempt(() => Maybe.Nothing<TResult>()))),
                 failure: ex => Io.Apply(() => ex.Fail<IMaybe<TResult>>()))));
         }
 
         public IoTryMaybe<T> Keep(Func<T, bool> predicate)
         {
-            return new IoTryMaybe<T>(_self.Select(@try => @try.Select(maybe => maybe.Where(predicate))));
+            return new IoTryMaybe<T>(Out.Select(@try => @try.Select(maybe => maybe.Where(predicate))));
         }
     }
 

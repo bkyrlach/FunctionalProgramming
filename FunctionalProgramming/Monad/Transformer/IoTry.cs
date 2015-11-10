@@ -5,11 +5,11 @@ namespace FunctionalProgramming.Monad.Transformer
 {
     public class IoTry<T>
     {
-        private readonly Io<Try<T>> _self;
+        public readonly Io<Try<T>> Out;
  
         public IoTry(Io<Try<T>> io)
         {
-            _self = io;
+            Out = io;
         }
 
         public IoTry(Try<T> t) : this(Io.Apply(() => t))
@@ -22,21 +22,16 @@ namespace FunctionalProgramming.Monad.Transformer
             
         }
 
-        public Io<Try<T>> Out()
-        {
-            return _self;
-        }
-
         public IoTry<TResult> FMap<TResult>(Func<T, TResult> f)
         {
-            return new IoTry<TResult>(_self.Select(t => t.Select(f)));
+            return new IoTry<TResult>(Out.Select(t => t.Select(f)));
         }
 
         public IoTry<TResult> Bind<TResult>(Func<T, IoTry<TResult>> f)
         {
-            return new IoTry<TResult>(_self.SelectMany(t => t.Match(
-               success: val => f(val).Out(),
-               failure: ex => ex.FailIo<TResult>().Out())));
+            return new IoTry<TResult>(Out.SelectMany(t => t.Match(
+               success: val => f(val).Out,
+               failure: ex => ex.FailIo<TResult>().Out)));
         }
     }
 

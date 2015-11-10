@@ -4,11 +4,11 @@ namespace FunctionalProgramming.Monad.Transformer
 {
     public sealed class IoEither<TLeft, TRight>
     {
-        private readonly Io<IEither<TLeft, TRight>> _self;
+        public readonly Io<IEither<TLeft, TRight>> Out;
  
         public IoEither(Io<IEither<TLeft, TRight>> io)
         {
-            _self = io;
+            Out = io;
         }
 
         public IoEither(IEither<TLeft, TRight> either) : this(Io.Apply(() => either))
@@ -26,21 +26,16 @@ namespace FunctionalProgramming.Monad.Transformer
             
         }
 
-        public Io<IEither<TLeft, TRight>> Out()
-        {
-            return _self;
-        }
-
         public IoEither<TLeft, TResult> FMap<TResult>(Func<TRight, TResult> f)
         {
-            return new IoEither<TLeft, TResult>(_self.Select(either => either.Select(f)));
+            return new IoEither<TLeft, TResult>(Out.Select(either => either.Select(f)));
         }
 
         public IoEither<TLeft, TResult> Bind<TResult>(Func<TRight, IoEither<TLeft, TResult>> f)
         {
-            return new IoEither<TLeft, TResult>(_self.SelectMany(either => either.Match(
+            return new IoEither<TLeft, TResult>(Out.SelectMany(either => either.Match(
                 left: l => Io.Apply(() => l.AsLeft<TLeft, TResult>()),
-                right: r => f(r).Out())));
+                right: r => f(r).Out)));
         }
     }
 
