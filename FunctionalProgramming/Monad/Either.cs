@@ -65,7 +65,7 @@ namespace FunctionalProgramming.Monad
 
         public override string ToString()
         {
-            return string.Format("-\\{0}", Value);
+            return string.Format("Left({0})", Value);
         }
     }
 
@@ -80,7 +80,7 @@ namespace FunctionalProgramming.Monad
 
         public override string ToString()
         {
-            return string.Format("/-{0}", Value);
+            return string.Format("Right({0})", Value);
         }
     }
 
