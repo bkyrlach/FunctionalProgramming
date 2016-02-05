@@ -82,6 +82,7 @@
     <Compile Include="MonadTests\MaybeTests.cs" />
     <Compile Include="ListZipperTests.cs" />
     <Compile Include="MonadTests\TaskTests.cs" />
+    <Compile Include="MonadTests\ValidationTests.cs" />
     <Compile Include="Parsingtests\ElementaryParserTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="MonadTests\LensTests.cs" />

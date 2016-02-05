@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using FunctionalProgramming.Basics;
@@ -331,7 +330,7 @@ namespace FunctionalProgramming.Streaming
                 cont: cw => new Cont<TI, TO2>(() => Pipe(cw)), 
                 eval: (effect, next) => new Eval<TI, TO2>(effect, Pipe(next)),
                 await: (req, recv) => Match(
-                    halt: e => new Halt<TI, TO>(e).Pipe(recv(e.AsLeft<Exception, TO>())),
+                    halt: e => new Halt<TI, TO>(e).Pipe(recv(Streaming.Kill.Only.AsLeft<Exception, TO>())),
                     emit: (h, t) => t.Pipe(Process.Try(() => recv(h.AsRight<Exception, TO>()))),
                     cont: cw => new Cont<TI, TO2>(() => cw.Pipe(p2)), 
                     eval: (effect, next) => new Eval<TI, TO2>(effect, next.Pipe(p2)), 
@@ -436,7 +435,7 @@ namespace FunctionalProgramming.Streaming
 
         public override string ToString()
         {
-            return string.Format("Halt({0})", _error);
+            return $"Halt({_error})";
         }
     }
 
@@ -463,7 +462,7 @@ namespace FunctionalProgramming.Streaming
 
         public override string ToString()
         {
-            return string.Format("Await(req, recv)");
+            return "Await(req, recv)";
         }
     }
 
@@ -490,7 +489,7 @@ namespace FunctionalProgramming.Streaming
 
         public override string ToString()
         {
-            return string.Format("Emit({0}, {1})", _head, _tail);
+            return $"Emit({_head}, {_tail})";
         }
     }
 
@@ -515,7 +514,7 @@ namespace FunctionalProgramming.Streaming
 
         public override string ToString()
         {
-            return string.Format("Cont({0})", _continueWith.IsValueCreated ? _continueWith.Value.ToString() : "???");
+            return $"Cont({(_continueWith.IsValueCreated ? _continueWith.Value.ToString() : "???")})";
         }
     }
 

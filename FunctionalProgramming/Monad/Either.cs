@@ -14,10 +14,11 @@ namespace FunctionalProgramming.Monad
 
     public abstract class Either<TLeft, TRight> : IEither<TLeft, TRight>
     {
-        public bool IsRight { get { return this is Right<TLeft, TRight>; } }
+        public bool IsRight => this is Right<TLeft, TRight>;
+
         public TMatch Match<TMatch>(Func<TLeft, TMatch> left, Func<TRight, TMatch> right)
         {
-            TMatch retval = default(TMatch);
+            TMatch retval;
             if (this is Left<TLeft, TRight>)
             {
                 var temp = this as Left<TLeft, TRight>;
@@ -65,7 +66,7 @@ namespace FunctionalProgramming.Monad
 
         public override string ToString()
         {
-            return string.Format("-\\{0}", Value);
+            return $"-\\{Value}";
         }
     }
 
@@ -80,7 +81,7 @@ namespace FunctionalProgramming.Monad
 
         public override string ToString()
         {
-            return string.Format("/-{0}", Value);
+            return $"/-{Value}";
         }
     }
 
@@ -180,96 +181,13 @@ namespace FunctionalProgramming.Monad
             return xs.SelectMany(x => x.Match(
                 left: l => l.LiftEnumerable(),
                 right: r => Enumerable.Empty<TLeft>()));
+        }
+
+        public static IEither<T1, T3> Apply<T1, T2, T3>(IEither<T1, Func<T2, T3>> fa, IEither<T1, T2> ma)
+        {
+            return fa.Match(
+                left: e => e.AsLeft<T1, T3>(),
+                right: ma.Select);
         } 
-
-        #region ApplicativeStuff
-        public static IEither<TErr, Tuple<T1, T2>> With<TErr, T1, T2>(this IEither<TErr, T1> e1,
-            IEither<TErr, T2> e2)
-        {
-            return from t1 in e1
-                   from t2 in e2
-                   select Tuple.Create(t1, t2);
-        }
-
-        public static IEither<TErr, Tuple<T1, T2, T3>> With<TErr, T1, T2, T3>(this IEither<TErr, Tuple<T1, T2>> e1, IEither<TErr, T3> e2)
-        {
-            return from tuple in e1
-                   from t3 in e2
-                   select Tuple.Create(tuple.Item1, tuple.Item2, t3);
-        }
-
-        public static IEither<TErr, Tuple<T1, T2, T3, T4>> With<TErr, T1, T2, T3, T4>(this IEither<TErr, Tuple<T1, T2, T3>> e1, IEither<TErr, T4> e2)
-        {
-            return from tuple in e1
-                   from t4 in e2
-                   select Tuple.Create(tuple.Item1, tuple.Item2, tuple.Item3, t4);
-        }
-
-        public static IEither<TErr, Tuple<T1, T2, T3, T4, T5>> With<TErr, T1, T2, T3, T4, T5>(this IEither<TErr, Tuple<T1, T2, T3, T4>> e1,
-    IEither<TErr, T5> e2)
-        {
-            return from tuple in e1
-                   from t5 in e2
-                   select Tuple.Create(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, t5);
-        }
-
-        public static IEither<TErr, Tuple<T1, T2, T3, T4, T5, T6>> With<TErr, T1, T2, T3, T4, T5, T6>(this IEither<TErr, Tuple<T1, T2, T3, T4, T5>> e1,
-    IEither<TErr, T6> e2)
-        {
-            return from tuple in e1
-                   from t6 in e2
-                   select Tuple.Create(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, t6);
-        }
-
-        public static IEither<TErr, Tuple<T1, T2, T3, T4, T5, T6, T7>> With<TErr, T1, T2, T3, T4, T5, T6, T7>(this IEither<TErr, Tuple<T1, T2, T3, T4, T5, T6>> e1,
-    IEither<TErr, T7> e2)
-        {
-            return from tuple in e1
-                   from t7 in e2
-                   select Tuple.Create(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4, tuple.Item5, tuple.Item6, t7);
-        }
-
-        public static IEither<TErr, TResult> Apply<TErr, T1, T2, TResult>(this IEither<TErr, Tuple<T1, T2>> e,
-            Func<T1, T2, TResult> f)
-        {
-            return from tuple in e
-                   select tuple.Apply(f);
-        }
-
-        public static IEither<TErr, TResult> Apply<TErr, T1, T2, T3, TResult>(this IEither<TErr, Tuple<T1, T2, T3>> e,
-            Func<T1, T2, T3, TResult> f)
-        {
-            return from tuple in e
-                   select tuple.Apply(f);
-        }
-
-        public static IEither<TErr, TResult> Apply<TErr, T1, T2, T3, T4, TResult>(this IEither<TErr, Tuple<T1, T2, T3, T4>> e,
-            Func<T1, T2, T3, T4, TResult> f)
-        {
-            return from tuple in e
-                   select tuple.Apply(f);
-        }
-
-        public static IEither<TErr, TResult> Apply<TErr, T1, T2, T3, T4, T5, TResult>(this IEither<TErr, Tuple<T1, T2, T3, T4, T5>> e,
-            Func<T1, T2, T3, T4, T5, TResult> f)
-        {
-            return from tuple in e
-                   select tuple.Apply(f);
-        }
-
-        public static IEither<TErr, TResult> Apply<TErr, T1, T2, T3, T4, T5, T6, TResult>(this IEither<TErr, Tuple<T1, T2, T3, T4, T5, T6>> e,
-            Func<T1, T2, T3, T4, T5, T6, TResult> f)
-        {
-            return from tuple in e
-                   select tuple.Apply(f);
-        }
-
-        public static IEither<TErr, TResult> Apply<TErr, T1, T2, T3, T4, T5, T6, T7, TResult>(this IEither<TErr, Tuple<T1, T2, T3, T4, T5, T6, T7>> e,
-            Func<T1, T2, T3, T4, T5, T6, T7, TResult> f)
-        {
-            return from tuple in e
-                   select tuple.Apply(f);
-        }
-        #endregion
     }
 }

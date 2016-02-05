@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using FunctionalProgramming.Basics;
+using FunctionalProgramming.Helpers;
 
 namespace FunctionalProgramming.Monad
 {
@@ -49,79 +53,30 @@ namespace FunctionalProgramming.Monad
                 failure: err => new Failure<TFailure, TResult>(err));
         }
 
-        #region BuildApplicative
-        public static Validation<TFailure, Tuple<TSuccess1, TSuccess2>> BuildApplicative<TFailure, TSuccess1, TSuccess2>(
-            this Validation<TFailure, TSuccess1> v1, Validation<TFailure, TSuccess2> v2, IMonoid<TFailure> m)
+        public static Validation<TFailure, TResult> SelectMany<TFailure, TSuccess, TResult>(
+            this Validation<TFailure, TSuccess> m, Func<TSuccess, Validation<TFailure, TResult>> f)
         {
-            return v1.Match(
-                success: val1 => v2.Match<Validation<TFailure, Tuple<TSuccess1, TSuccess2>>>(
-                    success: val2 => new Success<TFailure, Tuple<TSuccess1, TSuccess2>>(Tuple.Create(val1, val2)),
-                    failure: err2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2>>(m.MAppend(err2, m.MZero))),
-                failure: err1 => v2.Match(
-                    success: val2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2>>(m.MAppend(err1, m.MZero)),
-                    failure: err2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2>>(m.MAppend(err1, err2))));
+            return m.Match(
+                success: val => f(val),
+                failure: err => new Failure<TFailure, TResult>(err));
         }
 
-        public static Validation<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3>> BuildApplicative<TFailure, TSuccess1, TSuccess2, TSuccess3>(
-            this Validation<TFailure, Tuple<TSuccess1, TSuccess2>> v1, Validation<TFailure, TSuccess3> v2, IMonoid<TFailure> m)
+        public static Validation<TFailure, TSelect> SelectMany<TFailure, TSuccess, TResult, TSelect>(
+            this Validation<TFailure, TSuccess> m, Func<TSuccess, Validation<TFailure, TResult>> f,
+            Func<TSuccess, TResult, TSelect> selector)
         {
-            return v1.Match(
-                success: val1 => v2.Match<Validation<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3>>>(
-                    success: val2 => new Success<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3>>(Tuple.Create(val1.Item1, val1.Item2, val2)),
-                    failure: err2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3>>(m.MAppend(err2, m.MZero))),
-                failure: err1 => v2.Match(
-                    success: val2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3>>(m.MAppend(err1, m.MZero)),
-                    failure: err2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3>>(m.MAppend(err1, err2))));
+            return m.SelectMany(a => f(a).SelectMany(b => new Success<TFailure, TSelect>(selector(a, b))));
         }
 
-        public static Validation<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4>> BuildApplicative<TFailure, TSuccess1, TSuccess2, TSuccess3, TSuccess4>(
-            this Validation<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3>> v1, Validation<TFailure, TSuccess4> v2, IMonoid<TFailure> m)
+        public static Validation<TFailure, TResult> Apply<TFailure, TSuccess, TResult>(
+            this Validation<TFailure, Func<TSuccess, TResult>> fa, Validation<TFailure, TSuccess> ma, IMonoid<TFailure> m)
         {
-            return v1.Match(
-                success: val1 => v2.Match<Validation<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4>>>(
-                    success: val2 => new Success<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4>>(Tuple.Create(val1.Item1, val1.Item2, val1.Item3, val2)),
-                    failure: err2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4>>(m.MAppend(err2, m.MZero))),
-                failure: err1 => v2.Match(
-                    success: val2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4>>(m.MAppend(err1, m.MZero)),
-                    failure: err2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4>>(m.MAppend(err1, err2))));
+            return fa.Match(
+                success: ma.Select,
+                failure: e1 => ma.Match(
+                    failure: e2 => new Failure<TFailure, TResult>(m.MAppend(e1, e2)),
+                    success: _ => new Failure<TFailure, TResult>(e1)));
         }
-
-        public static Validation<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5>> BuildApplicative<TFailure, TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5>(
-            this Validation<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4>> v1, Validation<TFailure, TSuccess5> v2, IMonoid<TFailure> m)
-        {
-            return v1.Match(
-                success: val1 => v2.Match<Validation<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5>>>(
-                    success: val2 => new Success<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5>>(Tuple.Create(val1.Item1, val1.Item2, val1.Item3, val1.Item4, val2)),
-                    failure: err2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5>>(m.MAppend(err2, m.MZero))),
-                failure: err1 => v2.Match(
-                    success: val2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5>>(m.MAppend(err1, m.MZero)),
-                    failure: err2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5>>(m.MAppend(err1, err2))));
-        }
-
-        public static Validation<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5, TSuccess6>> BuildApplicative<TFailure, TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5, TSuccess6>(
-            this Validation<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5>> v1, Validation<TFailure, TSuccess6> v2, IMonoid<TFailure> m)
-        {
-            return v1.Match(
-                success: val1 => v2.Match<Validation<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5, TSuccess6>>>(
-                    success: val2 => new Success<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5, TSuccess6>>(Tuple.Create(val1.Item1, val1.Item2, val1.Item3, val1.Item4, val1.Item5, val2)),
-                    failure: err2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5, TSuccess6>>(m.MAppend(err2, m.MZero))),
-                failure: err1 => v2.Match(
-                    success: val2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5, TSuccess6>>(m.MAppend(err1, m.MZero)),
-                    failure: err2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5, TSuccess6>>(m.MAppend(err1, err2))));
-        }
-
-        public static Validation<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5, TSuccess6, TSuccess7>> BuildApplicative<TFailure, TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5, TSuccess6, TSuccess7>(
-            this Validation<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5, TSuccess6>> v1, Validation<TFailure, TSuccess7> v2, IMonoid<TFailure> m)
-        {
-            return v1.Match(
-                success: val1 => v2.Match<Validation<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5, TSuccess6, TSuccess7>>>(
-                    success: val2 => new Success<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5, TSuccess6, TSuccess7>>(Tuple.Create(val1.Item1, val1.Item2, val1.Item3, val1.Item4, val1.Item5, val1.Item6, val2)),
-                    failure: err2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5, TSuccess6, TSuccess7>>(m.MAppend(err2, m.MZero))),
-                failure: err1 => v2.Match(
-                    success: val2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5, TSuccess6, TSuccess7>>(m.MAppend(err1, m.MZero)),
-                    failure: err2 => new Failure<TFailure, Tuple<TSuccess1, TSuccess2, TSuccess3, TSuccess4, TSuccess5, TSuccess6, TSuccess7>>(m.MAppend(err1, err2))));
-        }
-        #endregion
 
         private class Success<TFailure, TSuccess> : Validation<TFailure, TSuccess>
         {
@@ -138,6 +93,11 @@ namespace FunctionalProgramming.Monad
             public override T Match<T>(Func<TSuccess, T> success, Func<TFailure, T> failure)
             {
                 return success(_val);
+            }
+
+            public override string ToString()
+            {
+                return string.Format("Success({0})", Value);
             }
         }
 
@@ -156,6 +116,11 @@ namespace FunctionalProgramming.Monad
             public override T Match<T>(Func<TSuccess, T> success, Func<TFailure, T> failure)
             {
                 return failure(_err);
+            }
+
+            public override string ToString()
+            {
+                return string.Format("Failure({0})", Value);
             }
         }
     }

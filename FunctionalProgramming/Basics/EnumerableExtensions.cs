@@ -1,14 +1,10 @@
-﻿using System.Net.NetworkInformation;
-using FunctionalProgramming.Monad;
+﻿using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Outlaws;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Net.NetworkInformation;
 using System.Threading.Tasks;
-using FunctionalProgramming.Monad.Parsing;
 using FunctionalProgramming.Monad.Transformer;
 
 namespace FunctionalProgramming.Basics
@@ -193,6 +189,12 @@ namespace FunctionalProgramming.Basics
         {
             var initial = ConsList.Nil<TRight>().AsRight<TLeft, IConsList<TRight>>();
             return xs.Aggregate(initial, (current, anEither) => current.SelectMany(ts => anEither.Select(t => t.Cons(ts)))).Select(eithers => eithers.AsEnumerable().Reverse());
+        }
+
+        public static IEither<TLeft, IEnumerable<TRight>> Traverse<TInitial, TLeft, TRight>(
+            this IEnumerable<TInitial> xs, Func<TInitial, IEither<TLeft, TRight>> f)
+        {
+            return xs.Select(f).Sequence();
         }
 
         public static StateIo<TState, IEnumerable<TValue>> Sequence<TState, TValue>(

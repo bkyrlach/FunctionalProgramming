@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using FunctionalProgramming.Helpers;
+using FunctionalProgramming.Monad;
 
 namespace FunctionalProgramming.Basics
 {
@@ -163,6 +164,19 @@ namespace FunctionalProgramming.Basics
         public Func<T, T> MAppend(Func<T, T> f, Func<T, T> g)
         {
             return g.Compose(f);
+        }
+    }
+
+    public sealed class ConsListMonoid<T> : IMonoid<IConsList<T>>
+    {
+        public static IMonoid<IConsList<T>> Only = new ConsListMonoid<T>();
+
+        private ConsListMonoid() { } 
+
+        public IConsList<T> MZero { get { return ConsList.Nil<T>(); } }
+        public IConsList<T> MAppend(IConsList<T> t1, IConsList<T> t2)
+        {
+            return t1.Concat(t2);
         }
     }
 }

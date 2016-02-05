@@ -41,7 +41,6 @@ namespace FunctionalProgramming.Tests.StreamingTests
             var source = new Emit<int, int>(1, new Emit<int, int>(2, new Emit<int, int>(3, new Emit<int, int>(4, new Emit<int, int>(5, new Emit<int, int>(6, new Emit<int, int>(7, new Emit<int, int>(8, new Emit<int, int>(9, new Emit<int, int>(10))))))))));
             var process = source.Pipe(transducer);
             var result = process.RunLog();
-            result.ToList().ForEach(Console.WriteLine);
             Assert.AreEqual(expected, result);
         }
 
