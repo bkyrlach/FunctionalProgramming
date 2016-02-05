@@ -82,8 +82,8 @@ namespace FunctionalProgramming.Monad
         {
             private readonly TSuccess _val;
 
-            public override bool IsSuccess { get { return true; } }
-            public TSuccess Value { get { return _val; } }
+            public override bool IsSuccess => true;
+            public TSuccess Value => _val;
 
             public Success(TSuccess val)
             {
@@ -97,7 +97,7 @@ namespace FunctionalProgramming.Monad
 
             public override string ToString()
             {
-                return string.Format("Success({0})", Value);
+                return $"Success({Value})";
             }
         }
 
@@ -105,8 +105,8 @@ namespace FunctionalProgramming.Monad
         {
             private readonly TFailure _err;
 
-            public override bool IsSuccess { get { return false; } }
-            public TFailure Value { get { return _err; } }
+            public override bool IsSuccess => false;
+            public TFailure Value => _err;
 
             public Failure(TFailure err)
             {
@@ -120,7 +120,7 @@ namespace FunctionalProgramming.Monad
 
             public override string ToString()
             {
-                return string.Format("Failure({0})", Value);
+                return $"Failure({Value})";
             }
         }
     }

@@ -66,7 +66,7 @@ namespace FunctionalProgramming.Monad
 
         public override string ToString()
         {
-            return $"-\\{Value}";
+            return $"Left({Value})";
         }
     }
 
@@ -81,7 +81,7 @@ namespace FunctionalProgramming.Monad
 
         public override string ToString()
         {
-            return $"/-{Value}";
+            return $"Right({Value})";
         }
     }
 
@@ -183,7 +183,7 @@ namespace FunctionalProgramming.Monad
                 right: r => Enumerable.Empty<TLeft>()));
         }
 
-        public static IEither<T1, T3> Apply<T1, T2, T3>(IEither<T1, Func<T2, T3>> fa, IEither<T1, T2> ma)
+        public static IEither<T1, T3> Apply<T1, T2, T3>(this IEither<T1, Func<T2, T3>> fa, IEither<T1, T2> ma)
         {
             return fa.Match(
                 left: e => e.AsLeft<T1, T3>(),

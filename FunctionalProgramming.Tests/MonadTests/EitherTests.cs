@@ -1,4 +1,6 @@
-﻿using FunctionalProgramming.Monad;
+﻿using FunctionalProgramming.Basics;
+using FunctionalProgramming.Helpers;
+using FunctionalProgramming.Monad;
 using NUnit.Framework;
 
 namespace FunctionalProgramming.Tests.MonadTests
@@ -68,8 +70,9 @@ namespace FunctionalProgramming.Tests.MonadTests
         public void TestApplicative(string foo, int bar, bool? fooBar, bool expected)
         {
             var dto = ValidateString(foo)
-                .With(ValidateInt(bar))
-                .With(ValidateBool(fooBar)).Apply(Dto.Apply);
+                .Select(FuncExtensions.Curry<string, int, bool, Dto>(Dto.Apply))
+                .Apply(ValidateInt(bar))
+                .Apply(ValidateBool(fooBar));
 
             Assert.AreEqual(expected, dto.Match(
                 left: error => false,
