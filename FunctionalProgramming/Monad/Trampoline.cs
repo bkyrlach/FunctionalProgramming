@@ -1,117 +1,120 @@
 ﻿using System;
 using System.Collections.Generic;
+using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad
 {
-    public abstract class Trampoline<T> 
+    public static class TrampolineExtensions
     {
-        public abstract TResult Match<TResult>(
-            Func<Func<Trampoline<T>>, TResult> more,
-            Func<Trampoline<T>, Func<T, Trampoline<T>>, TResult> cont, 
-            Func<T, TResult> done);
+        public static Trampoline<T2> Select<T, T2>(this Trampoline<T> m, Func<T, T2> f)
+        {
+            return m.SelectMany(a => new More<T2>(() => new Done<T2>(f(a))));
+        }
 
+        public static Trampoline<T2> SelectMany<T, T2>(this Trampoline<T> m,
+            Func<T, Trampoline<T2>> f)
+        {
+            return new Cont<T, T2>(m, f);
+        }
+    }
+
+    public class TrampolineException<T> : Exception
+    {
+        public Trampoline<T> Next;
+
+        public TrampolineException(Trampoline<T> next)
+        {
+            Next = next;
+        }
+    }
+
+    public interface ITrampoline
+    {
+        IEither<Tuple<ITrampoline, Delegate>, object> RunStep();
+    }
+
+    public abstract class Trampoline<T>
+    {
         public T Run()
         {
-            var step = this;
-            var stack = new Queue<Func<T, Trampoline<T>>>();
-            var result = Maybe.Nothing<T>();
-            while (result.IsEmpty)
+            object o = null;
+            var stack = new Stack<Delegate>();
+            var next = (ITrampoline)this;
+            var isDone = false;
+            while (!isDone)
             {
-                if (step is More<T>)
-                {
-                    var m = (step as More<T>);
-                    step = m._k();
-                }
-                else if (step is Cont<T>)
-                {
-                    var c = (step as Cont<T>);
-                    step = c._t;
-                    stack.Enqueue(c._f);
-                }
-                else if (step is Done<T>)
-                {
-                    var d = (step as Done<T>);
-                    if (stack.Count == 0)
+                next.RunStep().Match(
+                    left: pair =>
                     {
-                        result = d._t.ToMaybe();
-                    }
-                    else
+                        next = pair.Item1;
+                        if (pair.Item2 != null)
+                        {
+                            stack.Push(pair.Item2);
+                        }
+                        return Unit.Only;
+                    },
+                    right: obj =>
                     {
-                        step = stack.Dequeue()(d._t);
-                    }
-                }
-                
+                        o = obj;
+                        if (stack.Count == 0)
+                        {
+                            isDone = true;
+                        }
+                        else
+                        {
+                            var d = stack.Pop();
+                            next = (ITrampoline)d.DynamicInvoke(o);
+                        }
+                        return Unit.Only;
+                    });
             }
-            return result.GetOrError(() => new Exception("Impossibru!"));
+            return (T)o;
         }
     }
 
-    public sealed class More<T> : Trampoline<T>
+    public sealed class More<T> : Trampoline<T>, ITrampoline
     {
-        public readonly Func<Trampoline<T>> _k;
-        public More(Func<Trampoline<T>> k)
+        public readonly Func<Trampoline<T>> Continuation;
+        public More(Func<Trampoline<T>> continuation)
         {
-            _k = k;
+            Continuation = continuation;
         }
 
-        public override TResult Match<TResult>(
-            Func<Func<Trampoline<T>>, TResult> more,
-            Func<Trampoline<T>, Func<T, Trampoline<T>>, TResult> cont, 
-            Func<T, TResult> done)
+        public IEither<Tuple<ITrampoline, Delegate>, object> RunStep()
         {
-            return more(_k);
+            return Tuple.Create<ITrampoline, Delegate>((ITrampoline)Continuation(), null).AsLeft<Tuple<ITrampoline, Delegate>, object>();
         }
     }
 
-    public sealed class Cont<T> : Trampoline<T>
+    public sealed class Cont<T, T2> : Trampoline<T2>, ITrampoline
     {
-        public readonly Trampoline<T> _t;
-        public readonly Func<T, Trampoline<T>> _f;
+        public readonly Trampoline<T> Next;
+        public readonly Func<T, Trampoline<T2>> Transform;
 
-        public Cont(Trampoline<T> t, Func<T, Trampoline<T>> f)
+        public Cont(Trampoline<T> next, Func<T, Trampoline<T2>> transform)
         {
-            _t = t;
-            _f = f;
+            Next = next;
+            Transform = transform;
         }
 
-        public override TResult Match<TResult>(
-            Func<Func<Trampoline<T>>, TResult> more, 
-            Func<Trampoline<T>, Func<T, Trampoline<T>>, TResult> cont, 
-            Func<T, TResult> done)
+        public IEither<Tuple<ITrampoline, Delegate>, object> RunStep()
         {
-            return cont(_t, _f);
+            return Tuple.Create<ITrampoline, Delegate>((ITrampoline)Next, Transform).AsLeft<Tuple<ITrampoline, Delegate>, object>();
         }
     }
 
-    public sealed class Done<T> : Trampoline<T>
+    public sealed class Done<T> : Trampoline<T>, ITrampoline
     {
-        public readonly T _t;
+        public readonly T Value;
 
-        public Done(T t)
+        public Done(T value)
         {
-            _t = t;
+            Value = value;
         }
 
-        public override TResult Match<TResult>(
-            Func<Func<Trampoline<T>>, TResult> more,
-            Func<Trampoline<T>, Func<T, Trampoline<T>>, TResult> cont, 
-            Func<T, TResult> done)
+        public IEither<Tuple<ITrampoline, Delegate>, object> RunStep()
         {
-            return done(_t);
-        }
-    }
-
-    public static class Trampoline
-    {
-        public static Trampoline<T> Select<T>(this Trampoline<T> m, Func<T, T> f)
-        {
-            return m.SelectMany(a => new More<T>(() => new Done<T>(f(a))));
-        } 
-
-        public static Trampoline<T> SelectMany<T>(this Trampoline<T> m,
-            Func<T, Trampoline<T>> f)
-        {
-            return new Cont<T>(m, f);
+            return Value.AsRight<Tuple<ITrampoline, Delegate>, object>();
         }
     }
 }

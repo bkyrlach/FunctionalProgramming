@@ -11,14 +11,11 @@ namespace FunctionalProgramming.Monad
     /// <typeparam name="T">The type of value effectual code will yield at the end of the universe</typeparam>
     public sealed class Io<T>
     {
-        /// <summary>
-        /// This function represents an eventual lazy value resulting from effectual code.
-        /// </summary>
-        private readonly Func<T> _f;
+        public readonly Trampoline<T> Step;
 
-        public Io(Func<T> f)
+        public Io(Trampoline<T> step)
         {
-            _f = f;
+            Step = step;
         }
 
         /// <summary>
@@ -27,7 +24,7 @@ namespace FunctionalProgramming.Monad
         /// <returns>The result of the effectual computation</returns>
         public T UnsafePerformIo()
         {
-            return _f();
+            return Step.Run();
         }
     }
 
@@ -38,7 +35,7 @@ namespace FunctionalProgramming.Monad
     {
         public static Io<T> Pure<T>(T t) where T : struct
         {
-            return new Io<T>(() => t);
+            return new Io<T>(new Done<T>(t));
         }
 
         /// <summary>
@@ -49,7 +46,7 @@ namespace FunctionalProgramming.Monad
         /// <returns>Lifted T into IO</returns>
         public static Io<T> Apply<T>(Func<T> f)
         {
-            return new Io<T>(f);
+            return new Io<T>(new More<T>(() => new Done<T>(f())));
         }
 
         /// <summary>
@@ -60,11 +57,11 @@ namespace FunctionalProgramming.Monad
         /// <returns>Lifted Unit into IO</returns>
         public static Io<Unit> Apply(Action a)
         {
-            return new Io<Unit>(() =>
+            return new Io<Unit>(new More<Unit>(() =>
             {
                 a();
-                return Unit.Only;
-            });
+                return new Done<Unit>(Unit.Only);
+            }));
         }
 
         public static Io<T> Join<T>(this Io<Io<T>> m)
@@ -87,7 +84,7 @@ namespace FunctionalProgramming.Monad
         /// <returns>The value in the range TResult lifted to Io</returns>
         public static Io<TResult> Select<TValue, TResult>(this Io<TValue> io, Func<TValue, TResult> f)
         {
-            return Apply(() => f(io.UnsafePerformIo()));
+            return new Io<TResult>(io.Step.Select(f));
         }
 
         /// <summary>
@@ -100,7 +97,7 @@ namespace FunctionalProgramming.Monad
         /// <returns>The value in the range TResult lifted to Io</returns>
         public static Io<TResult> SelectMany<TValue, TResult>(this Io<TValue> io, Func<TValue, Io<TResult>> f)
         {
-            return Apply(() => f(io.UnsafePerformIo()).UnsafePerformIo());
+            return new Io<TResult>(io.Step.SelectMany(x => f(x).Step));
         }
 
         public static Io<TSelect> SelectMany<TValue, TResult, TSelect>(this Io<TValue> m, Func<TValue, Io<TResult>> f,
