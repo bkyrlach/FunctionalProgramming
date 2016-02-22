@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FunctionalProgramming.Basics;
@@ -35,429 +36,440 @@ namespace FunctionalProgramming.Streaming
 
     public static class Process
     {
-        private static readonly Random R = new Random();
-
-        public static Process<TI, TO> RepeatUntil<TI, TO>(this Process<TI, TO> p, Func<bool> predicate)
+        public static Process<Unit> Eval(Action effect)
         {
-            return p.Concat(() => predicate() ?  (Process<TI, TO>)new Halt<TI, TO>(End.Only) : new Cont<TI, TO>(() => p.RepeatUntil(predicate)));
+            return new Eval<Unit>(effect);
         }
 
-        public static Process<TI, TI> AwaitAndEmit<TI>(Io<TI> effect)
+        public static Process<T> Apply<T>(params T[] ts)
         {
-            return new Await<TI, TI>(effect, result => result.Match<Process<TI, TI>>(
-                left: ex => new Halt<TI, TI>(ex),
-                right: ti => new Emit<TI, TI>(ti)));
+            return ts.Reverse().Aggregate((Process<T>)new Halt<T>(End.Only), (p, t) => new Emit<T>(t, p));
         }
 
-        public static Process<TI, TI> Continually<TI>(Io<TI> effect)
+        public static Process<T> RepeatUntil<T>(this Process<T> p, Func<bool> predicate)
+        {
+            return p.Concat(() => predicate() ?  (Process<T>)new Halt<T>(End.Only) : new Cont<T>(() => p.RepeatUntil(predicate)));
+        }
+
+        public static Process<T> AwaitAndEmit<T>(Func<T> effect)
+        {
+            return Await<T>.Create(effect, result => result.Match<Process<T>>(
+                left: ex => new Halt<T>(ex),
+                right: ti => new Emit<T>(ti)));
+        }
+
+        public static Process<T> Continually<T>(Func<T> effect)
         {
             return AwaitAndEmit(effect).Repeat();
         } 
 
-        public static Process<TI, Unit> Sink<TI>(Action<TI> effect)
+        public static Process1<T, Unit> Sink<T>(Action<T> effect)
         {
-            return Lift<TI, Unit>(i =>
+            return Lift<T, Unit>(i =>
             {
                 effect(i);
                 return Unit.Only;
             });
         }
 
-        public static Process<TI, Unit> Sink<TI>(Action effect)
+        public static Process1<T, Unit> Sink<T>(Action effect)
         {
-            return Sink<TI>(i => effect());
+            return Sink<T>(i => effect());
         }
 
-        public static Process<TI, TO> Delay<TI, TO>(uint milliseconds)
+        public static Process<Unit> Delay(int milliseconds)
         {
-            return new Await<TI, TO>(Io.Apply(() =>
+            return Await<Unit>.Create(new Task<Unit>(() =>
             {
-                Thread.Sleep((int)milliseconds);
-                return default(TI);
-            }), either => either.Match(
-                left: ex => new Halt<TI, TO>(ex),
-                right: i => new Halt<TI, TO>(End.Only)));
-        } 
-
-        public static Process<T, IEither<T1, T2>> Wye<T, T1, T2>(Process<T, T1> p1, Process<T, T2> p2)
-        {
-            return p1.Match(
-                halt: e => new Halt<T, IEither<T1, T2>>(e), 
-                emit: (h, t) => new Emit<T, IEither<T1, T2>>(h.AsLeft<T1, T2>(), Wye(t, p2)),
-                cont: cw => new Cont<T, IEither<T1, T2>>(() => Wye(cw, p2)),
-                eval: (effect, next) => new Eval<T, IEither<T1, T2>>(effect, Wye(next, p2)),
-                await: (reql, recvl) => p2.Match<Process<T, IEither<T1, T2>>>(
-                    halt: e => new Halt<T, IEither<T1, T2>>(e), 
-                    emit: (h, t) => new Emit<T, IEither<T1, T2>>(h.AsRight<T1, T2>(), Wye(new Await<T, T1>(reql, recvl), t)),
-                    cont: cw => new Cont<T, IEither<T1, T2>>(() => Wye(p1, cw)),
-                    eval: (effect, next) => new Eval<T, IEither<T1, T2>>(effect, Wye(p1, next)),
-                    await: (reqr, recvr) =>
-                    {
-                        var isRight = false;
-                        var tleft = new Task<T>(reql.UnsafePerformIo);
-                        var tright = new Task<T>(reqr.UnsafePerformIo);
-                        return new Await<T, IEither<T1, T2>>(Io.Apply(() =>
-                        {
-                            if (R.Next()%2 == 0)
-                            {
-                                tleft.Start();
-                                tright.Start();
-                            }
-                            else
-                            {
-                                tright.Start();
-                                tleft.Start();
-                            }
-                            var task = Task.WhenAny(tleft, tright);
-                            var result = task.Await();
-                            isRight = result.Equals(tright);
-                            return result.Await();
-                        }), x => x.Match(
-                            left: e => new Halt<T, IEither<T1, T2>>(e),
-                            right: i => isRight
-                                ? Wye(new Await<T, T1>(Io.Apply(() => tleft.Result), recvl), recvr(i.AsRight<Exception, T>()))
-                                : Wye(recvl(i.AsRight<Exception, T>()), new Await<T, T2>(Io.Apply(() => tright.Result), recvr))));
-                    }));
+                Thread.Sleep(milliseconds);
+                return Unit.Only;
+            }), 
+                either => either.Match(
+                    left: ex => new Halt<Unit>(ex),
+                    right: i => new Halt<Unit>(End.Only)));
         }
 
-        private static Process<TI, TO> BufferHelper<TState, TI, TO>(TState buffer, Func<TState> @new, Action<TI, TState> add,
-            Func<TState, bool> ready, Func<TState, TO> flush)
+        public static Process<IEither<T1, T2>> Wye<T1, T2>(Process<T1> p1, Process<T2> p2)
         {
-            return new Await<TI, TO>(Io.Apply(() => default(TI)), either => either.Match(
-                left: e => new Halt<TI, TO>(e),
+            var random = new Random();
+            if (random.Next()%2 == 0)
+            {
+                return p1.Match(
+                    halt: e => new Halt<IEither<T1, T2>>(e),
+                    emit: (h, t) => new Emit<IEither<T1, T2>>(h.AsLeft<T1, T2>(), Wye(t, p2)),
+                    cont: cw => new Cont<IEither<T1, T2>>(cw.Select(p => Wye(p, p2))),
+                    eval: (effect, next) => new Eval<IEither<T1, T2>>(effect, Wye(next, p2)),
+                    await: (reql, recvl) => p2.Match<Process<IEither<T1, T2>>>(
+                        halt: e => new Halt<IEither<T1, T2>>(e),
+                        emit: (h, t) => new Emit<IEither<T1, T2>>(h.AsRight<T1, T2>(), Wye(Await<T1>.Create(reql, (Func<IEither<Exception, object>, Process<T1>>)recvl), t)),
+                        cont: cw => new Cont<IEither<T1, T2>>(cw.Select(p => Wye(p1, p))),
+                        eval: (effect, next) => new Eval<IEither<T1, T2>>(effect, Wye(p1, next)),
+                        await: (reqr, recvr) => Await<IEither<T1, T2>>.Create(Monad.Outlaws.TaskExtensions.WhenEither(reql, reqr), x => x.Match(
+                                left: e => new Halt<IEither<T1, T2>>(e),
+                                right: either => either.Match(
+                                    left: l => Wye((Process<T1>)recvl.DynamicInvoke(l.AsRight<Exception, object>()), Await<T2>.Create(reqr, (Func<IEither<Exception, object>, Process<T2>>)recvr)),
+                                    right: r => Wye(Await<T1>.Create(reql, (Func<IEither<Exception, object>, Process<T1>>)recvl), (Process<T2>)recvr.DynamicInvoke(r.AsRight<Exception, object>())))))));
+            }
+            else
+            {
+                return p2.Match(
+                    halt: e => new Halt<IEither<T1, T2>>(e),
+                    emit: (h, t) => new Emit<IEither<T1, T2>>(h.AsRight<T1, T2>(), Wye(p1, t)),
+                    cont: cw => new Cont<IEither<T1,T2>>(cw.Select(p => Wye(p1, p))),
+                    eval: (effect, next) => new Eval<IEither<T1,T2>>(effect, Wye(p1, next)), 
+                    await: (reqr, recvr) => p1.Match<Process<IEither<T1, T2>>>(
+                        halt: e => new Halt<IEither<T1, T2>>(e),
+                        emit: (h, t) => new Emit<IEither<T1, T2>>(h.AsLeft<T1, T2>(), Wye(t, p2)),
+                        cont: cw => new Cont<IEither<T1, T2>>(cw.Select(p => Wye(p, p2))),
+                        eval: (effect, next) => new Eval<IEither<T1,T2>>(effect, Wye<T1, T2>(next, p2)),
+                        await: (reql, recvl) => Await<IEither<T1, T2>>.Create(Monad.Outlaws.TaskExtensions.WhenEither(reql, reqr), x => x.Match(
+                            left: e => new Halt<IEither<T1, T2>>(e), 
+                            right: either => either.Match(
+                                left: l => Wye((Process<T1>)recvl.DynamicInvoke(l.AsRight<Exception, object>()), Await<T2>.Create(reqr, (Func<IEither<Exception, object>, Process<T2>>)recvr)),
+                                right: r => Wye(Await<T1>.Create(reql, (Func<IEither<Exception, object>, Process<T1>>)recvl), (Process<T2>)recvr.DynamicInvoke(r.AsRight<Exception, object>())))))));
+            }
+        }
+
+        private static Process<T> BufferHelper<TState, T>(TState buffer, Func<TState> @new, Action<T, TState> add,
+            Func<TState, bool> ready, Func<TState, T> flush)
+        {
+            return Await<T>.Create(() => default(T), either => either.Match(
+                left: e => new Halt<T>(e),
                 right: i =>
                 {
                     add(i, buffer);
-                    return ready(buffer) ? new Emit<TI, TO>(flush(buffer)).Concat(() => BufferHelper(@new(), @new, add, ready, flush)) : new Cont<TI, TO>(() => BufferHelper(buffer, @new, add, ready, flush));
+                    return ready(buffer) ? new Emit<T>(flush(buffer)).Concat(() => BufferHelper(@new(), @new, add, ready, flush)) : new Cont<T>(() => BufferHelper(buffer, @new, add, ready, flush));
                 }));            
         }
 
-        public static Process<TI, TO> Buffer<TState, TI, TO>(Func<TState> @new, Action<TI, TState> add,
-            Func<TState, bool> ready, Func<TState, TO> flush)
+        public static Process<T> Buffer<TState, T>(Func<TState> @new, Action<T, TState> add,
+            Func<TState, bool> ready, Func<TState, T> flush)
         {
             return BufferHelper(@new(), @new, add, ready, flush);
         }
 
-        public static Process<TI, TO> Emit<TI, TO>(TO head, Process<TI, TO> tail = null)
+        public static Process<T> Emit<T>(T head, Process<T> tail = null)
         {
-            return new Emit<TI, TO>(head, tail ?? Halt1<TI, TO>());    
+            return new Emit<T>(head, tail ?? new Halt<T>(End.Only));    
         }
 
-        public static Process<TI, TO> Await1<TI, TO>(
-            Func<TI, Process<TI, TO>> recv, 
-            Func<Process<TI, TO>> fallback = null)
+        public static Process1<TI, TO> Await1<TI, TO>(
+            Func<TI, Process1<TI, TO>> recv, 
+            Process1<TI, TO> fallback = null)
         {
-            return new Await<TI, TO>(
-                Io.Apply(() => default(TI)),
+            return new Await1<TI, TO>(
+                () => default(TI), 
                 either => either.Match(
                     left: ex => ex is End
-                        ? fallback.ToMaybe().Select(f => f()).GetOrElse(Halt1<TI, TO>)
-                        : new Halt<TI, TO>(ex),
-                    right: recv));
+                        ? fallback.ToMaybe().GetOrElse(Halt1<TI, TO>)
+                        : new Halt1<TI, TO>(ex),
+                    right: i => Try(() => recv(i))));
         }
 
-        public static Process<TI, TO> Lift1<TI, TO>(Func<TI, TO> f)
+        public static Process1<TI, TO> Lift1<TI, TO>(Func<TI, TO> f)
         {
-            return Await1<TI, TO>(i => Emit<TI, TO>(f(i)));
+            return Await1<TI, TO>(i => Emit1<TI, TO>(f(i)));
         }
 
-        public static Process<TI, TO> Lift<TI, TO>(Func<TI, TO> f)
+        public static Process1<TI, TO> Emit1<TI, TO>(TO h, Process1<TI, TO> t = null)
+        {
+            return new Emit1<TI, TO>(h, t ?? new Halt1<TI, TO>(End.Only));
+        }
+
+        public static Process1<T1, T2> Lift<T1, T2>(Func<T1, T2> f)
         {
             return Lift1(f).Repeat();
         }
 
-        public static Process<TI, TO> Halt1<TI, TO>()
+        public static Process1<TI, TO> Halt1<TI, TO>()
         {
-            return new Halt<TI, TO>(End.Only);
+            return new Halt1<TI, TO>(End.Only);
         }
 
-        public static Process<TI, TO> Try<TI, TO>(Func<Process<TI, TO>> p)
+        public static Process<T> Try<T>(Func<Process<T>> p)
         {
             return Monad.Outlaws.Try.Attempt(p).Match(
                 success: BasicFunctions.Identity,
-                failure: ex => new Halt<TI, TO>(ex));
+                failure: ex => new Halt<T>(ex));
         }
 
-        public static Process<TI, TO> Concat<TI, TO>(this Process<TI, TO> p1, Func<Process<TI, TO>> p2)
+        public static Process1<TI, TO> Try<TI, TO>(Func<Process1<TI, TO>> p)
         {
-            return p1.OnHalt(ex => ex is End ? (Process<TI, TO>)new Cont<TI, TO>(() => Try(p2)) : new Halt<TI, TO>(ex));
+            return Monad.Outlaws.Try.Attempt(p).Match(
+                success: BasicFunctions.Identity,
+                failure: ex => new Halt1<TI, TO>(ex));
         }
 
-        public static Process<T, T> Take<T>(int n)
+        public static Process<T> Repeat<T>(this Process<T> p1)
         {
-            return n <= 0
-                ? Halt1<T, T>()
-                : Await1<T, T>(i => Emit(i, Take<T>(n - 1)));
+            return p1.Concat(p1.Repeat);
         }
 
-        public static Process<TI, TO2> Select<TI, TO1, TO2>(this Process<TI, TO1> m, Func<TO1, TO2> f)
+        public static Process<T> Concat<T>(this Process<T> p1, Func<Process<T>> p2)
+        {
+            return p1.OnHalt(ex => ex is End ? (Process<T>)new Cont<T>(() => Try(p2)) : new Halt<T>(ex));
+        }
+
+        public static Process1<TI, TO> Repeat<TI, TO>(this Process1<TI, TO> p1)
+        {
+            return p1.Concat(p1.Repeat);
+        }
+
+        public static Process1<TI, TO> Concat<TI, TO>(this Process1<TI, TO> p1, Func<Process1<TI, TO>> p2)
+        {
+            return p1.OnHalt(ex => ex is End ? (Process1<TI, TO>)new Cont1<TI, TO>(() => Try(p2)) : new Halt1<TI, TO>(ex));
+        }
+
+        public static Process<T2> Select<T1, T2>(this Process<T1> m, Func<T1, T2> f)
+        {
+            return m.Pipe(Lift(f));
+        }
+
+        public static Process<T2> SelectMany<T1, T2>(this Process<T1> m, Func<T1, Process<T2>> f)
         {
             return m.Match(
-                await: (req, recv) => new Await<TI, TO2>(req, recv.AndThen(p => p.Select(f))),
-                emit: (h, t) => Try(() => new Emit<TI, TO2>(f(h), t.Select(f))),
-                halt: e => new Halt<TI, TO2>(e),
-                cont: cw => new Cont<TI, TO2>(() => cw.Select(f)),
-                eval: (effect, next) => new Eval<TI, TO2>(effect, next.Select(f)));
-        }
-
-        public static Process<TI, TO2> SelectMany<TI, TO1, TO2>(this Process<TI, TO1> m, Func<TO1, Process<TI, TO2>> f)
-        {
-            return m.Match(
-                halt: e => new Halt<TI, TO2>(e),
+                halt: e => new Halt<T2>(e),
                 emit: (h, t) => Try(() => f(h)).Concat(() => t.SelectMany(f)),
-                await: (req, recv) => new Await<TI, TO2>(req, recv.AndThen(p => p.SelectMany(f))),
-                cont: cw => new Cont<TI, TO2>(() => cw.SelectMany(f)),
-                eval: (effect, next) => new Eval<TI, TO2>(effect, next.SelectMany(f)));
+                await: (req, recv) => Await<T2>.Create(req, ((Func<IEither<Exception, object>, Process<T1>>)recv).AndThen(p => p.SelectMany(f))),
+                cont: cw => new Cont<T2>(cw.Select(p => p.SelectMany(f))),
+                eval: (effect, next) => new Eval<T2>(effect, next.SelectMany(f)));
         }
 
-        public static Process<TI, TO> Resource<TR, TI, TO>(Func<TR> create, Action<TR> initialize, Action<TR> release, Func<TR, Process<TI, TO>> use)
+        public static Process<T> Resource<TR, T>(Func<TR> create, Action<TR> initialize, Action<TR> release, Func<TR, Process<T>> use)
         {
             TR resource = default(TR);
-            return new Eval<TI, TO>(
-                Io.Apply(() => { resource = create(); }),
-                new Eval<TI, TO>(
-                    Io.Apply(() => initialize(resource)),
-                    new Cont<TI, TO>(() => use(resource).OnHalt(ex => new Eval<TI, TO>(Io.Apply(() => release(resource))).Concat(() => new Halt<TI, TO>(ex))))));
+            return new Eval<T>(
+                () => { resource = create(); },
+                new Eval<T>(
+                    () => initialize(resource),
+                    new Cont<T>(() => use(resource).OnHalt(ex => new Eval<T>(() => release(resource)).Concat(() => new Halt<T>(ex))))));
         }
     }
 
-    public abstract class Process<TI, TO>
+    public abstract class Process<T>
     {
-        public IEnumerable<TO> RunLog()
+        public TResult Match<TResult>(
+            Func<Exception, TResult> halt,
+            Func<Task<object>, Delegate, TResult> await,
+            Func<T, Process<T>, TResult> emit,
+            Func<Task<Process<T>>, TResult>  cont,
+            Func<Task<Unit>, Process<T>, TResult> eval)
         {
-            var acc = new List<TO>();
-            var cur = this;
-            var isDone = false;
-            while (!isDone)
+            TResult retval;
+            if (this is Halt<T>)
             {
-                cur.Match(
-                    emit: (h, t) =>
-                    {
-                        acc.Add(h);
-                        cur = t;
-                        return Unit.Only;
-                    },
-                    halt: ex =>
-                    {
-                        if (ex is End || ex is Kill)
-                        {
-                            isDone = true;
-                        }
-                        else
-                        {
-                            throw ex;
-                        }
-                        return Unit.Only;
-                    },
-                    await: (req, recv) =>
-                    {
-                        var res = req.UnsafePerformIo();
-                        cur = recv(res.AsRight<Exception, TI>());
-                        return Unit.Only;
-                    },
-                    cont: cw =>
-                    {
-                        cur = cw;
-                        return Unit.Only;
-                    },
-                    eval: (effect, next) =>
-                    {
-                        effect.UnsafePerformIo();
-                        cur = next;
-                        return Unit.Only;
-                    });                
+                var temp = this as Halt<T>;
+                retval = halt(temp.Error);
             }
-            return acc;
+            else if (this is Await<T>)
+            {
+                var temp = this as Await<T>;
+                retval = @await(temp.Request, temp.Receive);
+            }
+            else if (this is Emit<T>)
+            {
+                var temp = this as Emit<T>;
+                retval = emit(temp.Head, temp.Tail);
+            }
+            else if (this is Cont<T>)
+            {
+                var temp = this as Cont<T>;
+                retval = cont(temp.ContinueWith);
+            }
+            else if(this is Eval<T>)
+            {
+                var temp = this as Eval<T>;
+                retval = eval(temp.Effect, temp.Next);
+            }
+            else
+            {
+                throw new MatchException(typeof(Process<T>), GetType());
+            }
+            return retval;
         }
 
-        public TO Run()
+        public List<T> RunLog()
         {
-            var result = default(TO);
-            var cur = this;
-            var isDone = false;
+            var results = new List<T>();
+            bool isDone = false;
+            var step = this;
             while (!isDone)
             {
-                cur.Match(
-                    emit: (h, t) =>
+                step.Match(
+                    halt: e =>
                     {
-                        result = h;
-                        cur = t;
-                        return Unit.Only;
-                    },
-                    halt: ex =>
-                    {
-                        if (ex is End || ex is Kill)
+                        if (e is End || e is Kill)
                         {
                             isDone = true;
                         }
                         else
                         {
-                            throw ex;
+                            throw e;
                         }
                         return Unit.Only;
                     },
                     await: (req, recv) =>
                     {
-                        var res = req.UnsafePerformIo();
-                        cur = recv(res.AsRight<Exception, TI>());                            
+                        var o = req.SafeRun();
+                        step = (Process<T>) recv.DynamicInvoke(o.AsRight<Exception, object>());
+                        return Unit.Only;
+                    },
+                    emit: (h, t) =>
+                    {
+                        results.Add(h);
+                        step = t;
                         return Unit.Only;
                     },
                     cont: cw =>
                     {
-                        cur = cw;
+                        step = cw.SafeRun();
                         return Unit.Only;
                     },
                     eval: (effect, next) =>
                     {
-                        effect.UnsafePerformIo();
-                        cur = next;
+                        effect.SafeRun();
+                        step = next;
                         return Unit.Only;
                     });
             }
-            return result;
-        }
-       
-        public Process<TI, TO> Repeat()
-        {
-            return this.Concat(Repeat);
+            return results;
         }
 
-        public Process<TI, TO2> Pipe<TO2>(Process<TO, TO2> p2)
+        public T Run()
         {
-            return p2.Match(
-                halt: e => Kill<TO2>().OnHalt(e2 => new Halt<TI, TO2>(e).Concat(() => new Halt<TI, TO2>(e2))),
-                emit: (h, t) => new Emit<TI, TO2>(h, Pipe(t)),
-                cont: cw => new Cont<TI, TO2>(() => Pipe(cw)), 
-                eval: (effect, next) => new Eval<TI, TO2>(effect, Pipe(next)),
+            return RunLog().Last();
+        }        
+
+        public Process<T2> Pipe<T2>(Process1<T, T2> p2)
+        {
+            return p2.Match1(
+                halt: e => Kill<T2>().OnHalt(e2 => new Halt<T2>(e).Concat(() => new Halt<T2>(e2))),
+                emit: (h, t) => new Emit<T2>(h, Pipe(t)),
+                cont: cw => new Cont<T2>(cw.Select(Pipe)),
+                eval: (effect, next) => new Eval<T2>(effect, Pipe(next)),
                 await: (req, recv) => Match(
-                    halt: e => new Halt<TI, TO>(e).Pipe(recv(Streaming.Kill.Only.AsLeft<Exception, TO>())),
-                    emit: (h, t) => t.Pipe(Process.Try(() => recv(h.AsRight<Exception, TO>()))),
-                    cont: cw => new Cont<TI, TO2>(() => cw.Pipe(p2)), 
-                    eval: (effect, next) => new Eval<TI, TO2>(effect, next.Pipe(p2)), 
-                    await: (req0, recv0) => new Await<TI, TO2>(req0, recv0.AndThen(p => p.Pipe(p2)))));
+                    halt: e => new Halt<T>(e).Pipe(recv(Streaming.Kill.Only.AsLeft<Exception, T>())),
+                    emit: (h, t) => t.Pipe(Process.Try(() => recv(h.AsRight<Exception, T>()))),
+                    cont: cw => new Cont<T2>(cw.Select(p => p.Pipe(p2))),
+                    eval: (effect, next) => new Eval<T2>(effect, next.Pipe(p2)),
+                    await: (req0, recv0) => Await<T2>.Create(req0, ((Func<IEither<Exception, object>, Process<T>>)recv0).AndThen(p => p.Pipe(p2)))));
         }
 
-        public Process<TI, TO2> Kill<TO2>()
+        public Process<T2> Kill<T2>()
+        {
+            return
+                Match(
+                    halt: e => new Halt<T2>(e),
+                    await:
+                        (req, recv) =>
+                            ((Process<T>) recv.DynamicInvoke(Streaming.Kill.Only.AsLeft<Exception, object>())).Drain<T2>
+                                ().OnHalt(e => e is Kill ? new Halt<T2>(End.Only) : new Halt<T2>(e)),
+                    emit: (h, t) => t.Kill<T2>(),
+                    cont: cw => new Cont<T2>(cw.Select(p => p.Kill<T2>())),
+                    eval: (effect, next) => next.Kill<T2>());
+        }
+
+        public Process<T> OnHalt(Func<Exception, Process<T>> f)
+        {
+            return 
+                Match(
+                    halt: error => Process.Try(() => f(error)),
+                    await: (req, recv) => Await<T>.Create(req, ((Func<IEither<Exception, object>, Process<T>>)recv).AndThen(p => p.OnHalt(f))),
+                    emit: (h, t) => new Emit<T>(h, t.OnHalt(f)),
+                    cont: cw => new Cont<T>(cw.Select(p => p.OnHalt(f))),
+                    eval: (effect, next) => new Eval<T>(effect, next.OnHalt(f)));
+        }
+
+        public Process<T2> Drain<T2>()
         {
             return Match(
-                await: (req, recv) => recv(Streaming.Kill.Only.AsLeft<Exception, TI>()).Drain<TO2>().OnHalt(e => e is Kill ? Process.Halt1<TI, TO2>() : new Halt<TI, TO2>(e)),
-                halt: e => new Halt<TI, TO2>(e),
-                emit: (h, t) => t.Kill<TO2>(),
-                eval: (effect, next) => next.Kill<TO2>(),
-                cont: cw => cw.Kill<TO2>());
+                halt: error => new Halt<T2>(error),
+                await: (req, recv) => new Cont<T2>(req.Select(o => o.AsRight<Exception, object>()).Select(either => (Process<T>)recv.DynamicInvoke(either)).Select(p => p.Drain<T2>())),
+                emit: (h, t) => t.Drain<T2>(),
+                cont: cw => new Cont<T2>(cw.Select(p => p.Drain<T2>())),
+                eval: (effect, next) => next.Drain<T2>());
         }
 
-        public Process<TI, TO> OnHalt(Func<Exception, Process<TI, TO>> f)
+        public Process<T> AsFinalizer()
         {
-            return Match(
-                halt: e => Process.Try(() => f(e)),
-                emit: (h, t) => new Emit<TI, TO>(h, t.OnHalt(f)),
-                await: (req, recv) => new Await<TI, TO>(req, recv.AndThen(p => p.OnHalt(f))),
-                eval: (effect, next) => new Eval<TI, TO>(effect, next.OnHalt(f)), 
-                cont: cw => new Cont<TI, TO>(() => cw.OnHalt(f)));
+            return Match<Process<T>>(
+                halt: error => new Halt<T>(error),
+                await: (req, recv) => Await<T>.Create(req, either => either.Match(
+                    left: ex => ex is Kill
+                        ? AsFinalizer()
+                        : (Process<T>) recv.DynamicInvoke(either),
+                    right: i => (Process<T>) recv.DynamicInvoke(i.AsRight<Exception, object>()))),
+                emit: (h, t) => new Emit<T>(h, t.AsFinalizer()),
+                cont: cw => new Cont<T>(cw.Select(p => p.AsFinalizer())),
+                eval: (effect, next) => new Eval<T>(effect, next.AsFinalizer()));
         }
 
-        public Process<TI, TO2> Drain<TO2>()
+        public Process<T> OnComplete(Func<Process<T>> p)
         {
-            return Match(
-                halt: e => new Halt<TI, TO2>(e),
-                emit: (h, t) => t.Drain<TO2>(),
-                await: (req, recv) => new Await<TI, TO2>(req, recv.AndThen(p => p.Drain<TO2>())),
-                eval: (effect, next) => next.Drain<TO2>(),
-                cont: cw => new Cont<TI, TO2>(cw.Drain<TO2>));
+            return OnHalt(ex => ex is End ? p().AsFinalizer() : p().AsFinalizer().Concat(() => new Halt<T>(ex)));
         }
 
-        public Process<TI, TO> AsFinalizer()
+        public Process<T3> Tee<T2, T3>(Process<T2> p2, Process1<IEither<T,T2>, T3> tee)
         {
-            return Match<Process<TI, TO>>(
-                emit: (h, t) => new Emit<TI, TO>(h, t.AsFinalizer()),
-                halt: e => new Halt<TI, TO>(e),
-                cont: cw => new Cont<TI, TO>(cw.AsFinalizer), 
-                eval: (effect, next) => new Eval<TI, TO>(effect, next.AsFinalizer()), 
-                await: (req, recv) => new Await<TI, TO>(req, either => either.Match(
-                    left: ex => ex is Kill ? AsFinalizer() : recv(either),
-                    right: i => recv(i.AsRight<Exception, TI>()))));
+            return tee.Match1(
+                halt: e => Kill<T3>().OnComplete(p2.Kill<T3>).OnComplete(() => new Halt<T3>(e)),
+                emit: (h, t) => new Emit<T3>(h, Tee(p2, t)),
+                cont: cw => new Cont<T3>(cw.Select(p => Tee(p2, p))),
+                eval: (effect, next) => new Eval<T3>(effect, Tee(p2, next)),
+                await: (req, recv) => Await<T3>.Create(req, either => either.Match(
+                    left: ex => new Halt<T3>(ex),
+                    right: side => side.Match(
+                        left: t1 => Match(
+                            halt: e => p2.Kill<T3>().OnComplete(() => new Halt<T3>(e)),
+                            await: (reql, recvl) => Await<T3>.Create(reql, ((Func<IEither<Exception, object>, Process<T>>)recvl).AndThen(this2 => this2.Tee(p2, tee))),
+                            emit: (h, t) => t.Tee(p2, Process.Try(() => recv(h.AsLeft<T, T2>().AsRight<Exception, IEither<T, T2>>()))),
+                            cont: cw => new Cont<T3>(cw.Select(p => p.Tee(p2, tee))),
+                            eval: (effect, next) => new Eval<T3>(effect, next.Tee(p2, tee))),
+                        right: t2 => p2.Match(
+                            halt: e => Kill<T3>().OnComplete(() => new Halt<T3>(e)),
+                            await: (reqr, recvr) => Await<T3>.Create(reqr, ((Func<IEither<Exception, object>, Process<T2>>)recvr).AndThen(p3 => Tee(p3, tee))),
+                            emit: (h, t) => Tee(t, Process.Try(() => recv(h.AsRight<T, T2>().AsRight<Exception, IEither<T, T2>>()))),
+                            cont: cw => new Cont<T3>(cw.Select(p => Tee(p, tee))),
+                            eval: (effect, next) => new Eval<T3>(effect, Tee(next, tee)))))));
         }
-
-        public Process<TI, TO> OnComplete(Func<Process<TI, TO>> p)
-        {
-            return OnHalt(ex => ex is End ? p().AsFinalizer() : p().AsFinalizer().Concat(() => new Halt<TI, TO>(ex)));
-        }
-
-        public Process<TI, TO3> Tee<TO2, TO3>(Process<TI, TO2> p2, Process<IEither<TO, TO2>, TO3> tee)
-        {
-            return tee.Match(
-                halt: e => Kill<TO3>().OnComplete(p2.Kill<TO3>).OnComplete(() => new Halt<TI, TO3>(e)),
-                emit: (h, t) => new Emit<TI, TO3>(h, Tee(p2, t)),
-                cont: cw => new Cont<TI, TO3>(() => Tee(p2, cw)), 
-                eval: (effect, next) => new Eval<TI, TO3>(effect, Tee(p2, next)), 
-                await: (side, recv) => side.UnsafePerformIo().Match(
-                    left: isO => Match(
-                        halt: e => p2.Kill<TO3>().OnComplete(() => new Halt<TI, TO3>(e)),
-                        emit: (o, ot) => ot.Tee(p2, Process.Try(() => recv(o.AsLeft<TO, TO2>().AsRight<Exception, IEither<TO, TO2>>()))),
-                        cont: cw => new Cont<TI, TO3>(() => cw.Tee(p2, tee)), 
-                        eval: (effect, next) => new Eval<TI, TO3>(effect, next.Tee(p2, tee)),
-                        await: (reql, recvl) => new Await<TI, TO3>(reql, recvl.AndThen(this2 => this2.Tee(p2, tee)))),
-                    right: isO2 => p2.Match(
-                        halt: e => Kill<TO3>().OnComplete(() => new Halt<TI, TO3>(e)),
-                        emit: (o2, ot) => Tee(ot, Process.Try(() => recv(o2.AsRight<TO, TO2>().AsRight<Exception, IEither<TO, TO2>>()))),
-                        cont: cw => new Cont<TI, TO3>(() => Tee(cw, tee)), 
-                        eval: (effect, next) => new Eval<TI, TO3>(effect, Tee(next, tee)), 
-                        await: (reqr, recvr) => new Await<TI, TO3>(reqr, recvr.AndThen(p3 => Tee(p3, tee))))));
-        }
-
-        public abstract T Match<T>(
-            Func<Exception, T> halt,
-            Func<Io<TI>, Func<IEither<Exception, TI>, Process<TI, TO>>, T> await,
-            Func<TO, Process<TI, TO>, T> emit,
-            Func<Process<TI, TO>, T> cont,
-            Func<Io<Unit>, Process<TI, TO>, T> eval);
     }
 
-    public sealed class Halt<TI, TO> : Process<TI, TO>
+    public sealed class Halt<T> : Process<T>
     {
-        private readonly Exception _error;
+        public readonly Exception Error;
 
         public Halt(Exception error)
         {
-            _error = error;
-        }
-
-        public override T Match<T>(
-            Func<Exception, T> halt,
-            Func<Io<TI>, Func<IEither<Exception, TI>, Process<TI, TO>>, T> await,
-            Func<TO, Process<TI, TO>, T> emit,
-            Func<Process<TI, TO>, T> cont,
-            Func<Io<Unit>, Process<TI, TO>, T> eval)
-        {
-            return halt(_error);
+            Error = error;
         }
 
         public override string ToString()
         {
-            return $"Halt({_error})";
+            return $"Halt({Error})";
         }
     }
 
-    public sealed class Await<TI, TO> : Process<TI, TO>
+    public sealed class Await<T> : Process<T>
     {
-        private readonly Io<TI> _request;
-        private readonly Func<IEither<Exception, TI>, Process<TI, TO>> _receive;
+        public readonly Task<object> Request;
+        public readonly Delegate Receive;
 
-        public Await(Io<TI> request, Func<IEither<Exception, TI>, Process<TI, TO>> receive)
+        public static Await<T> Create<TInput>(Func<TInput> request, Func<IEither<Exception, TInput>, Process<T>> receive)
         {
-            _request = request;
-            _receive = receive;
+            return Create(new Task<TInput>(request), receive);
         }
 
-        public override T Match<T>(
-            Func<Exception, T> halt,
-            Func<Io<TI>, Func<IEither<Exception, TI>, Process<TI, TO>>, T> await,
-            Func<TO, Process<TI, TO>, T> emit,
-            Func<Process<TI, TO>, T> cont,
-            Func<Io<Unit>, Process<TI, TO>, T> eval)
+        public static Await<T> Create<TInput>(Task<TInput> request, Func<IEither<Exception, TInput>, Process<T>> receive)
         {
-            return @await(_request, _receive);
+            var replacementReq = request.Select(i => (object) i);
+            Func<IEither<Exception, object>, Process<T>> replacementFunc = e => receive(e.Select(o => (TInput) o));
+            return new Await<T>(replacementReq, replacementFunc);
+        }
+
+        private Await(Task<object> request, Delegate receive)
+        {            
+            Request = request;
+            Receive = receive;
         }
 
         public override string ToString()
@@ -466,77 +478,186 @@ namespace FunctionalProgramming.Streaming
         }
     }
 
-    public sealed class Emit<TI, TO> : Process<TI, TO>
+    public sealed class Emit<T> : Process<T>
     {
-        private readonly TO _head;
-        private readonly Process<TI, TO> _tail;
+        public readonly T Head;
+        public readonly Process<T> Tail;
 
-        public Emit(TO head, Process<TI, TO> tail = null)
+        public Emit(T head, Process<T> tail = null)
         {
-            _head = head;
-            _tail = tail ?? Process.Halt1<TI, TO>();
-        }
-
-        public override T Match<T>(
-            Func<Exception, T> halt,
-            Func<Io<TI>, Func<IEither<Exception, TI>, Process<TI, TO>>, T> await,
-            Func<TO, Process<TI, TO>, T> emit,
-            Func<Process<TI, TO>, T> cont,
-            Func<Io<Unit>, Process<TI, TO>, T> eval)
-        {
-            return emit(_head, _tail);
+            Head = head;
+            Tail = tail ?? new Halt<T>(End.Only);
         }
 
         public override string ToString()
         {
-            return $"Emit({_head}, {_tail})";
+            return $"Emit({Head}, {Tail})";
         }
     }
 
-    public sealed class Cont<TI, TO> : Process<TI, TO>
+    public sealed class Cont<T> : Process<T>
     {
-        private readonly Lazy<Process<TI, TO>> _continueWith;
+        public readonly Task<Process<T>> ContinueWith;
 
-        public Cont(Func<Process<TI, TO>> continueWith)
+        public Cont(Task<Process<T>> continueWith)
         {
-            _continueWith = new Lazy<Process<TI, TO>>(continueWith);
+            ContinueWith = continueWith;
         }
 
-        public override T Match<T>(
-            Func<Exception, T> halt, 
-            Func<Io<TI>, Func<IEither<Exception, TI>, Process<TI, TO>>, T> await, 
-            Func<TO, Process<TI, TO>, T> emit,
-            Func<Process<TI, TO>, T> cont,
-            Func<Io<Unit>, Process<TI, TO>, T> eval)
+        public Cont(Func<Process<T>> continueWith) : this(new Task<Process<T>>(continueWith))
         {
-            return cont(_continueWith.Value);
+
         }
 
         public override string ToString()
         {
-            return $"Cont({(_continueWith.IsValueCreated ? _continueWith.Value.ToString() : "???")})";
+            //TODO Find better string representation
+            return "Cont(???)";
         }
     }
 
-    public sealed class Eval<TI, TO> : Process<TI, TO>
+    public sealed class Eval<T> : Process<T>
     {
-        private readonly Io<Unit> _effect;
-        private readonly Process<TI, TO> _next;
+        public readonly Task<Unit> Effect;
+        public readonly Process<T> Next;
 
-        public Eval(Io<Unit> effect, Process<TI, TO > next = null)
+        public Eval(Task<Unit> effect, Process<T> next = null)
         {
-            _effect = effect;
-            _next = next ?? Process.Halt1<TI, TO>();
+            Effect = effect;
+            Next = next ?? new Halt<T>(End.Only);
         } 
 
-        public override T Match<T>(
-            Func<Exception, T> halt, 
-            Func<Io<TI>, Func<IEither<Exception, TI>, Process<TI, TO>>, T> await,
-            Func<TO, Process<TI, TO>, T> emit,
-            Func<Process<TI, TO>, T> cont,
-            Func<Io<Unit>, Process<TI, TO>, T> eval)
+        public Eval(Func<Unit> effect, Process<T> next = null) : this(new Task<Unit>(effect), next)
         {
-            return eval(_effect, _next);
+
         }
+
+        public Eval(Action effect, Process<T> next = null) : this(() =>
+        {
+            effect();
+            return Unit.Only;
+        }, next)
+        {
+
+        }
+    }
+
+    public abstract class Process1<TI, TO> : Process<TO>
+    {
+        public Process1<TI, TO> OnHalt(Func<Exception, Process1<TI, TO>> f)
+        {
+            return Match1(
+                halt: e => Process.Try(() => f(e)),
+                await: (req, recv) => new Await1<TI, TO>(req, recv.AndThen(p => p.OnHalt(f))),
+                emit: (h, t) => new Emit1<TI, TO>(h, t.OnHalt(f)),
+                cont: cw => new Cont1<TI, TO>(cw.Select(p => p.OnHalt(f))),
+                eval: (effect, next) => new Eval1<TI, TO>(effect, next.OnHalt(f)));
+        }
+
+        public TMatch Match1<TMatch>(
+            Func<Exception, TMatch> halt,
+            Func<Task<TI>, Func<IEither<Exception, TI>, Process1<TI, TO>>, TMatch> await,
+            Func<TO, Process1<TI, TO>, TMatch> emit,
+            Func<Task<Process1<TI, TO>>, TMatch> cont,
+            Func<Task<Unit>, Process1<TI, TO>, TMatch> eval)
+        {
+            TMatch retval;
+            if (this is Halt1<TI, TO>)
+            {
+                var p = this as Halt1<TI, TO>;
+                retval = halt(p.Error);
+            }
+            else if (this is Await1<TI, TO>)
+            {
+                var p = this as Await1<TI, TO>;
+                retval = @await(p.Request, p.Receive);
+            }
+            else if (this is Emit1<TI, TO>)
+            {
+                var p = this as Emit1<TI, TO>;
+                retval = emit(p.Head, p.Tail);
+            }
+            else if (this is Cont1<TI, TO>)
+            {
+                var p = this as Cont1<TI, TO>;
+                retval = cont(p.ContinueWith);
+            }
+            else if (this is Eval1<TI, TO>)
+            {
+                var p = this as Eval1<TI, TO>;
+                retval = eval(p.Effect, p.Next);
+            }
+            else
+            {
+                throw new MatchException(typeof(Process1<TI, TO>), GetType());
+            }
+            return retval;
+        }
+    }
+
+    public sealed class Halt1<TI, TO> : Process1<TI, TO>
+    {
+        public readonly Exception Error;
+        
+        public Halt1(Exception error)
+        {
+            Error = error;
+        }
+    }
+
+    public sealed class Await1<TI, TO> : Process1<TI, TO>
+    {
+        public readonly Task<TI> Request;
+        public readonly Func<IEither<Exception, TI>, Process1<TI, TO>> Receive;
+
+        public Await1(Task<TI> request, Func<IEither<Exception, TI>, Process1<TI, TO>> receive)
+        {
+            Request = request;
+            Receive = receive;
+        }
+
+        public Await1(Func<TI> request, Func<IEither<Exception, TI>, Process1<TI, TO>> receive) : this(new Task<TI>(request), receive)
+        {
+            
+        } 
+    }
+
+    public sealed class Emit1<TI, TO> : Process1<TI, TO>
+    {
+        public readonly TO Head;
+        public readonly Process1<TI, TO> Tail;
+
+        public Emit1(TO head, Process1<TI, TO> tail)
+        {
+            Head = head;
+            Tail = tail;
+        } 
+    }
+
+    public sealed class Cont1<TI, TO> : Process1<TI, TO>
+    {
+        public readonly Task<Process1<TI, TO>> ContinueWith;
+
+        public Cont1(Func<Process1<TI, TO>> continueWith) : this(new Task<Process1<TI, TO>>(continueWith))
+        {
+
+        }
+
+        public Cont1(Task<Process1<TI, TO>> continueWith)
+        {
+            ContinueWith = continueWith;
+        }
+    }
+
+    public sealed class Eval1<TI, TO> : Process1<TI, TO>
+    {
+        public readonly Task<Unit> Effect;
+        public readonly Process1<TI, TO> Next;
+
+        public Eval1(Task<Unit> effect, Process1<TI, TO> next)
+        {
+            Effect = effect;
+            Next = next;
+        } 
     }
 }

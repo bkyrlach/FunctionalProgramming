@@ -1,9 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Threading.Tasks;
 using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad;
 using FunctionalProgramming.Streaming;
+using FunctionalProgramming.Tests.Util;
 using NUnit.Framework;
 using Process = FunctionalProgramming.Streaming.Process;
 
@@ -13,97 +13,73 @@ namespace FunctionalProgramming.Tests.StreamingTests
     public sealed class StreamingTests
     {
         [Test]
-        public void TestConcat()
+        public void TestProcess()
         {
-            var expected = new[] {1, 2};
-            var _1 = new Emit<int, int>(1);
-            var _2 = new Emit<int, int>(2);
-            var process = _1.Concat(() => _2);
-            var result = process.RunLog();
-            Assert.AreEqual(expected, result);
+            var expected = new[] {1, 2, 3, 4, 5};
+            var p1 = Process.Apply(1, 2, 3, 4, 5);
+            var result = p1.RunLog();
+            Assert.IsTrue(TestUtils.AreEqual(expected, result));
         }
 
         [Test]
-        public void TestOneProcess()
+        public void TestSink()
         {
-            var transducer = Process.Lift<int, int>(x => x*2);
-            var source = new Emit<int, int>(1);
-            var process = source.Pipe(transducer);
-            var result = process.Run();
-            Assert.AreEqual(2, result);
+            var p1 = Process.Apply(1, 2, 3, 4, 5);
+            var p2 = Process.Sink<int>(n => Console.WriteLine(n));
+            var p3 = p1.Pipe(p2);
+            p3.Run();
         }
 
-        [Test]
-        public void TestTenProcess()
+        private Process1<IEither<T, T2>, IEither<T, T2>> Tee<T, T2>(bool right = true)
         {
-            var expected = new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 }.Select(x => x * 2);
-            var transducer = Process.Lift<int, int>(x => x*2);
-            var source = new Emit<int, int>(1, new Emit<int, int>(2, new Emit<int, int>(3, new Emit<int, int>(4, new Emit<int, int>(5, new Emit<int, int>(6, new Emit<int, int>(7, new Emit<int, int>(8, new Emit<int, int>(9, new Emit<int, int>(10))))))))));
-            var process = source.Pipe(transducer);
-            var result = process.RunLog();
-            Assert.AreEqual(expected, result);
-        }
-
-        private Process<IEither<T, T2>, IEither<T, T2>> Tee<T, T2>(bool right = true)
-        {
-            return new Await<IEither<T, T2>, IEither<T, T2>>(
-                Io.Apply(() => BasicFunctions.EIf(right, () => default(T2), () => default(T))),
-                errorOrValue => errorOrValue.Match<Process<IEither<T, T2>, IEither<T, T2>>>(
-                    left: e => new Halt<IEither<T, T2>, IEither<T, T2>>(e),
-                    right: either => new Emit<IEither<T, T2>, IEither<T, T2>>(either, Tee<T, T2>(!right))));
-        }
-
-        private Process<T, T> ListToProcess<T>(IEnumerable<T> xs)
-        {
-            return (xs.Any()
-                ? new Await<T, T>(Io.Apply(() => xs.First()), either => either.Match<Process<T, T>>(
-                    left: e => new Halt<T, T>(e),
-                    right: x => new Emit<T, T>(x, ListToProcess(xs.Skip(1)))))
-                : Process.Halt1<T, T>());
+            return new Await1<IEither<T, T2>, IEither<T, T2>>(
+                () => BasicFunctions.EIf(right, () => default(T2), () => default(T)),
+                errorOrValue => errorOrValue.Match<Process1<IEither<T, T2>, IEither<T, T2>>>(
+                    left: e => new Halt1<IEither<T, T2>, IEither<T, T2>>(e),
+                    right: either => new Emit1<IEither<T, T2>, IEither<T, T2>>(either, Tee<T, T2>(!right))));
         }
 
         [Test]
         public void TestTee()
         {
-            var nums = ListToProcess(new[] {1, 2, 3, 4, 5});
-            var letters = ListToProcess(new[] {"a", "b", "c", "d", "e"});
-            var combined = nums.Tee(nums, Tee<int, int>());
-            var results = combined.RunLog();
-            results.ToList().ForEach(Console.WriteLine);
-        }        
+            var p1 = Process.Apply(1, 2, 3, 4, 5);
+            var p2 = Process.Apply("a", "b", "c", "d", "e");
+            var p3 = Process.Sink<IEither<int, string>>(either => Console.WriteLine(either));
+            var p4 = p1.Tee(p2, Tee<int, string>());
 
-        [Test]
-        public void TestBoringNonDet()
-        {
-            var nums = ListToProcess(new[] { 1, 2, 3, 4, 5 });
-            var nums2 = ListToProcess(new[] {1, 2, 3});
-            var letters = ListToProcess(new[] { "a", "b", "c", "d", "e" });
-            var process = Process.Wye(nums, nums2);
-            var results = process.RunLog();
-            results.ToList().ForEach(Console.WriteLine);
-        }
-
-        private static readonly Random R = new Random();
-
-        private Process<T, T> Delayed<T>(IEnumerable<T> ints)
-        {
-            return ints.Any() 
-                ? Process.Delay<T, T>((uint)R.Next(25, 101)).Concat(() => new Await<T, T>(
-                    Io.Apply(() => ints.First()), 
-                    either => either.Match<Process<T, T>>(
-                        left: e => new Halt<T, T>(e),
-                        right: x => new Emit<T, T>(x))).Concat(() => Delayed(ints.Skip(1))))
-                : Process.Halt1<T, T>();
+            var results = p4.Pipe(p3).Run();            
         }
 
         [Test]
-        public void TestNonDet()
+        public void TestSelectMany()
         {
-            var nums = Delayed(Enumerable.Range(1, 100));
-            var sink = Process.Sink<int>(n => Console.WriteLine(n));
-            var stopAfter = Process.Delay<int, int>(30000);
-            var process = Process.Wye(nums.Pipe(sink), stopAfter);
-            process.Run();
+            var p1 = Process.Apply(1);
+            var p2 = Process.Apply(2);
+            var p3 = p1.SelectMany(n => p2);
+            var results = p3.RunLog();
+            results.ForEach(Console.WriteLine);
+        }
+
+        public Process<int> DelayCount(int cur)
+        {
+            return Await<int>.Create(new Task<int>(() =>
+            {
+                Thread.Sleep(1000);
+                return cur;
+            }), either => either.Match<Process<int>>(
+                left: ex => new Halt<int>(ex),
+                right: n => new Emit<int>(n, DelayCount(n + 1))));
+        }
+
+        [Test]
+        public void TestWye()
+        {
+            var stopAfter30 = Process.Delay(3000);
+            var count = DelayCount(1);
+            var combined = Process.Wye(count, stopAfter30);
+            var sink = Process.Sink<IEither<int, Unit>>(either => Console.WriteLine(either));
+            var result = combined.Pipe(sink);
+            result.Run();
         }
     }
 }

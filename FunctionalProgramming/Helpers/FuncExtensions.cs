@@ -4,6 +4,16 @@ namespace FunctionalProgramming.Helpers
 {
     public static class FuncExtensions
     {
+        public static Func<T1, T3> Select<T1, T2, T3>(this Func<T1, T2> m, Func<T2, T3> f)
+        {
+            return f.Compose(m);
+        }
+
+        public static Func<T2> Select<T1, T2>(this Func<T1> m, Func<T1, T2> f)
+        {
+            return () => f(m());
+        } 
+
         /// <summary>
         /// Predicate combinator using boolean AND
         /// </summary>

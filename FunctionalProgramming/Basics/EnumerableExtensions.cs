@@ -81,16 +81,16 @@ namespace FunctionalProgramming.Basics
         /// <typeparam name="T"></typeparam>
         /// <param name="taskTs"></param>
         /// <returns></returns>
-        public static Task<IEnumerable<T>> Sequence<T>(this IEnumerable<Task<T>> taskTs)
-        {
-            var initial = ConsList.Nil<T>().FromResult();
-            return taskTs.Reverse().Aggregate(initial, (current, task) => current.SelectMany(ts => task.Select(t => t.Cons(ts)))).Select(tasks => tasks.AsEnumerable());
-        }
+        //public static Task<IEnumerable<T>> Sequence<T>(this IEnumerable<Task<T>> taskTs)
+        //{
+        //    var initial = ConsList.Nil<T>().FromResult();
+        //    return taskTs.Reverse().Aggregate(initial, (current, task) => current.SelectMany(ts => task.Select(t => t.Cons(ts)))).Select(tasks => tasks.AsEnumerable());
+        //}
 
-        public static Task<IEnumerable<T2>> Traverse<T1, T2>(this IEnumerable<T1> xs, Func<T1, Task<T2>> f)
-        {
-            return xs.Select(f).Sequence();
-        }
+        //public static Task<IEnumerable<T2>> Traverse<T1, T2>(this IEnumerable<T1> xs, Func<T1, Task<T2>> f)
+        //{
+        //    return xs.Select(f).Sequence();
+        //}
 
         /// <summary>
         /// Sequence takes a list of computations and builds from them a computation which will
