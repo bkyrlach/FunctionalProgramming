@@ -39,7 +39,7 @@ namespace FunctionalProgramming.Monad
                 cons: (h, t) => new More<Unit>(() =>
                 {
                     f(h);
-                    return ForEachT<T>(t, f);
+                    return ForEachT(t, f);
                 }),
                 nil: () => new Done<Unit>(Unit.Only));
         } 
@@ -124,17 +124,11 @@ namespace FunctionalProgramming.Monad
             private readonly T _head;
             private readonly Lazy<IStream<T>> _tail;
 
-            public IMaybe<T> Head { get { return _head.ToMaybe(); } }
+            public IMaybe<T> Head => _head.ToMaybe();
 
-            public IMaybe<IStream<T>> Tail
-            {
-                get { return _tail.Value.ToMaybe(); }
-            }
+            public IMaybe<IStream<T>> Tail => _tail.Value.ToMaybe();
 
-            public bool Any
-            {
-                get { return true; }
-            }
+            public bool Any => true;
 
             public NonEmptyStream(T head, Lazy<IStream<T>> tail)
             {
@@ -149,17 +143,15 @@ namespace FunctionalProgramming.Monad
 
             public override string ToString()
             {
-                return string.Format("Stream({0}, ?)", _head);
+                return $"Stream({_head}, ?)";
             }
         }
 
         private class EmptyStream<T> : IStream<T>
         {
-            public IMaybe<T> Head { get { return Maybe.Nothing<T>(); } }
-            public IMaybe<IStream<T>> Tail { get { return Maybe.Nothing<IStream<T>>(); } }
-            public bool Any { get { return false; } }
-
-            public EmptyStream() {} 
+            public IMaybe<T> Head => Maybe.Nothing<T>();
+            public IMaybe<IStream<T>> Tail => Maybe.Nothing<IStream<T>>();
+            public bool Any => false;
 
             public TResult Match<TResult>(Func<T, IStream<T>, TResult> cons, Func<TResult> nil)
             {

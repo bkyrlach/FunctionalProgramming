@@ -75,22 +75,16 @@ namespace FunctionalProgramming.Basics
             return xs.Select(f).Sequence();
         }
 
-        /// <summary>
-        /// Do not USE!!!!
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="taskTs"></param>
-        /// <returns></returns>
-        //public static Task<IEnumerable<T>> Sequence<T>(this IEnumerable<Task<T>> taskTs)
-        //{
-        //    var initial = ConsList.Nil<T>().FromResult();
-        //    return taskTs.Reverse().Aggregate(initial, (current, task) => current.SelectMany(ts => task.Select(t => t.Cons(ts)))).Select(tasks => tasks.AsEnumerable());
-        //}
+        public static Task<IEnumerable<T>> Sequence<T>(this IEnumerable<Task<T>> taskTs)
+        {
+            var initial = Task.FromResult(ConsList.Nil<T>());
+            return taskTs.Reverse().Aggregate(initial, (current, task) => current.SelectMany(ts => task.Select(t => t.Cons(ts)))).Select(tasks => tasks.AsEnumerable());
+        }
 
-        //public static Task<IEnumerable<T2>> Traverse<T1, T2>(this IEnumerable<T1> xs, Func<T1, Task<T2>> f)
-        //{
-        //    return xs.Select(f).Sequence();
-        //}
+        public static Task<IEnumerable<T2>> Traverse<T1, T2>(this IEnumerable<T1> xs, Func<T1, Task<T2>> f)
+        {
+            return xs.Select(f).Sequence();
+        }
 
         /// <summary>
         /// Sequence takes a list of computations and builds from them a computation which will
@@ -138,7 +132,7 @@ namespace FunctionalProgramming.Basics
         /// <returns>A computation thqt yields a sequence of values of type 'T</returns>
         public static Try<IEnumerable<T>> Sequence<T>(this IEnumerable<Try<T>> tries)
         {
-            var initial = Try.Attempt(() => ConsList.Nil<T>());
+            var initial = Try.Attempt(ConsList.Nil<T>);
             return tries.Reverse().Aggregate(initial, (current, aTry) => current.SelectMany(ts => aTry.Select(t => t.Cons(ts)))).Select(ts => ts.AsEnumerable());
         }
 
@@ -174,9 +168,6 @@ namespace FunctionalProgramming.Basics
                 }
                 return Tuple.Create(s, retval.Select(xs => xs.AsEnumerable().Reverse()));
             }));
-
-            //var initial = ConsList.Nil<TRight>().InsertRight<TState, TLeft, IConsList<TRight>>();
-            //return stateTs.Aggregate(initial, (current, aStateEither) => current.SelectMany(ts => aStateEither.Select(t => t.Cons(ts)))).Select(ts => ts.AsEnumerable().Reverse());
         }
 
         public static StateEither<TState, TLeft, IEnumerable<TResult>> Traverse<TState, TLeft, TRight, TResult>(
@@ -197,14 +188,10 @@ namespace FunctionalProgramming.Basics
             return xs.Select(f).Sequence();
         }
 
-        public static StateIo<TState, IEnumerable<TValue>> Sequence<TState, TValue>(
-            this IEnumerable<StateIo<TState, TValue>> stateTs)
+        public static StateIo<TState, IEnumerable<TValue>> Sequence<TState, TValue>(this IEnumerable<StateIo<TState, TValue>> stateTs)
         {
             var initial = ConsList.Nil<TValue>().ToStateIo<TState, IConsList<TValue>>();
-            return
-                stateTs.Aggregate(initial,
-                    (current, anIoState) => current.SelectMany(ts => anIoState.Select(t => t.Cons(ts))))
-                    .Select(ioStates => ioStates.AsEnumerable().Reverse());
+            return stateTs.Aggregate(initial, (current, anIoState) => current.SelectMany(ts => anIoState.Select(t => t.Cons(ts)))).Select(ioStates => ioStates.AsEnumerable().Reverse());
         }
 
         public static StateIo<TState, IEnumerable<TValue>> Traverse<TState, TInitial, TValue>(
@@ -215,7 +202,7 @@ namespace FunctionalProgramming.Basics
 
         public static IoTry<IEnumerable<T>> Sequence<T>(this IEnumerable<IoTry<T>> ioTs)
         {
-            var initial = Io.Apply(() => ConsList.Nil<T>()).ToIoTry();
+            var initial = Io.Apply(ConsList.Nil<T>).ToIoTry();
             return ioTs.Aggregate(initial, (current, maybe) => current.SelectMany(ts => maybe.Select(t => t.Cons(ts)))).Select(xs => xs.AsEnumerable());
         }
 
@@ -330,8 +317,7 @@ namespace FunctionalProgramming.Basics
         /// <param name="ts">A queryable from which we want the only element that satisfies the provided predicate</param>
         /// <param name="predicate">A predicate for which only one element will satisfy to be the return value</param>
         /// <returns>The only value in the queryable that satisfies the predicate, or nothing if no such element exists or multiple elements satisifying the predicate exist</returns>
-        public static IMaybe<T> MaybeSingle<T>(this IQueryable<T> ts, Expression<Func<T, bool>> predicate)
-            where T : class
+        public static IMaybe<T> MaybeSingle<T>(this IQueryable<T> ts, Expression<Func<T, bool>> predicate) where T : class
         {
             return Try.Attempt(() => ts.SingleOrDefault(predicate).ToMaybe()).AsMaybe().Join();
         }

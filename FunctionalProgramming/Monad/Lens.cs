@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Xml;
 using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad

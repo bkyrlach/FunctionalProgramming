@@ -207,7 +207,7 @@ namespace FunctionalProgramming.Streaming
                 () => default(TI), 
                 either => either.Match(
                     left: ex => ex is End
-                        ? fallback.ToMaybe().GetOrElse(Halt1<TI, TO>)
+                        ? fallback.ToMaybe().GetOrElse(() => Halt1<TI, TO>())
                         : new Halt1<TI, TO>(ex),
                     right: i => Try(() => recv(i))));
         }
@@ -227,9 +227,14 @@ namespace FunctionalProgramming.Streaming
             return Lift1(f).Repeat();
         }
 
-        public static Process1<TI, TO> Halt1<TI, TO>()
+        public static Process<T> Halt<T>(Exception ex = null)
         {
-            return new Halt1<TI, TO>(End.Only);
+            return new Halt<T>(ex ?? End.Only);
+        }
+
+        public static Process1<TI, TO> Halt1<TI, TO>(Exception ex = null)
+        {
+            return new Halt1<TI, TO>(ex ?? End.Only);
         }
 
         public static Process<T> Try<T>(Func<Process<T>> p)

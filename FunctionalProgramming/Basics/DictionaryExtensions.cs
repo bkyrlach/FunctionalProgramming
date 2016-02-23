@@ -22,8 +22,7 @@ namespace FunctionalProgramming.Basics
             Tuple<TKey, TValue> update)
         {
             //TODO This is not likely very performant. Lets see if there's a better way
-            var newDictionary = new Dictionary<TKey, TValue>(dictionary);
-            newDictionary[update.Item1] = update.Item2;
+            var newDictionary = new Dictionary<TKey, TValue>(dictionary) {[update.Item1] = update.Item2};
             return newDictionary;
         }
 

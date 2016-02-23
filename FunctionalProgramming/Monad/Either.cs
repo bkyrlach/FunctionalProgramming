@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using FunctionalProgramming.Basics;
-using FunctionalProgramming.Helpers;
 
 namespace FunctionalProgramming.Monad
 {
@@ -185,9 +184,7 @@ namespace FunctionalProgramming.Monad
 
         public static IEither<T1, T3> Apply<T1, T2, T3>(this IEither<T1, Func<T2, T3>> fa, IEither<T1, T2> ma)
         {
-            return fa.Match(
-                left: e => e.AsLeft<T1, T3>(),
-                right: ma.Select);
+            return fa.SelectMany(ma.Select);
         } 
     }
 }
