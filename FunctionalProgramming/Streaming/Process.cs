@@ -161,17 +161,17 @@ namespace FunctionalProgramming.Streaming
             }
         }
 
-        private static Process<IEither<T1, T2>> HandleBranch<T1, T2>(object l, Delegate recvl, Delegate recvr, bool isLeft)
+        private static Process<IEither<T1, T2>> HandleBranch<T1, T2>(object l, Func<IEither<Exception, object>, Process<T1>> recvl, Func<IEither<Exception, object>, Process<T2>> recvr, bool isLeft)
         {
             Process<IEither<T1, T2>> retval;
             var pair = (Tuple<object, Func<object>>) l;
             if (isLeft)
             {
-                retval = Wye((Process<T1>) recvl.DynamicInvoke(pair.Item1.AsRight<Exception, object>()), Await<T2>.Create(pair.Item2, (Func<IEither<Exception, object>, Process<T2>>) recvr));
+                retval = Wye(recvl(pair.Item1.AsRight<Exception, object>()), Await<T2>.Create(pair.Item2, recvr));
             }
             else
             {
-                retval = Wye(Await<T1>.Create(pair.Item2, (Func<IEither<Exception, object>, Process<T1>>) recvl), (Process<T2>) recvr.DynamicInvoke(pair.Item1.AsRight<Exception, object>()));
+                retval = Wye(Await<T1>.Create(pair.Item2, recvl), recvr(pair.Item1.AsRight<Exception, object>()));
             }
             return retval;
         }
@@ -309,7 +309,7 @@ namespace FunctionalProgramming.Streaming
     {
         public TResult Match<TResult>(
             Func<Exception, TResult> halt,
-            Func<Func<object>, Delegate, TResult> await,
+            Func<Func<object>, Func<IEither<Exception, Object>, Process<T>>, TResult> await,
             Func<T, Process<T>, TResult> emit,
             Func<Func<Process<T>>, TResult>  cont,
             Func<Action, Process<T>, TResult> eval)
@@ -369,8 +369,8 @@ namespace FunctionalProgramming.Streaming
                     },
                     await: (req, recv) =>
                     {
-                        var o = req.DynamicInvoke();
-                        step = (Process<T>) recv.DynamicInvoke(o.AsRight<Exception, object>());
+                        var o = req();
+                        step = recv(o.AsRight<Exception, object>());
                         return Unit.Only;
                     },
                     emit: (h, t) =>
@@ -411,7 +411,7 @@ namespace FunctionalProgramming.Streaming
                     emit: (h, t) => t.Pipe(Process.Try(() => recv(h.AsRight<Exception, T>()))),
                     cont: cw => new Cont<T2>(cw.Select(p => p.Pipe(p2))),
                     eval: (effect, next) => new Eval<T2>(effect, next.Pipe(p2)),
-                    await: (req0, recv0) => Await<T2>.Create(req0, ((Func<IEither<Exception, object>, Process<T>>)recv0).AndThen(p => p.Pipe(p2)))));
+                    await: (req0, recv0) => Await<T2>.Create(req0, recv0.AndThen(p => p.Pipe(p2)))));
         }
 
         public Process<T2> Kill<T2>()
@@ -419,10 +419,7 @@ namespace FunctionalProgramming.Streaming
             return
                 Match(
                     halt: e => new Halt<T2>(e),
-                    await:
-                        (req, recv) =>
-                            ((Process<T>) recv.DynamicInvoke(Streaming.Kill.Only.AsLeft<Exception, object>())).Drain<T2>
-                                ().OnHalt(e => e is Kill ? new Halt<T2>(End.Only) : new Halt<T2>(e)),
+                    await: (req, recv) => recv(Streaming.Kill.Only.AsLeft<Exception, object>()).Drain<T2>().OnHalt(e => e is Kill ? new Halt<T2>(End.Only) : new Halt<T2>(e)),
                     emit: (h, t) => t.Kill<T2>(),
                     cont: cw => new Cont<T2>(cw.Select(p => p.Kill<T2>())),
                     eval: (effect, next) => next.Kill<T2>());
@@ -433,7 +430,7 @@ namespace FunctionalProgramming.Streaming
             return 
                 Match(
                     halt: error => Process.Try(() => f(error)),
-                    await: (req, recv) => Await<T>.Create(req, ((Func<IEither<Exception, object>, Process<T>>)recv).AndThen(p => p.OnHalt(f))),
+                    await: (req, recv) => Await<T>.Create(req, recv.AndThen(p => p.OnHalt(f))),
                     emit: (h, t) => new Emit<T>(h, t.OnHalt(f)),
                     cont: cw => new Cont<T>(cw.Select(p => p.OnHalt(f))),
                     eval: (effect, next) => new Eval<T>(effect, next.OnHalt(f)));
@@ -443,7 +440,7 @@ namespace FunctionalProgramming.Streaming
         {
             return Match(
                 halt: error => new Halt<T2>(error),
-                await: (req, recv) => new Cont<T2>(req.Select(o => o.AsRight<Exception, object>()).Select(either => (Process<T>)recv.DynamicInvoke(either)).Select(p => p.Drain<T2>())),
+                await: (req, recv) => new Cont<T2>(req.Select(o => o.AsRight<Exception, object>()).Select(recv).Select(p => p.Drain<T2>())),
                 emit: (h, t) => t.Drain<T2>(),
                 cont: cw => new Cont<T2>(cw.Select(p => p.Drain<T2>())),
                 eval: (effect, next) => next.Drain<T2>());
@@ -456,8 +453,8 @@ namespace FunctionalProgramming.Streaming
                 await: (req, recv) => Await<T>.Create(req, either => either.Match(
                     left: ex => ex is Kill
                         ? AsFinalizer()
-                        : (Process<T>) recv.DynamicInvoke(either),
-                    right: i => (Process<T>) recv.DynamicInvoke(i.AsRight<Exception, object>()))),
+                        : recv(either),
+                    right: i => recv(i.AsRight<Exception, object>()))),
                 emit: (h, t) => new Emit<T>(h, t.AsFinalizer()),
                 cont: cw => new Cont<T>(cw.Select(p => p.AsFinalizer())),
                 eval: (effect, next) => new Eval<T>(effect, next.AsFinalizer()));
@@ -511,7 +508,7 @@ namespace FunctionalProgramming.Streaming
     public sealed class Await<T> : Process<T>
     {
         public readonly Func<object> Request;
-        public readonly Delegate Receive;
+        public readonly Func<IEither<Exception, object>, Process<T>> Receive;
 
         public static Await<T> Create<TInput>(Func<TInput> request, Func<IEither<Exception, TInput>, Process<T>> receive)
         {
@@ -520,7 +517,7 @@ namespace FunctionalProgramming.Streaming
             return new Await<T>(replacementReq, replacementFunc);
         }
 
-        private Await(Func<object> request, Delegate receive)
+        private Await(Func<object> request, Func<IEither<Exception, object>, Process<T>> receive)
         {            
             Request = request;
             Receive = receive;

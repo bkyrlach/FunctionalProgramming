@@ -18,7 +18,7 @@ namespace FunctionalProgramming.Monad
         public static T Run<T>(this ITrampoline<T> self)
         {
             object o = null;
-            var stack = new Stack<Delegate>();
+            var stack = new Stack<Func<object, object>>();
             var next = (ITrampoline)self;
             var isDone = false;
             while (!isDone)
@@ -27,7 +27,7 @@ namespace FunctionalProgramming.Monad
                 if (data[0] != null)
                     next = (ITrampoline)data[0];
                 if (data[1] != null)
-                    stack.Push((Delegate)data[1]);
+                    stack.Push((Func<object, object>)data[1]);
                 if (data[2] != null)
                 {
                     o = data[2];
@@ -41,7 +41,7 @@ namespace FunctionalProgramming.Monad
                         while (apply)
                         {
                             var f = stack.Pop();
-                            var temp = f.DynamicInvoke(o);
+                            var temp = f(o);
                             if (temp is ITrampoline)
                             {
                                 apply = false;
@@ -88,12 +88,13 @@ namespace FunctionalProgramming.Monad
     public struct Cont<T, T2> : ITrampoline<T2>, ITrampoline
     {
         private readonly ITrampoline<T> _next;
-        private readonly Func<T, ITrampoline<T2>> _transform;
+        private readonly Func<object, object> _transform;
 
         public Cont(ITrampoline<T> next, Func<T, ITrampoline<T2>> transform)
         {
+            Func<object, object> replacement = o => transform((T) o);
             _next = next;
-            _transform = transform;
+            _transform = replacement;
         }
 
         public object[] RunStep()
@@ -105,12 +106,13 @@ namespace FunctionalProgramming.Monad
     public struct Transform<T, T2> : ITrampoline<T2>, ITrampoline
     {
         private readonly ITrampoline<T> _next;
-        private readonly Func<T, T2> _transform;
+        private readonly Func<object, object> _transform;
 
         public Transform(ITrampoline<T> next, Func<T, T2> transform)
         {
+            Func<object, object> replacement = o => transform((T) o);
             _next = next;
-            _transform = transform;
+            _transform = replacement;
         }
 
         public object[] RunStep()
