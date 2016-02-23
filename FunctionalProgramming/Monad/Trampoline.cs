@@ -1,120 +1,137 @@
 ﻿using System;
 using System.Collections.Generic;
-using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad
 {
     public static class TrampolineExtensions
     {
-        public static Trampoline<T2> Select<T, T2>(this Trampoline<T> m, Func<T, T2> f)
+        public static ITrampoline<T2> Select<T, T2>(this ITrampoline<T> m, Func<T, T2> f)
         {
-            return m.SelectMany(a => new More<T2>(() => new Done<T2>(f(a))));
+            return new Transform<T,T2>(m, f);
         }
 
-        public static Trampoline<T2> SelectMany<T, T2>(this Trampoline<T> m,
-            Func<T, Trampoline<T2>> f)
+        public static ITrampoline<T2> SelectMany<T, T2>(this ITrampoline<T> m, Func<T, ITrampoline<T2>> f)
         {
             return new Cont<T, T2>(m, f);
         }
-    }
 
-    public class TrampolineException<T> : Exception
-    {
-        public Trampoline<T> Next;
-
-        public TrampolineException(Trampoline<T> next)
-        {
-            Next = next;
-        }
-    }
-
-    public interface ITrampoline
-    {
-        IEither<Tuple<ITrampoline, Delegate>, object> RunStep();
-    }
-
-    public abstract class Trampoline<T>
-    {
-        public T Run()
+        public static T Run<T>(this ITrampoline<T> self)
         {
             object o = null;
             var stack = new Stack<Delegate>();
-            var next = (ITrampoline)this;
+            var next = (ITrampoline)self;
             var isDone = false;
             while (!isDone)
             {
-                next.RunStep().Match(
-                    left: pair =>
+                var data = next.RunStep();
+                if (data[0] != null)
+                    next = (ITrampoline)data[0];
+                if (data[1] != null)
+                    stack.Push((Delegate)data[1]);
+                if (data[2] != null)
+                {
+                    o = data[2];
+                    if (stack.Count == 0)
                     {
-                        next = pair.Item1;
-                        if (pair.Item2 != null)
-                        {
-                            stack.Push(pair.Item2);
-                        }
-                        return Unit.Only;
-                    },
-                    right: obj =>
+                        isDone = true;
+                    }
+                    else
                     {
-                        o = obj;
-                        if (stack.Count == 0)
+                        var apply = true;
+                        while (apply)
                         {
-                            isDone = true;
+                            var f = stack.Pop();
+                            var temp = f.DynamicInvoke(o);
+                            if (temp is ITrampoline)
+                            {
+                                apply = false;
+                                next = (ITrampoline) temp;
+                            }
+                            else
+                            {
+                                o = temp;
+                            }
+                            apply = apply && (stack.Count != 0);
                         }
-                        else
-                        {
-                            var d = stack.Pop();
-                            next = (ITrampoline) d.DynamicInvoke(o);
-                        }
-                        return Unit.Only;
-                    });
+
+                    }
+                }
             }
             return (T)o;
         }
+
     }
 
-    public sealed class More<T> : Trampoline<T>, ITrampoline
+    internal interface ITrampoline
     {
-        public readonly Func<Trampoline<T>> Continuation;
-        public More(Func<Trampoline<T>> continuation)
-        {
-            Continuation = continuation;
-        }
-
-        public IEither<Tuple<ITrampoline, Delegate>, object> RunStep()
-        {
-            return Tuple.Create<ITrampoline, Delegate>((ITrampoline) Continuation(), null).AsLeft< Tuple<ITrampoline, Delegate>, object>();
-        }
+        object[] RunStep();
     }
 
-    public sealed class Cont<T, T2> : Trampoline<T2>, ITrampoline
+    public interface ITrampoline<T>
     {
-        public readonly Trampoline<T> Next;
-        public readonly Func<T, Trampoline<T2>> Transform;
+    }
 
-        public Cont(Trampoline<T> next, Func<T, Trampoline<T2>> transform)
+    public struct More<T> : ITrampoline<T>, ITrampoline
+    {
+        private readonly Func<ITrampoline<T>> _continuation;
+        public More(Func<ITrampoline<T>> continuation)
         {
-            Next = next;
-            Transform = transform;
+            _continuation = continuation;
         }
 
-        public IEither<Tuple<ITrampoline, Delegate>, object> RunStep()
+        public object[] RunStep()
         {
-            return Tuple.Create<ITrampoline, Delegate>((ITrampoline) Next, Transform).AsLeft<Tuple<ITrampoline, Delegate>, object>();
+            return new object[] {(ITrampoline) _continuation(), null, null};
         }
     }
 
-    public sealed class Done<T> : Trampoline<T>, ITrampoline
+    public struct Cont<T, T2> : ITrampoline<T2>, ITrampoline
     {
-        public readonly T Value;
+        private readonly ITrampoline<T> _next;
+        private readonly Func<T, ITrampoline<T2>> _transform;
+
+        public Cont(ITrampoline<T> next, Func<T, ITrampoline<T2>> transform)
+        {
+            _next = next;
+            _transform = transform;
+        }
+
+        public object[] RunStep()
+        {
+            return new object[] {(ITrampoline) _next, _transform, null};
+        }
+    }
+
+    public struct Transform<T, T2> : ITrampoline<T2>, ITrampoline
+    {
+        private readonly ITrampoline<T> _next;
+        private readonly Func<T, T2> _transform;
+
+        public Transform(ITrampoline<T> next, Func<T, T2> transform)
+        {
+            _next = next;
+            _transform = transform;
+        }
+
+        public object[] RunStep()
+        {
+            return new object[] { (ITrampoline)_next, _transform, null };
+        }
+
+    }
+
+    public struct Done<T> : ITrampoline<T>, ITrampoline
+    {
+        private readonly T _value;
 
         public Done(T value)
         {
-            Value = value;
+            _value = value;
         }
 
-        public IEither<Tuple<ITrampoline, Delegate>, object> RunStep()
+        public object[] RunStep()
         {
-            return Value.AsRight<Tuple<ITrampoline, Delegate>, object>();
+            return new object[] {null, null, _value};
         }
     }
 }

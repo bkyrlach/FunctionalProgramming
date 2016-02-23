@@ -11,9 +11,9 @@ namespace FunctionalProgramming.Monad
     /// <typeparam name="T">The type of value effectual code will yield at the end of the universe</typeparam>
     public sealed class Io<T>
     {
-        public readonly Trampoline<T> Step;
+        public readonly ITrampoline<T> Step;
 
-        public Io(Trampoline<T> step)
+        public Io(ITrampoline<T> step)
         {
             Step = step;
         }

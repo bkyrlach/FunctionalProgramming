@@ -12,7 +12,7 @@ namespace FunctionalProgramming.Helpers
         public static Func<T2> Select<T1, T2>(this Func<T1> m, Func<T1, T2> f)
         {
             return () => f(m());
-        } 
+        }         
 
         /// <summary>
         /// Predicate combinator using boolean AND

@@ -33,9 +33,9 @@ namespace FunctionalProgramming.Monad
             return retval;
         }
 
-        private static Trampoline<Unit> ForEachT<T>(IStream<T> xs, Action<T> f)
+        private static ITrampoline<Unit> ForEachT<T>(IStream<T> xs, Action<T> f)
         {
-            return xs.Match<Trampoline<Unit>>(
+            return xs.Match<ITrampoline<Unit>>(
                 cons: (h, t) => new More<Unit>(() =>
                 {
                     f(h);

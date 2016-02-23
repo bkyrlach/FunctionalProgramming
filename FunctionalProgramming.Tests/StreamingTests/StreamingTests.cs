@@ -31,7 +31,7 @@ namespace FunctionalProgramming.Tests.StreamingTests
             p3.Run();
         }
 
-        private Process1<IEither<T, T2>, IEither<T, T2>> Tee<T, T2>(bool right = true)
+        private static Process1<IEither<T, T2>, IEither<T, T2>> Tee<T, T2>(bool right = true)
         {
             return new Await1<IEither<T, T2>, IEither<T, T2>>(
                 () => BasicFunctions.EIf(right, () => default(T2), () => default(T)),
@@ -63,11 +63,11 @@ namespace FunctionalProgramming.Tests.StreamingTests
 
         public Process<int> DelayCount(int cur)
         {
-            return Await<int>.Create(new Task<int>(() =>
+            return Await<int>.Create(() =>
             {
                 Thread.Sleep(1000);
                 return cur;
-            }), either => either.Match<Process<int>>(
+            }, either => either.Match<Process<int>>(
                 left: ex => new Halt<int>(ex),
                 right: n => new Emit<int>(n, DelayCount(n + 1))));
         }
@@ -81,6 +81,18 @@ namespace FunctionalProgramming.Tests.StreamingTests
             var sink = Process.Sink<IEither<int, Unit>>(either => Console.WriteLine(either));
             var result = combined.Pipe(sink);
             result.Run();
+        }
+
+        [Test]
+        public void TestRepeatUntil()
+        {
+            var x = 0;
+            var p1 = new Eval<int>(() => x++, new Emit<int>(x)).RepeatUntil(() =>
+            {
+                Console.WriteLine($"{x} > 9? {x > 9}");
+                return x > 9;
+            });
+            var results = p1.RunLog();
         }
     }
 }

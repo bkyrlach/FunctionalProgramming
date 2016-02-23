@@ -78,7 +78,7 @@ namespace FunctionalProgramming.Monad
             return SelectTrampoline(xs, f).Run();
         }
 
-        private static Trampoline<IConsList<T2>> SelectTrampoline<T1, T2>(this IConsList<T1> xs, Func<T1, T2> f)
+        private static ITrampoline<IConsList<T2>> SelectTrampoline<T1, T2>(this IConsList<T1> xs, Func<T1, T2> f)
         {
             return xs.Match(
                 cons: (h, t) => new More<IConsList<T2>>(() => t.SelectTrampoline(f)).Select(ts => f(h).Cons(ts)),
