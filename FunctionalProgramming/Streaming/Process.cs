@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 using System.Threading;
 using System.Threading.Tasks;
 using FunctionalProgramming.Basics;
@@ -36,9 +38,23 @@ namespace FunctionalProgramming.Streaming
 
     public static class Process
     {
-        public static Process<Unit> Eval(Action effect)
+        public static Process<T> Eval<T>(Action effect, Process<T> next = null)
         {
-            return new Eval<Unit>(effect);
+            Func<Unit> effectFunc = () =>
+            {
+                effect();
+                return Unit.Only;
+            };
+            return Await<T>.Create(effectFunc, either => either.Match(
+                left: ex => Halt<T>(),
+                right: u => next ?? Halt<T>()));
+        }
+
+        public static Process<T> Continue<T>(Func<Process<T>> next)
+        {
+            return Await<T>.Create(next, either => either.Match(
+                left: Halt<T>,
+                right: BasicFunctions.Identity));
         }
 
         public static Process<T> Apply<T>(params T[] ts)
@@ -49,6 +65,11 @@ namespace FunctionalProgramming.Streaming
         public static Process<T> RepeatUntil<T>(this Process<T> p, Func<bool> predicate)
         {
             return p.Concat(() => predicate() ? new Halt<T>(End.Only) : p.RepeatUntil(predicate));
+        }
+
+        public static Process1<TI, TO> RepeatUntil<TI, TO>(this Process1<TI, TO> p, Func<bool> predicate)
+        {
+            return p.Concat(() => predicate() ? new Halt1<TI, TO>(End.Only) : p.RepeatUntil(predicate));
         }
 
         public static Process<T> While<T>(this Process<T> p, Func<bool> predicate)
@@ -128,13 +149,9 @@ namespace FunctionalProgramming.Streaming
                 return p1.Match(
                     halt: e => new Halt<IEither<T1, T2>>(e),
                     emit: (h, t) => new Emit<IEither<T1, T2>>(h.AsLeft<T1, T2>(), Wye(t, p2)),
-                    cont: cw => new Cont<IEither<T1, T2>>(cw.Select(p => Wye(p, p2))),
-                    eval: (effect, next) => new Eval<IEither<T1, T2>>(effect, Wye(next, p2)),
                     await: (reql, recvl) => p2.Match<Process<IEither<T1, T2>>>(
                         halt: e => new Halt<IEither<T1, T2>>(e),
-                        emit: (h, t) => new Emit<IEither<T1, T2>>(h.AsRight<T1, T2>(), Wye(Await<T1>.Create(reql, (Func<IEither<Exception, object>, Process<T1>>)recvl), t)),
-                        cont: cw => new Cont<IEither<T1, T2>>(cw.Select(p => Wye(p1, p))),
-                        eval: (effect, next) => new Eval<IEither<T1, T2>>(effect, Wye(p1, next)),
+                        emit: (h, t) => new Emit<IEither<T1, T2>>(h.AsRight<T1, T2>(), Wye(Await<T1>.Create(reql, recvl), t)),
                         await: (reqr, recvr) => Await<IEither<T1, T2>>.Create(WhenEither(reql, reqr), x => x.Match(
                                 left: e => new Halt<IEither<T1, T2>>(e),
                                 right: either => either.Match(
@@ -146,18 +163,14 @@ namespace FunctionalProgramming.Streaming
                 return p2.Match(
                     halt: e => new Halt<IEither<T1, T2>>(e),
                     emit: (h, t) => new Emit<IEither<T1, T2>>(h.AsRight<T1, T2>(), Wye(p1, t)),
-                    cont: cw => new Cont<IEither<T1,T2>>(cw.Select(p => Wye(p1, p))),
-                    eval: (effect, next) => new Eval<IEither<T1,T2>>(effect, Wye(p1, next)), 
                     await: (reqr, recvr) => p1.Match<Process<IEither<T1, T2>>>(
                         halt: e => new Halt<IEither<T1, T2>>(e),
                         emit: (h, t) => new Emit<IEither<T1, T2>>(h.AsLeft<T1, T2>(), Wye(t, p2)),
-                        cont: cw => new Cont<IEither<T1, T2>>(cw.Select(p => Wye(p, p2))),
-                        eval: (effect, next) => new Eval<IEither<T1,T2>>(effect, Wye<T1, T2>(next, p2)),
                         await: (reql, recvl) => Await<IEither<T1, T2>>.Create(WhenEither(reql, reqr), x => x.Match(
                             left: e => new Halt<IEither<T1, T2>>(e), 
                             right: either => either.Match(
-                                left: l => HandleBranch<T1, T2>(l, recvl, recvr, true),
-                                right: r => HandleBranch<T1, T2>(r, recvl, recvr, false))))));
+                                left: l => HandleBranch(l, recvl, recvr, true),
+                                right: r => HandleBranch(r, recvl, recvr, false))))));
             }
         }
 
@@ -184,7 +197,7 @@ namespace FunctionalProgramming.Streaming
                 right: i =>
                 {
                     add(i, buffer);
-                    return ready(buffer) ? new Emit<T>(flush(buffer)).Concat(() => BufferHelper(@new(), @new, add, ready, flush)) : new Cont<T>(() => BufferHelper(buffer, @new, add, ready, flush));
+                    return ready(buffer) ? new Emit<T>(flush(buffer)).Concat(() => BufferHelper(@new(), @new, add, ready, flush)) : Continue(() => BufferHelper(buffer, @new, add, ready, flush));
                 }));            
         }
 
@@ -258,7 +271,7 @@ namespace FunctionalProgramming.Streaming
 
         public static Process<T> Concat<T>(this Process<T> p1, Func<Process<T>> p2)
         {
-            return p1.OnHalt(ex => ex is End ? (Process<T>)new Cont<T>(() => Try(p2)) : new Halt<T>(ex));
+            return p1.OnHalt(ex => ex is End ? Continue(() => Try(p2)) : new Halt<T>(ex));
         }
 
         public static Process1<TI, TO> Repeat<TI, TO>(this Process1<TI, TO> p1)
@@ -268,7 +281,7 @@ namespace FunctionalProgramming.Streaming
 
         public static Process1<TI, TO> Concat<TI, TO>(this Process1<TI, TO> p1, Func<Process1<TI, TO>> p2)
         {
-            return p1.OnHalt(ex => ex is End ? (Process1<TI, TO>)new Cont1<TI, TO>(() => Try(p2)) : new Halt1<TI, TO>(ex));
+            return p1.OnHalt(ex => ex is End ? (Process1<TI, TO>)new Cont1<TI,TO>(() => Try(p2)) : new Halt1<TI, TO>(ex));
         }
 
         public static Process<T2> Select<T1, T2>(this Process<T1> m, Func<T1, T2> f)
@@ -281,27 +294,38 @@ namespace FunctionalProgramming.Streaming
             return m.Match(
                 halt: e => new Halt<T2>(e),
                 emit: (h, t) => Try(() => f(h)).Concat(() => t.SelectMany(f)),
-                await: (req, recv) => Await<T2>.Create(req, ((Func<IEither<Exception, object>, Process<T1>>)recv).AndThen(p => p.SelectMany(f))),
-                cont: cw => new Cont<T2>(cw.Select(p => p.SelectMany(f))),
-                eval: (effect, next) => new Eval<T2>(effect, next.SelectMany(f)));
+                await: (req, recv) => Await<T2>.Create(req, recv.AndThen(p => p.SelectMany(f))));
         }
 
         public static Process<T> Resource<TR, T>(Func<TR> create, Action<TR> initialize, Action<TR> release, Func<TR, Process<T>> use)
         {
             TR resource = default(TR);
-            return new Eval<T>(
-                () => { resource = create(); },
-                new Eval<T>(
-                    () => initialize(resource),
-                    new Cont<T>(() => use(resource).OnHalt(ex => new Eval<T>(() => release(resource)).Concat(() => new Halt<T>(ex))))));
+            return Eval(() => { resource = create(); }, Eval(() => initialize(resource), Continue(() => use(resource).OnHalt(ex => Eval<T>(() => release(resource)).Concat(() => new Halt<T>(ex))))));
         }
 
         public static Process<T> Resource<TR, T>(Func<TR> create, Action<TR> release, Func<TR, Process<T>> use)
         {
             TR resource = default(TR);
-            return new Eval<T>(
-                () => { resource = create(); },
-                new Cont<T>(() => use(resource).OnHalt(ex => new Eval<T>(() => release(resource)).Concat(() => new Halt<T>(ex)))));
+            return Eval(() => { resource = create(); }, Continue(() => use(resource).OnHalt(ex => Eval<T>(() => release(resource)).Concat(() => new Halt<T>(ex)))));
+        }
+
+        public static Process<T> OnHalt<T>(this Process<T> process, Func<Exception, Process<T>> f)
+        {
+            return
+                process.Match(
+                    halt: error => Process.Try(() => f(error)),
+                    await: (req, recv) => Await<T>.Create(req, recv.AndThen(p => p.OnHalt(f))),
+                    emit: (h, t) => new Emit<T>(h, t.OnHalt(f)));
+        }
+
+        public static Process1<TI, TO> OnHalt<TI, TO>(this Process1<TI, TO> process, Func<Exception, Process1<TI, TO>> f)
+        {
+            return
+                process.Match1<Process1<TI,TO>>(
+                    halt: error => Process.Try(() => f(error)),
+                    await: (req, recv) => new Await1<TI, TO>(req, recv.AndThen(p => p.OnHalt(f))),
+                    emit: (h, t) => new Emit1<TI, TO>(h, t.OnHalt(f)),
+                    cont: cw => new Cont1<TI, TO>(cw.Select(p => p.OnHalt(f))));
         }
     }
 
@@ -309,10 +333,8 @@ namespace FunctionalProgramming.Streaming
     {
         public TResult Match<TResult>(
             Func<Exception, TResult> halt,
-            Func<Func<object>, Func<IEither<Exception, Object>, Process<T>>, TResult> await,
-            Func<T, Process<T>, TResult> emit,
-            Func<Func<Process<T>>, TResult>  cont,
-            Func<Action, Process<T>, TResult> eval)
+            Func<Func<object>, Func<IEither<Exception, object>, Process<T>>, TResult> await,
+            Func<T, Process<T>, TResult> emit)
         {
             TResult retval;
             if (this is Halt<T>)
@@ -329,16 +351,6 @@ namespace FunctionalProgramming.Streaming
             {
                 var temp = this as Emit<T>;
                 retval = emit(temp.Head, temp.Tail);
-            }
-            else if (this is Cont<T>)
-            {
-                var temp = this as Cont<T>;
-                retval = cont(temp.ContinueWith);
-            }
-            else if(this is Eval<T>)
-            {
-                var temp = this as Eval<T>;
-                retval = eval(temp.Effect, temp.Next);
             }
             else
             {
@@ -378,17 +390,6 @@ namespace FunctionalProgramming.Streaming
                         results.Add(h);
                         step = t;
                         return Unit.Only;
-                    },
-                    cont: cw =>
-                    {
-                        step = cw();
-                        return Unit.Only;
-                    },
-                    eval: (effect, next) =>
-                    {
-                        effect();
-                        step = next;
-                        return Unit.Only;
                     });
             }
             return results;
@@ -404,13 +405,10 @@ namespace FunctionalProgramming.Streaming
             return p2.Match1(
                 halt: e => Kill<T2>().OnHalt(e2 => new Halt<T2>(e).Concat(() => new Halt<T2>(e2))),
                 emit: (h, t) => new Emit<T2>(h, Pipe(t)),
-                cont: cw => new Cont<T2>(cw.Select(Pipe)),
-                eval: (effect, next) => new Eval<T2>(effect, Pipe(next)),
+                cont: Process.Continue,
                 await: (req, recv) => Match(
                     halt: e => new Halt<T>(e).Pipe(recv(Streaming.Kill.Only.AsLeft<Exception, T>())),
                     emit: (h, t) => t.Pipe(Process.Try(() => recv(h.AsRight<Exception, T>()))),
-                    cont: cw => new Cont<T2>(cw.Select(p => p.Pipe(p2))),
-                    eval: (effect, next) => new Eval<T2>(effect, next.Pipe(p2)),
                     await: (req0, recv0) => Await<T2>.Create(req0, recv0.AndThen(p => p.Pipe(p2)))));
         }
 
@@ -420,30 +418,15 @@ namespace FunctionalProgramming.Streaming
                 Match(
                     halt: e => new Halt<T2>(e),
                     await: (req, recv) => recv(Streaming.Kill.Only.AsLeft<Exception, object>()).Drain<T2>().OnHalt(e => e is Kill ? new Halt<T2>(End.Only) : new Halt<T2>(e)),
-                    emit: (h, t) => t.Kill<T2>(),
-                    cont: cw => new Cont<T2>(cw.Select(p => p.Kill<T2>())),
-                    eval: (effect, next) => next.Kill<T2>());
-        }
-
-        public Process<T> OnHalt(Func<Exception, Process<T>> f)
-        {
-            return 
-                Match(
-                    halt: error => Process.Try(() => f(error)),
-                    await: (req, recv) => Await<T>.Create(req, recv.AndThen(p => p.OnHalt(f))),
-                    emit: (h, t) => new Emit<T>(h, t.OnHalt(f)),
-                    cont: cw => new Cont<T>(cw.Select(p => p.OnHalt(f))),
-                    eval: (effect, next) => new Eval<T>(effect, next.OnHalt(f)));
+                    emit: (h, t) => t.Kill<T2>());
         }
 
         public Process<T2> Drain<T2>()
         {
             return Match(
                 halt: error => new Halt<T2>(error),
-                await: (req, recv) => new Cont<T2>(req.Select(o => o.AsRight<Exception, object>()).Select(recv).Select(p => p.Drain<T2>())),
-                emit: (h, t) => t.Drain<T2>(),
-                cont: cw => new Cont<T2>(cw.Select(p => p.Drain<T2>())),
-                eval: (effect, next) => next.Drain<T2>());
+                await: (req, recv) => Process.Continue(req.Select(o => o.AsRight<Exception, object>()).Select(recv).Select(p => p.Drain<T2>())),
+                emit: (h, t) => t.Drain<T2>());
         }
 
         public Process<T> AsFinalizer()
@@ -455,14 +438,12 @@ namespace FunctionalProgramming.Streaming
                         ? AsFinalizer()
                         : recv(either),
                     right: i => recv(i.AsRight<Exception, object>()))),
-                emit: (h, t) => new Emit<T>(h, t.AsFinalizer()),
-                cont: cw => new Cont<T>(cw.Select(p => p.AsFinalizer())),
-                eval: (effect, next) => new Eval<T>(effect, next.AsFinalizer()));
+                emit: (h, t) => new Emit<T>(h, t.AsFinalizer()));
         }
 
         public Process<T> OnComplete(Func<Process<T>> p)
         {
-            return OnHalt(ex => ex is End ? p().AsFinalizer() : p().AsFinalizer().Concat(() => new Halt<T>(ex)));
+            return this.OnHalt(ex => ex is End ? p().AsFinalizer() : p().AsFinalizer().Concat(() => new Halt<T>(ex)));
         }
 
         public Process<T3> Tee<T2, T3>(Process<T2> p2, Process1<IEither<T,T2>, T3> tee)
@@ -470,23 +451,18 @@ namespace FunctionalProgramming.Streaming
             return tee.Match1(
                 halt: e => Kill<T3>().OnComplete(p2.Kill<T3>).OnComplete(() => new Halt<T3>(e)),
                 emit: (h, t) => new Emit<T3>(h, Tee(p2, t)),
-                cont: cw => new Cont<T3>(cw.Select(p => Tee(p2, p))),
-                eval: (effect, next) => new Eval<T3>(effect, Tee(p2, next)),
+                cont: cw => Process.Continue(cw.Select(p => Tee(p2, p))), 
                 await: (req, recv) => Await<T3>.Create(req, either => either.Match(
                     left: ex => new Halt<T3>(ex),
                     right: side => side.Match(
                         left: t1 => Match(
                             halt: e => p2.Kill<T3>().OnComplete(() => new Halt<T3>(e)),
                             await: (reql, recvl) => Await<T3>.Create(reql, ((Func<IEither<Exception, object>, Process<T>>)recvl).AndThen(this2 => this2.Tee(p2, tee))),
-                            emit: (h, t) => t.Tee(p2, Process.Try(() => recv(h.AsLeft<T, T2>().AsRight<Exception, IEither<T, T2>>()))),
-                            cont: cw => new Cont<T3>(cw.Select(p => p.Tee(p2, tee))),
-                            eval: (effect, next) => new Eval<T3>(effect, next.Tee(p2, tee))),
+                            emit: (h, t) => t.Tee(p2, Process.Try(() => recv(h.AsLeft<T, T2>().AsRight<Exception, IEither<T, T2>>())))),
                         right: t2 => p2.Match(
                             halt: e => Kill<T3>().OnComplete(() => new Halt<T3>(e)),
                             await: (reqr, recvr) => Await<T3>.Create(reqr, ((Func<IEither<Exception, object>, Process<T2>>)recvr).AndThen(p3 => Tee(p3, tee))),
-                            emit: (h, t) => Tee(t, Process.Try(() => recv(h.AsRight<T, T2>().AsRight<Exception, IEither<T, T2>>()))),
-                            cont: cw => new Cont<T3>(cw.Select(p => Tee(p, tee))),
-                            eval: (effect, next) => new Eval<T3>(effect, Tee(next, tee)))))));
+                            emit: (h, t) => Tee(t, Process.Try(() => recv(h.AsRight<T, T2>().AsRight<Exception, IEither<T, T2>>()))))))));
         }
     }
 
@@ -546,52 +522,13 @@ namespace FunctionalProgramming.Streaming
         }
     }
 
-    public sealed class Cont<T> : Process<T>
-    {
-        public readonly Func<Process<T>> ContinueWith;
-
-        public Cont(Func<Process<T>> continueWith)
-        {
-            ContinueWith = continueWith;
-        }
-
-        public override string ToString()
-        {
-            //TODO Find better string representation
-            return "Cont(???)";
-        }
-    }
-
-    public sealed class Eval<T> : Process<T>
-    {
-        public readonly Action Effect;
-        public readonly Process<T> Next;
-
-        public Eval(Action effect, Process<T> next = null)
-        {
-            Effect = effect;
-            Next = next ?? new Halt<T>(End.Only);
-        } 
-    }
-
     public abstract class Process1<TI, TO> : Process<TO>
-    {
-        public Process1<TI, TO> OnHalt(Func<Exception, Process1<TI, TO>> f)
-        {
-            return Match1(
-                halt: e => Process.Try(() => f(e)),
-                await: (req, recv) => new Await1<TI, TO>(req, recv.AndThen(p => p.OnHalt(f))),
-                emit: (h, t) => new Emit1<TI, TO>(h, t.OnHalt(f)),
-                cont: cw => new Cont1<TI, TO>(cw.Select(p => p.OnHalt(f))),
-                eval: (effect, next) => new Eval1<TI, TO>(effect, next.OnHalt(f)));
-        }
-
+    { 
         public TMatch Match1<TMatch>(
             Func<Exception, TMatch> halt,
             Func<Func<TI>, Func<IEither<Exception, TI>, Process1<TI, TO>>, TMatch> await,
             Func<TO, Process1<TI, TO>, TMatch> emit,
-            Func<Func<Process1<TI, TO>>, TMatch> cont,
-            Func<Action, Process1<TI, TO>, TMatch> eval)
+            Func<Func<Process1<TI, TO>>, TMatch> cont)
         {
             TMatch retval;
             if (this is Halt1<TI, TO>)
@@ -613,11 +550,6 @@ namespace FunctionalProgramming.Streaming
             {
                 var p = this as Cont1<TI, TO>;
                 retval = cont(p.ContinueWith);
-            }
-            else if (this is Eval1<TI, TO>)
-            {
-                var p = this as Eval1<TI, TO>;
-                retval = eval(p.Effect, p.Next);
             }
             else
             {
@@ -668,18 +600,6 @@ namespace FunctionalProgramming.Streaming
         public Cont1(Func<Process1<TI, TO>> continueWith)
         {
             ContinueWith = continueWith;
-        }
-    }
-
-    public sealed class Eval1<TI, TO> : Process1<TI, TO>
-    {
-        public readonly Action Effect;
-        public readonly Process1<TI, TO> Next;
-
-        public Eval1(Action effect, Process1<TI, TO> next)
-        {
-            Effect = effect;
-            Next = next;
         } 
     }
 }

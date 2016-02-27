@@ -87,7 +87,7 @@ namespace FunctionalProgramming.Tests.StreamingTests
         public void TestRepeatUntil()
         {
             var x = 0;
-            var p1 = new Eval<int>(() => x++, new Emit<int>(x)).RepeatUntil(() =>
+            var p1 = Process.Eval(() => x++, new Emit<int>(x)).RepeatUntil(() =>
             {
                 Console.WriteLine($"{x} > 9? {x > 9}");
                 return x > 9;
