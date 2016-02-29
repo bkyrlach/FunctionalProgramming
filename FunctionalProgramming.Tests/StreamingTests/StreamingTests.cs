@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad;
 using FunctionalProgramming.Streaming;
@@ -23,12 +23,22 @@ namespace FunctionalProgramming.Tests.StreamingTests
         }
 
         [Test]
+        public void TestConcat()
+        {
+            var p1 = Process.Emit(1);
+            var p2 = Process.Emit(2);
+            var p3 = p1.Concat(() => p2);
+            p3.RunLog().ToList().ForEach(Console.WriteLine);
+        }
+
+        [Test]
         public void TestSink()
         {
             var p1 = Process.Apply(1, 2, 3, 4, 5);
-            var p2 = Process.Sink<int>(n => Console.WriteLine(n));
-            var p3 = p1.Pipe(p2);
-            p3.Run();
+            var p2 = Process.Lift1<int, Unit>(n => { Console.WriteLine(n); return Unit.Only; });
+            var p3 = p2.Concat(() => p2);
+            var p4 = p1.Pipe(p3);
+            p4.Run();
         }
 
         private static Process1<IEither<T, T2>, IEither<T, T2>> Tee<T, T2>(bool right = true)
@@ -86,13 +96,13 @@ namespace FunctionalProgramming.Tests.StreamingTests
         [Test]
         public void TestRepeatUntil()
         {
-            var x = 0;
-            var p1 = Process.Eval(() => x++, new Emit<int>(x)).RepeatUntil(() =>
-            {
-                Console.WriteLine($"{x} > 9? {x > 9}");
-                return x > 9;
-            });
-            var results = p1.RunLog();
+            //var x = 0;
+            //var p1 = Process.Eval(() => x++, new Emit<int>(x)).RepeatUntil(() =>
+            //{
+            //    Console.WriteLine($"{x} > 9? {x > 9}");
+            //    return x > 9;
+            //});
+            //var results = p1.RunLog();
         }
     }
 }
