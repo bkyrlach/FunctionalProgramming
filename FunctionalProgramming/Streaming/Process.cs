@@ -41,6 +41,11 @@ namespace FunctionalProgramming.Streaming
             return new Eval<Unit>(effect);
         }
 
+        public static Process1<T1, T2> Eval1<T1, T2>(Action effect)
+        {
+            return new Eval1<T1, T2>(effect);
+        }
+
         public static Process<T> Apply<T>(params T[] ts)
         {
             return ts.Reverse().Aggregate((Process<T>)new Halt<T>(End.Only), (p, t) => new Emit<T>(t, p));
@@ -77,11 +82,6 @@ namespace FunctionalProgramming.Streaming
                 effect(i);
                 return Unit.Only;
             });
-        }
-
-        public static Process1<T, Unit> Sink<T>(Action effect)
-        {
-            return Sink<T>(i => effect());
         }
 
         public static Process<Unit> Delay(int milliseconds)
@@ -336,6 +336,56 @@ namespace FunctionalProgramming.Streaming
                 left: ex => new Halt1<T, T>(ex),
                 right: t => predicate(t) ? (Process1<T, T>)new Emit1<T, T>(t, new Halt1<T, T>(End.Only)) : new Halt1<T, T>(End.Only))).Repeat();
         }
+
+        public static Process1<IEither<T1, T2>, T3> HaltT<T1, T2, T3>()
+        {
+            return new Halt1<IEither<T1, T2>, T3>(End.Only);
+        }
+
+        public static Process1<IEither<T1, T2>, T3> AwaitLeft<T1, T2, T3>(Func<T1, Process1<IEither<T1, T2>, T3>> recv, Func<Process1<IEither<T1, T2>, T3>> fallback = null)
+        {
+            fallback = fallback ?? (() => new Halt1<IEither<T1, T2>, T3>(End.Only));
+            return new Await1<IEither<T1, T2>, T3>(() => default(T1).AsLeft<T1, T2>(), either => either.Match(
+                left: ex => ex is End ? fallback() : new Halt1<IEither<T1, T2>, T3>(ex),
+                right: v => Process.Try(() => recv(v.Match(
+                    left: BasicFunctions.Identity,
+                    right: r => { throw new Exception("Unexpected right!");})))));
+        }
+
+        public static Process1<IEither<T1, T2>, T3> AwaitRight<T1, T2, T3>(Func<T2, Process1<IEither<T1, T2>, T3>> recv, Func<Process1<IEither<T1, T2>, T3>> fallback = null)
+        {
+            fallback = fallback ?? (() => new Halt1<IEither<T1, T2>, T3>(End.Only));
+            return new Await1<IEither<T1, T2>, T3>(() => default(T2).AsRight<T1, T2>(), either => either.Match(
+                left: ex => ex is End ? fallback() : new Halt1<IEither<T1, T2>, T3>(ex),
+                right: v => Try(() => recv(v.Match(
+                    right: BasicFunctions.Identity,
+                    left: l => { throw new Exception("Unexpected left!"); })))));
+        }
+
+        public static Process1<IEither<T1, T2>, T3> EmitT<T1, T2, T3>(T3 h, Process1<IEither<T1, T2>, T3> t = null)
+        {
+            return new Emit1<IEither<T1, T2>, T3>(h, t);
+        }
+
+        public static Process<T> Interleave<T>(Process<T> t1, Process<T> t2)
+        {
+            return t1.Tee(t2, AwaitLeft<T, T, T>(l => AwaitRight<T, T, T>(r => EmitT<T, T, T>(l).Concat(() => EmitT<T, T, T>(r)))).Repeat());
+        }
+
+        public static Process1<T1, T2> Fold<T1, T2>(T2 seed, Func<T2, T1, T2> reducer)
+        {
+            return Await1<T1, T2>(n => Eval1<T1, T2>(() => { seed = reducer(seed, n); })).Repeat().OnHalt(ex => Emit1<T1, T2>(seed));
+        }
+
+        public static Process1<IEither<T1, T2>, T1> PassLeft<T1, T2>()
+        {
+            return AwaitLeft<T1, T2, T1>(l => EmitT(l, new Cont1<IEither<T1, T2>, T1>(PassLeft<T1, T2>)));
+        }
+
+        public static Process1<IEither<T1, T2>, T2> PassRight<T1, T2>()
+        {
+            return AwaitRight<T1, T2, T2>(r => EmitT(r, new Cont1<IEither<T1, T2>, T2>(PassRight<T1, T2>)));
+        }
     }
 
     internal class ChunkReady : Exception
@@ -517,13 +567,13 @@ namespace FunctionalProgramming.Streaming
                     right: side => side.Match(
                         left: t1 => Match(
                             halt: e => p2.Kill<T3>().OnComplete(() => new Halt<T3>(e)),
-                            await: (reql, recvl) => Await<T3>.Create(reql, ((Func<IEither<Exception, object>, Process<T>>)recvl).AndThen(this2 => this2.Tee(p2, tee))),
+                            await: (reql, recvl) => Await<T3>.Create(reql, recvl.AndThen(this2 => this2.Tee(p2, tee))),
                             emit: (h, t) => t.Tee(p2, Process.Try(() => recv(h.AsLeft<T, T2>().AsRight<Exception, IEither<T, T2>>()))),
                             cont: cw => new Cont<T3>(cw.Select(p => p.Tee(p2, tee))),
                             eval: (effect, next) => new Eval<T3>(effect, next.Tee(p2, tee))),
                         right: t2 => p2.Match(
                             halt: e => Kill<T3>().OnComplete(() => new Halt<T3>(e)),
-                            await: (reqr, recvr) => Await<T3>.Create(reqr, ((Func<IEither<Exception, object>, Process<T2>>)recvr).AndThen(p3 => Tee(p3, tee))),
+                            await: (reqr, recvr) => Await<T3>.Create(reqr, recvr.AndThen(p3 => Tee(p3, tee))),
                             emit: (h, t) => Tee(t, Process.Try(() => recv(h.AsRight<T, T2>().AsRight<Exception, IEither<T, T2>>()))),
                             cont: cw => new Cont<T3>(cw.Select(p => Tee(p, tee))),
                             eval: (effect, next) => new Eval<T3>(effect, Tee(next, tee)))))));
@@ -697,7 +747,7 @@ namespace FunctionalProgramming.Streaming
         public Emit1(TO head, Process1<TI, TO> tail)
         {
             Head = head;
-            Tail = tail;
+            Tail = tail ?? new Halt1<TI, TO>(End.Only);
         }
     }
 
@@ -716,10 +766,10 @@ namespace FunctionalProgramming.Streaming
         public readonly Action Effect;
         public readonly Process1<TI, TO> Next;
 
-        public Eval1(Action effect, Process1<TI, TO> next)
+        public Eval1(Action effect, Process1<TI, TO> next = null)
         {
             Effect = effect;
-            Next = next;
+            Next = next ?? Process.Halt1<TI, TO>();
         }
     }
 }

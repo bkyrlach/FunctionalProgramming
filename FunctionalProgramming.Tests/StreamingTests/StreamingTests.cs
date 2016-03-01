@@ -41,24 +41,15 @@ namespace FunctionalProgramming.Tests.StreamingTests
             p4.Run();
         }
 
-        private static Process1<IEither<T, T2>, IEither<T, T2>> Tee<T, T2>(bool right = true)
-        {
-            return new Await1<IEither<T, T2>, IEither<T, T2>>(
-                () => BasicFunctions.EIf(right, () => default(T2), () => default(T)),
-                errorOrValue => errorOrValue.Match<Process1<IEither<T, T2>, IEither<T, T2>>>(
-                    left: e => new Halt1<IEither<T, T2>, IEither<T, T2>>(e),
-                    right: either => new Emit1<IEither<T, T2>, IEither<T, T2>>(either, Tee<T, T2>(!right))));
-        }
-
         [Test]
         public void TestTee()
         {
-            var p1 = Process.Apply(1, 2, 3, 4, 5);
+            var p1 = Process.Apply(1, 2, 3, 4, 5).Select(n => n.ToString());
             var p2 = Process.Apply("a", "b", "c", "d", "e");
-            var p3 = Process.Sink<IEither<int, string>>(either => Console.WriteLine(either));
-            var p4 = p1.Tee(p2, Tee<int, string>());
+            var p3 = Process.Interleave(p1, p2);
+            var p4 = Process.Sink<string>(s => Console.WriteLine(s));
 
-            var results = p4.Pipe(p3).Run();            
+            var results = p3.Pipe(p4).Run();            
         }
 
         [Test]
