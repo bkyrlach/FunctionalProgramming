@@ -1,6 +1,7 @@
-﻿using System;
-using FunctionalProgramming.Monad;
+﻿using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Outlaws;
+using System;
+using System.Linq.Expressions;
 
 namespace FunctionalProgramming.Basics
 {
@@ -35,7 +36,7 @@ namespace FunctionalProgramming.Basics
         /// <param name="consequent">The conclusion we can draw from the predicate holding (returns TLeft \/ TRight)</param>
         /// <param name="alternative">The conclusion we can draw from the predicate failing to hold (returns TLeft)</param>
         /// <returns>TLeft \/ TRight</returns>
-        public static IEither<TLeft, TRight> EIf<TLeft, TRight>(bool predicate, Func<IEither<TLeft, TRight>> consequent, 
+        public static IEither<TLeft, TRight> EIf<TLeft, TRight>(bool predicate, Func<IEither<TLeft, TRight>> consequent,
             Func<TLeft> alternative)
         {
             return predicate ? consequent() : alternative().AsLeft<TLeft, TRight>();
@@ -108,7 +109,7 @@ namespace FunctionalProgramming.Basics
         /// <returns>Potentially a T (or nothing if we cannot prove at runtime that 'o' is a T)</returns>
         public static IMaybe<T> CastV<T>(this object o) where T : struct
         {
-            return Try.Attempt(() => (T) o).AsMaybe();
+            return Try.Attempt(() => (T)o).AsMaybe();
         }
 
         /// <summary>
@@ -131,7 +132,7 @@ namespace FunctionalProgramming.Basics
         public static Io<Unit> IfTrue(bool predicate, Io<Unit> io)
         {
             return predicate ? io : Io.Apply(() => Unit.Only);
-        } 
+        }
 
         #region Const
         /// <summary>
@@ -187,6 +188,18 @@ namespace FunctionalProgramming.Basics
         {
             return (ignored1, ignored2, ignored3, ignored4) => t;
         }
+
+        public static Expression<Func<T1>> AsExpression<T1>(this Func<T1> func)
+        {
+            return () => func();
+        }
+
+        public static Expression<Func<T1, T2>> AsExpression<T1, T2>(this Func<T1, T2> func)
+        {
+            return t => func(t);
+        }
+
+
         #endregion
     }
 }

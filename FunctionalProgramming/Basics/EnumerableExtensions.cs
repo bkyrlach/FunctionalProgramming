@@ -295,7 +295,7 @@ namespace FunctionalProgramming.Basics
         /// <returns>The only value in the queryable, or nothing if no such element exists</returns>
         public static IMaybe<T> MaybeFirst<T>(this IQueryable<T> items)
         {
-            return items.MaybeFirst(BasicFunctions.Const<T, bool>(true) as Expression<Func<T, bool>>);
+            return items.MaybeFirst(BasicFunctions.Const<T, bool>(true).AsExpression());
         }
 
         /// <summary>
@@ -345,7 +345,7 @@ namespace FunctionalProgramming.Basics
         /// <returns>The only value in the queryable, or nothing if no such element exists or multiple elements exist</returns>
         public static IMaybe<T> MaybeSingle<T>(this IQueryable<T> items)
         {
-            return items.MaybeSingle(BasicFunctions.Const<T, bool>(true) as Expression<Func<T, bool>>);
+            return items.MaybeSingle(BasicFunctions.Const<T, bool>(true).AsExpression());
         }
     }
 }
