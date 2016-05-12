@@ -6,7 +6,6 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Principal;
 
 namespace FunctionalProgramming.Tests
 {
@@ -36,7 +35,7 @@ namespace FunctionalProgramming.Tests
         [Test]
         public void TestTraverseIo()
         {
-            var xs = new[] { 1, 2, 3, 4, 5 };
+            var xs = Enumerable.Range(1, 5).ToArray();
             var result = xs.Traverse(x => from _1 in Io.Apply(() => Console.WriteLine(x)) select x).UnsafePerformIo();
             Assert.AreEqual(xs, result);
         }
@@ -53,8 +52,7 @@ namespace FunctionalProgramming.Tests
         [Test]
         public void TestTraverseStateIo()
         {
-            var xs = new[] { 1, 2, 3, 4, 5 };
-
+            var xs = Enumerable.Range(1, 5).ToArray();
             var result = xs.Select(Count).Sequence().RunIo(0).UnsafePerformIo();
             Assert.AreEqual(5, result.Item1);
         }
@@ -256,6 +254,20 @@ namespace FunctionalProgramming.Tests
         }
 
         [TestCase]
+        public void MaybeSingleTest_MultipleEnumerableOfPrimitiveWithoutPredicateReturnsSomething()
+        {
+            var result = new List<int> { 1 }.MaybeSingle();
+            Assert.IsFalse(result.IsEmpty);
+        }
+
+        [TestCase]
+        public void MaybeSingleTest_MultipleEnumerableOfPrimitiveWithPredicateReturnsSomething()
+        {
+            var result = new List<int> { 1, 2 }.MaybeSingle(x => x == 1);
+            Assert.IsFalse(result.IsEmpty);
+        }
+
+        [TestCase]
         public void MaybeSingleTest_EmptyQueryableOfPrimitiveWithoutPredicateReturnsNothing()
         {
             var result = new List<int>().AsQueryable().MaybeSingle();
@@ -283,16 +295,23 @@ namespace FunctionalProgramming.Tests
             Assert.IsTrue(result.IsEmpty);
         }
 
-        public class TestUser : IPrincipal
+        [TestCase]
+        public void MaybeSingleTest_MultipleQueryableOfPrimitiveWithoutPredicateReturnsSomething()
+        {
+            var result = new List<int> { 1 }.AsQueryable().MaybeSingle();
+            Assert.IsFalse(result.IsEmpty);
+        }
+
+        [TestCase]
+        public void MaybeSingleTest_MultipleQueryableOfPrimitiveWithPredicateReturnsSomething()
+        {
+            var result = new List<int> { 1, 2 }.AsQueryable().MaybeSingle(x => x == 1);
+            Assert.IsFalse(result.IsEmpty);
+        }
+
+        public class TestUser
         {
             public string Email { get; set; }
-
-            public bool IsInRole(string role)
-            {
-                throw new NotImplementedException();
-            }
-
-            public IIdentity Identity => new GenericIdentity(Email);
         }
     }
 }
