@@ -51,7 +51,11 @@ namespace FunctionalProgramming.Monad
                             {
                                 o = temp;
                             }
-                            apply = apply && (stack.Count != 0);
+                            if (apply && stack.Count == 0)
+                            {
+                                apply = false;
+                                isDone = true;                                
+                            }
                         }
 
                     }

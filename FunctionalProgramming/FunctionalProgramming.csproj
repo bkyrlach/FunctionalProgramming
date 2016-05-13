@@ -68,6 +68,7 @@
     <Compile Include="Basics\ConsListZipper.cs" />
     <Compile Include="Basics\MatchException.cs" />
     <Compile Include="Basics\Monoid.cs" />
+    <Compile Include="Basics\Ref.cs" />
     <Compile Include="Basics\Unit.cs" />
     <Compile Include="Helpers\FuncExtensions.cs" />
     <Compile Include="Helpers\Replacements.cs" />

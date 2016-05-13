@@ -20,7 +20,7 @@ namespace FunctionalProgramming.Tests.TransformerTests
                 from _3 in Io.Apply(() => Console.WriteLine("After modifications {0}", o)).ToStateIo<int, Unit>()
                 select _3;
 
-            pgm.EvalIo(5).UnsafePerformIo();
+            pgm.Out.Eval(5).UnsafePerformIo();
         }
     }
 }
