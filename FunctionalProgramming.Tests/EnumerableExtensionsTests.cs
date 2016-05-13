@@ -53,8 +53,8 @@ namespace FunctionalProgramming.Tests
         public void TestTraverseStateIo()
         {
             var xs = Enumerable.Range(1, 5).ToArray();
-            var result = xs.Select(Count).Sequence().RunIo(0).UnsafePerformIo();
-            Assert.AreEqual(5, result.Item1);
+            var result = xs.Select(Count).Sequence().Out.Eval(0).UnsafePerformIo();
+            Assert.AreEqual(5, result);
         }
 
         [TestCase]

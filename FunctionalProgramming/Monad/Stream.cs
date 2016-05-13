@@ -85,10 +85,10 @@ namespace FunctionalProgramming.Monad
             return Tuple.Create(xs.Take(n), xs.Drop(n));
         }
 
-        public static IStream<T> Repeat<T>(this T t)
-        {
-            return t.Cons(() => Repeat(t));
-        }
+        //public static IStream<T> Repeat<T>(this T t)
+        //{
+        //    return t.Cons(() => Repeat(t));
+        //}
 
         public static IStream<Tuple<T1, T2>> ZipWith<T1, T2>(this IStream<T1> ts, IStream<T2> vs)
         {

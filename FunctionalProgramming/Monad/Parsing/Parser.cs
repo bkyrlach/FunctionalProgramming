@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad.Transformer;
@@ -58,12 +60,19 @@ namespace FunctionalProgramming.Monad.Parsing
         }
     }
 
-    public static class Parser
+    public sealed class Parser<TInput, TOutput>
     {
-        public static IEither<string, TOutput> Parse<TInput, TOutput>(this StateEither<ParserState<TInput>, string, TOutput> parser, IEnumerable<TInput> input)
+        public readonly StateEither<ParserState<TInput>, string, TOutput> Out;
+
+        public Parser(StateEither<ParserState<TInput>, string, TOutput> self)
+        {
+            Out = self;
+        }
+
+        public IEither<string, TOutput> Parse(IEnumerable<TInput> input)
         {
             return
-                (from parseResult in parser
+                (from parseResult in Out
                  from allDone in ParserState<TInput>.IsEoF()
                  from _ in BasicFunctions.EIf(allDone, () => parseResult, () => "Parser didn't parse all available input").ToStateEither<ParserState<TInput>, string, TOutput>()
                  select _)
@@ -72,72 +81,122 @@ namespace FunctionalProgramming.Monad.Parsing
                 .Item2;
         }
 
-        public static Tuple<ParserState<TInput>, IEither<string, TOutput>> ParseSome<TInput, TOutput>(this StateEither<ParserState<TInput>, string, TOutput> parser, IEnumerable<TInput> input)
+        public Tuple<ParserState<TInput>, IEither<string, TOutput>> ParseSome(IEnumerable<TInput> input)
         {
-            return parser.Out.Run(new ParserState<TInput>(input.ToArray()));
+            return Out.Out.Run(new ParserState<TInput>(input.ToArray()));
         }
 
-        public static StateEither<ParserState<TInput>, string, TInput> Elem<TInput>(TInput expected)
+        public Parser<TInput, TOutput> CombineTakeLeft<TRight>(Parser<TInput, TRight> other)
         {
-            return
+            return new Parser<TInput, TOutput>(Out.CombineTakeLeft(other.Out));
+        }
+
+        public Parser<TInput, TRight> CombineTakeRight<TRight>(Parser<TInput, TRight> other)
+        {
+            return new Parser<TInput, TRight>(Out.CombineTakeRight(other.Out));
+        }
+    }
+
+    public static class Parser
+    {
+
+        public static Parser<TInput, TInput> Elem<TInput>(TInput expected)
+        {
+            return new Parser<TInput, TInput>(
                 from next in ParserState<TInput>.Peek()
                 from result in next.Equals(expected)
                     ? from _1 in ParserState<TInput>.MoveNext()
                       select next
-                    : string.Format("Expected {0} but got --> {1} <--", expected, next).InsertLeft<ParserState<TInput>, string, TInput>()
-                select result;
+                    : $"Expected {expected} but got --> {next} <--".InsertLeft<ParserState<TInput>, string, TInput>()
+                select result);
         }
 
-        public static StateEither<ParserState<TInput>, string, TInput> ElemWhere<TInput>(Func<TInput, bool> predicate, string expectation)
+        public static Parser<TInput, TInput> ElemWhere<TInput>(Func<TInput, bool> predicate, string expectation)
         {
-            return
+            return new Parser<TInput, TInput>(
                 from next in ParserState<TInput>.Peek()
                 from result in predicate(next)
                     ? from _1 in ParserState<TInput>.MoveNext()
                       select next
-                    : string.Format("Expected {0} but got --> {1} <--", expectation, next).InsertLeft<ParserState<TInput>, string, TInput>()
-                select result;
+                    : $"Expected {expectation} but got --> {next} <--".InsertLeft<ParserState<TInput>, string, TInput>()
+                select result);
         }
 
-        public static StateEither<ParserState<TInput>, string, IEnumerable<TOutput>> Repeat<TInput, TOutput>(
-            this StateEither<ParserState<TInput>, string, TOutput> parser, int n)
+        public static Parser<TInput, IEnumerable<TOutput>> Repeat<TInput, TOutput>(this Parser<TInput, TOutput> parser, int n)
         {
-            return Enumerable.Repeat(parser, n).Sequence();
+            return new Parser<TInput, IEnumerable<TOutput>>(Enumerable.Repeat(parser.Out, n).Sequence());
         }
 
-        public static StateEither<IStream<TInput>, string, Tuple<TFirst, TSecond>> FollowedBy<TInput, TFirst, TSecond>(
-            this StateEither<IStream<TInput>, string, TFirst> p1, StateEither<IStream<TInput>, string, TSecond> p2)
+        public static Parser<TInput, TOutput> Pure<TInput, TOutput>(TOutput val)
         {
-            return
-                from first in p1
-                from second in p2
-                select Tuple.Create(first, second);
+            return new Parser<TInput, TOutput>(val.InsertRight<ParserState<TInput>, string, TOutput>());
         }
 
-        public static StateEither<ParserState<TInput>, string, TOutput> Pure<TInput, TOutput>(TOutput val)
+        public static Parser<TInput, IMaybe<TOutput>> MakeOptional<TInput, TOutput>(this Parser<TInput, TOutput> parser)
         {
-            return val.InsertRight<ParserState<TInput>, string, TOutput>();
+            return new Parser<TInput, IMaybe<TOutput>>(parser.Out.Select(val => val.ToMaybe()).Or(Pure<TInput, IMaybe<TOutput>>(Maybe.Nothing<TOutput>()).Out));
         }
 
-        public static StateEither<ParserState<TInput>, string, IMaybe<TOutput>> MakeOptional<TInput, TOutput>(
-            this StateEither<ParserState<TInput>, string, TOutput> parser)
+        public static Parser<TInput, Unit> EoF<TInput>()
         {
-            return parser.Select(val => val.ToMaybe()).Or(Pure<TInput, IMaybe<TOutput>>(Maybe.Nothing<TOutput>()));
+            return new Parser<TInput, Unit>(
+                from isEoF in ParserState<TInput>.IsEoF()
+                from result in BasicFunctions.EIf(isEoF, () => Unit.Only, () => "Expected EoF but more input remains").ToStateEither<ParserState<TInput>, string, Unit>()
+                select result);
         }
 
-        public static StateEither<ParserState<TInput>, string, Unit> EoF<TInput>()
+        public static Parser<TInput, TOutput> WithoutConsuming<TInput, TOutput>(this Parser<TInput, TOutput> parser)
         {
-            return from isEoF in ParserState<TInput>.IsEoF()
-                   from result in BasicFunctions.EIf(isEoF, () => Unit.Only, () => "Expected EoF but more input remains").ToStateEither<ParserState<TInput>, string, Unit>()
-                   select result;
+            return new Parser<TInput, TOutput>(
+                from i in ParserState<TInput>.Index.GetS().ToStateEither<ParserState<TInput>, string, uint>()
+                from result in parser.Out
+                from _1 in ParserState<TInput>.Index.SetS(i).ToStateEither<ParserState<TInput>, string, Unit>()
+                select result);
         }
 
-        public static StateEither<ParserState<TInput>, string, TOutput> WithoutConsuming<TInput, TOutput>(this StateEither<ParserState<TInput>, string, TOutput> parser)
+        public static Parser<TInput, IEnumerable<TOutput>> Sequence<TInput, TOutput>(this IEnumerable<Parser<TInput, TOutput>> xs)
         {
-            return from i in ParserState<TInput>.Index.GetS().ToStateEither<ParserState<TInput>, string, uint>()
-                   from result in parser
-                   from _1 in ParserState<TInput>.Index.SetS(i).ToStateEither<ParserState<TInput>, string, Unit>()
-                   select result;
+            return new Parser<TInput, IEnumerable<TOutput>>(xs.Select(x => x.Out).Sequence());
+        }
+
+        public static Parser<TInput, IEnumerable<TOutput>> Traverse<TInitial, TInput, TOutput>(
+            this IEnumerable<TInitial> xs, Func<TInitial, Parser<TInput, TOutput>> f)
+        {
+            return xs.Select(f).Sequence();
+        }
+
+        public static Parser<TInput, TOutput> Or<TInput, TOutput>(this Parser<TInput, TOutput> a,
+            Parser<TInput, TOutput> b)
+        {
+            return new Parser<TInput, TOutput>(a.Out.Or(b.Out));
+        }
+
+        public static Parser<TInput, TResult> Select<TInput, TOutput, TResult>(this Parser<TInput, TOutput> m,
+            Func<TOutput, TResult> f)
+        {
+            return new Parser<TInput, TResult>(m.Out.Select(f));
+        }
+
+        public static Parser<TInput, IEnumerable<TOutput>> Many<TInput, TOutput>(this Parser<TInput, TOutput> p)
+        {
+            return new Parser<TInput, IEnumerable<TOutput>>(p.Out.Many());
+        }
+
+        public static Parser<TInput, IEnumerable<TOutput>> Many1<TInput, TOutput>(this Parser<TInput, TOutput> p)
+        {
+            return new Parser<TInput, IEnumerable<TOutput>>(p.Out.Many1());
+        }
+
+        public static Parser<TInput, TResult> SelectMany<TInitial, TInput, TResult>(this Parser<TInput, TInitial> m, Func<TInitial, Parser<TInput, TResult>> f)
+        {
+            return new Parser<TInput, TResult>(m.Out.SelectMany(a => f(a).Out));
+        }
+
+        public static Parser<TInput, TSelect> SelectMany<TInitial, TInput, TResult, TSelect>(
+            this Parser<TInput, TInitial> m, Func<TInitial, Parser<TInput, TResult>> f,
+            Func<TInitial, TResult, TSelect> selector)
+        {
+            return m.SelectMany(a => f(a).SelectMany(b => Pure<TInput, TSelect>(selector(a, b))));
         }
     }
 }
