@@ -1,11 +1,11 @@
 ﻿using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Outlaws;
+using FunctionalProgramming.Monad.Transformer;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
-using FunctionalProgramming.Monad.Transformer;
 
 namespace FunctionalProgramming.Basics
 {
@@ -55,7 +55,7 @@ namespace FunctionalProgramming.Basics
         /// <returns>A computation thqt yields a sequence of values of type 'T</returns>
         public static Io<IEnumerable<T>> Sequence<T>(this IEnumerable<Io<T>> ioTs)
         {
-            var initial = Io.Apply(() => ConsList.Nil<T>());
+            var initial = Io.Apply(ConsList.Nil<T>);
             return ioTs.Aggregate(initial, (current, io) => current.SelectMany(ts => io.Select(t => t.Cons(ts)))).Select(ios => ios.AsEnumerable().Reverse());
         }
 
@@ -152,7 +152,7 @@ namespace FunctionalProgramming.Basics
             return xs.Select(f).Sequence();
         }
 
-        public static StateEither<TState, TLeft, IEnumerable<TRight>>  Sequence<TState, TLeft, TRight>(this IEnumerable<StateEither<TState, TLeft, TRight>> stateTs)
+        public static StateEither<TState, TLeft, IEnumerable<TRight>> Sequence<TState, TLeft, TRight>(this IEnumerable<StateEither<TState, TLeft, TRight>> stateTs)
         {
             return new StateEither<TState, TLeft, IEnumerable<TRight>>(new State<TState, IEither<TLeft, IEnumerable<TRight>>>(s =>
             {
@@ -249,39 +249,53 @@ namespace FunctionalProgramming.Basics
         }
 
         /// <summary>
-        /// Type-safe version of LINQs 'First' and 'FirstOrDefualt' function that returns a Maybe 
-        /// instead of possibly throwing an exception or returning null
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <param name="ts">An enumerable of elements that we want the first element of</param>
-        /// <returns>Just the first value in the enumerable, or nothing if no such element exists</returns>
-        public static IMaybe<T> MaybeFirst<T>(this IEnumerable<T> ts) where T : class
-        {
-            return ts.MaybeFirst(BasicFunctions.Const<T, bool>(true));
-        }
-
-        /// <summary>
         /// Type-safe version of LINQs 'First' and 'FirstOrDefault' function that accepts a predicate, returning
         /// a Maybe instead of possibly throwing an exception or returning null
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="ts">An enumerable from which we want the first element that satisfies the provided predicate</param>
+        /// <param name="items">An enumerable from which we want the first element that satisfies the provided predicate</param>
         /// <param name="predicate">A predicate for which the first element to satisfy will be the return value</param>
         /// <returns>Just the first value in the enumerable that satisfies the predicate, or nothing if no such element exists</returns>
-        public static IMaybe<T> MaybeFirst<T>(this IEnumerable<T> ts, Func<T, bool> predicate) where T : class
+        public static IMaybe<T> MaybeFirst<T>(this IEnumerable<T> items, Func<T, bool> predicate)
         {
-            return ts.FirstOrDefault(predicate).ToMaybe();
+            return Try.Attempt(() => typeof(T).IsPrimitive ? items.First(predicate).ToMaybe() : items.FirstOrDefault(predicate).ToMaybe()).GetOrElse(Maybe.Nothing<T>);
         }
 
-        public static IMaybe<T> MaybeFirst<T>(this IQueryable<T> ts, Expression<Func<T, bool>> predicate)
-            where T : class
+        /// <summary>
+        /// Type-safe version of LINQs 'First' and 'FirstOrDefualt' function that returns a Maybe
+        /// instead of possibly throwing an exception or returning null
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items">An enumerable of elements that we want the first element of</param>
+        /// <returns>Just the first value in the enumerable, or nothing if no such element exists</returns>
+        public static IMaybe<T> MaybeFirst<T>(this IEnumerable<T> items)
         {
-            return ts.FirstOrDefault(predicate).ToMaybe();
+            return items.MaybeFirst(BasicFunctions.Const<T, bool>(true));
         }
 
-        public static IMaybe<T> MaybeFirst<T>(this IQueryable<T> ts) where T : class
+        /// <summary>
+        /// Type-safe version of LINQs 'First' and 'FirstOrDefault' function that returns a Maybe
+        /// instead of possibly throwing an exception or returning null
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items">A queryable of elements that we want the only element of</param>
+        /// <param name="predicate"></param>
+        /// <returns>The only value in the queryable, or nothing if no such element exists</returns>
+        public static IMaybe<T> MaybeFirst<T>(this IQueryable<T> items, Expression<Func<T, bool>> predicate)
         {
-            return ts.MaybeFirst(t => true);
+            return Try.Attempt(() => typeof(T).IsPrimitive ? items.First(predicate).ToMaybe() : items.FirstOrDefault(predicate).ToMaybe()).GetOrElse(Maybe.Nothing<T>);
+        }
+
+        /// <summary>
+        /// Type-safe version of LINQs 'First' and 'FirstOrDefault' function that returns a Maybe
+        /// instead of possibly throwing an exception or returning null
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="items">A queryable of elements that we want the only element of</param>
+        /// <returns>The only value in the queryable, or nothing if no such element exists</returns>
+        public static IMaybe<T> MaybeFirst<T>(this IQueryable<T> items)
+        {
+            return items.MaybeFirst(BasicFunctions.Const<T, bool>(true).AsExpression());
         }
 
         /// <summary>
@@ -289,12 +303,12 @@ namespace FunctionalProgramming.Basics
         /// a Maybe instead of possibly throwing an exception or returning null
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="ts">An enumerable from which we want the only element that satisfies the provided predicate</param>
+        /// <param name="items">An enumerable from which we want the only element that satisfies the provided predicate</param>
         /// <param name="predicate">A predicate for which only one element will satisfy to be the return value</param>
         /// <returns>The only value in the enumerable that satisfies the predicate, or nothing if no such element exists or multiple elements satisifying the predicate exist</returns>
-        public static IMaybe<T> MaybeSingle<T>(this IEnumerable<T> ts, Func<T, bool> predicate) where T : class
+        public static IMaybe<T> MaybeSingle<T>(this IEnumerable<T> items, Func<T, bool> predicate)
         {
-            return Try.Attempt(() => ts.SingleOrDefault(predicate).ToMaybe()).AsMaybe().Join();
+            return Try.Attempt(() => typeof(T).IsPrimitive ? items.Single(predicate).ToMaybe() : items.SingleOrDefault(predicate).ToMaybe()).GetOrElse(Maybe.Nothing<T>);
         }
 
         /// <summary>
@@ -302,11 +316,11 @@ namespace FunctionalProgramming.Basics
         /// instead of possibly throwing an exception or returning null
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="ts">An enumerable of elements that we want the only element of</param>
+        /// <param name="items">An enumerable of elements that we want the only element of</param>
         /// <returns>The only value in the enumerable, or nothing if no such element exists or multiple elements exist</returns>
-        public static IMaybe<T> MaybeSingle<T>(this IEnumerable<T> ts) where T : class
+        public static IMaybe<T> MaybeSingle<T>(this IEnumerable<T> items)
         {
-            return ts.MaybeSingle(BasicFunctions.Const<T, bool>(true));
+            return items.MaybeSingle(BasicFunctions.Const<T, bool>(true));
         }
 
         /// <summary>
@@ -314,24 +328,24 @@ namespace FunctionalProgramming.Basics
         /// a Maybe instead of possibly throwing an exception or returning null
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="ts">A queryable from which we want the only element that satisfies the provided predicate</param>
+        /// <param name="items">A queryable from which we want the only element that satisfies the provided predicate</param>
         /// <param name="predicate">A predicate for which only one element will satisfy to be the return value</param>
         /// <returns>The only value in the queryable that satisfies the predicate, or nothing if no such element exists or multiple elements satisifying the predicate exist</returns>
-        public static IMaybe<T> MaybeSingle<T>(this IQueryable<T> ts, Expression<Func<T, bool>> predicate) where T : class
+        public static IMaybe<T> MaybeSingle<T>(this IQueryable<T> items, Expression<Func<T, bool>> predicate)
         {
-            return Try.Attempt(() => ts.SingleOrDefault(predicate).ToMaybe()).AsMaybe().Join();
+            return Try.Attempt(() => typeof(T).IsPrimitive ? items.Single(predicate).ToMaybe() : items.SingleOrDefault(predicate).ToMaybe()).GetOrElse(Maybe.Nothing<T>);
         }
 
         /// <summary>
-        /// Type-safe version of LINQs 'Single' and 'SingleOrDefault' function that returns a Maybe 
+        /// Type-safe version of LINQs 'Single' and 'SingleOrDefault' function that returns a Maybe
         /// instead of possibly throwing an exception or returning null
         /// </summary>
         /// <typeparam name="T"></typeparam>
-        /// <param name="ts">A queryable of elements that we want the only element of</param>
+        /// <param name="items">A queryable of elements that we want the only element of</param>
         /// <returns>The only value in the queryable, or nothing if no such element exists or multiple elements exist</returns>
-        public static IMaybe<T> MaybeSingle<T>(this IQueryable<T> ts) where T : class
+        public static IMaybe<T> MaybeSingle<T>(this IQueryable<T> items)
         {
-            return ts.MaybeFirst(t => true);
+            return items.MaybeSingle(BasicFunctions.Const<T, bool>(true).AsExpression());
         }
     }
 }
