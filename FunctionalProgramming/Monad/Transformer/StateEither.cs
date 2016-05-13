@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using FunctionalProgramming.Basics;
 
 namespace FunctionalProgramming.Monad.Transformer
@@ -141,15 +142,31 @@ namespace FunctionalProgramming.Monad.Transformer
             return left.CombineTakeRight(right);
         }
 
-        public static StateEither<TState, TLeft, IEnumerable<TRight>> Many<TState, TLeft, TRight>(this StateEither<TState, TLeft, TRight> stateT)
+        public static StateEither<TState, TLeft, IEnumerable<TRight>> Many<TState, TLeft, TRight>(
+            this StateEither<TState, TLeft, TRight> stateT)
         {
-            return
-                (from e in stateT.Out
-                 from result in e.Match(
-                     left: err => Enumerable.Empty<TRight>().AsRight<TLeft, IEnumerable<TRight>>().Insert<TState, IEither<TLeft, IEnumerable<TRight>>>(),
-                     right: h => stateT.Many().Select(t => h.LiftEnumerable().Concat(t)).Out)
-                 select result)
-                .ToStateEither<TState, TLeft, IEnumerable<TRight>>();
+            return new State<TState, IEither<TLeft, IEnumerable<TRight>>>(state =>
+            {
+                var retval = new List<TRight>();
+                var isDone = false;
+                while (!isDone)
+                {
+                    var result = stateT.Out.Run(state);
+                    state = result.Item1;
+                    result.Item2.Match(
+                        left: error =>
+                        {
+                            isDone = true;
+                            return Unit.Only;
+                        },
+                        right: v =>
+                        {
+                            retval.Add(v);
+                            return Unit.Only;
+                        });
+                }
+                return Tuple.Create(state, retval.AsEnumerable().AsRight<TLeft, IEnumerable<TRight>>());
+            }).ToStateEither();
         }
 
         public static StateEither<TState, TLeft, IEnumerable<TRight>> Many1<TState, TLeft, TRight>(this StateEither<TState, TLeft, TRight> stateT)

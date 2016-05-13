@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad;
 using FunctionalProgramming.Streaming;
@@ -23,32 +23,33 @@ namespace FunctionalProgramming.Tests.StreamingTests
         }
 
         [Test]
+        public void TestConcat()
+        {
+            var p1 = Process.Emit(1);
+            var p2 = Process.Emit(2);
+            var p3 = p1.Concat(() => p2);
+            p3.RunLog().ToList().ForEach(Console.WriteLine);
+        }
+
+        [Test]
         public void TestSink()
         {
             var p1 = Process.Apply(1, 2, 3, 4, 5);
-            var p2 = Process.Sink<int>(n => Console.WriteLine(n));
-            var p3 = p1.Pipe(p2);
-            p3.Run();
-        }
-
-        private static Process1<IEither<T, T2>, IEither<T, T2>> Tee<T, T2>(bool right = true)
-        {
-            return new Await1<IEither<T, T2>, IEither<T, T2>>(
-                () => BasicFunctions.EIf(right, () => default(T2), () => default(T)),
-                errorOrValue => errorOrValue.Match<Process1<IEither<T, T2>, IEither<T, T2>>>(
-                    left: e => new Halt1<IEither<T, T2>, IEither<T, T2>>(e),
-                    right: either => new Emit1<IEither<T, T2>, IEither<T, T2>>(either, Tee<T, T2>(!right))));
+            var p2 = Process.Lift1<int, Unit>(n => { Console.WriteLine(n); return Unit.Only; });
+            var p3 = p2.Concat(() => p2);
+            var p4 = p1.Pipe(p3);
+            p4.Run();
         }
 
         [Test]
         public void TestTee()
         {
-            var p1 = Process.Apply(1, 2, 3, 4, 5);
+            var p1 = Process.Apply(1, 2, 3, 4, 5).Select(n => n.ToString());
             var p2 = Process.Apply("a", "b", "c", "d", "e");
-            var p3 = Process.Sink<IEither<int, string>>(either => Console.WriteLine(either));
-            var p4 = p1.Tee(p2, Tee<int, string>());
+            var p3 = Process.Interleave(p1, p2);
+            var p4 = Process.Sink<string>(s => Console.WriteLine(s));
 
-            var results = p4.Pipe(p3).Run();            
+            var results = p3.Pipe(p4).Run();            
         }
 
         [Test]
@@ -86,13 +87,13 @@ namespace FunctionalProgramming.Tests.StreamingTests
         [Test]
         public void TestRepeatUntil()
         {
-            var x = 0;
-            var p1 = new Eval<int>(() => x++, new Emit<int>(x)).RepeatUntil(() =>
-            {
-                Console.WriteLine($"{x} > 9? {x > 9}");
-                return x > 9;
-            });
-            var results = p1.RunLog();
+            //var x = 0;
+            //var p1 = Process.Eval(() => x++, new Emit<int>(x)).RepeatUntil(() =>
+            //{
+            //    Console.WriteLine($"{x} > 9? {x > 9}");
+            //    return x > 9;
+            //});
+            //var results = p1.RunLog();
         }
     }
 }

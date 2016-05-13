@@ -9,12 +9,12 @@ using FunctionalProgramming.Monad.Parsing;
 using FunctionalProgramming.Monad.Transformer;
 using NUnit.Framework;
 
-using UnitParser = FunctionalProgramming.Monad.Transformer.StateEither<FunctionalProgramming.Monad.Parsing.ParserState<char>, string, FunctionalProgramming.Basics.Unit>;
-using CharParser = FunctionalProgramming.Monad.Transformer.StateEither<FunctionalProgramming.Monad.Parsing.ParserState<char>, string, char>;
-using StringParser = FunctionalProgramming.Monad.Transformer.StateEither<FunctionalProgramming.Monad.Parsing.ParserState<char>, string, string>;
-using DictionaryParser = FunctionalProgramming.Monad.Transformer.StateEither<FunctionalProgramming.Monad.Parsing.ParserState<char>, string, FunctionalProgramming.Monad.IMaybe<System.Collections.Generic.IDictionary<string, string>>>;
-using HardwareDescriptorParser = FunctionalProgramming.Monad.Transformer.StateEither<FunctionalProgramming.Monad.Parsing.ParserState<char>, string, FunctionalProgramming.Monad.IMaybe<FunctionalProgramming.Tests.Parsingtests.HardwareDescriptor>>;
-using HardwareDescriptorsParser = FunctionalProgramming.Monad.Transformer.StateEither<FunctionalProgramming.Monad.Parsing.ParserState<char>, string, System.Collections.Generic.IEnumerable<FunctionalProgramming.Monad.IMaybe<FunctionalProgramming.Tests.Parsingtests.HardwareDescriptor>>>;
+using UnitParser = FunctionalProgramming.Monad.Parsing.Parser<char, FunctionalProgramming.Basics.Unit>;
+using CharParser = FunctionalProgramming.Monad.Parsing.Parser<char, char>;
+using StringParser = FunctionalProgramming.Monad.Parsing.Parser<char, string>;
+using DictionaryParser = FunctionalProgramming.Monad.Parsing.Parser<char, FunctionalProgramming.Monad.IMaybe<System.Collections.Generic.IDictionary<string, string>>>;
+using HardwareDescriptorParser = FunctionalProgramming.Monad.Parsing.Parser<char, FunctionalProgramming.Monad.IMaybe<FunctionalProgramming.Tests.Parsingtests.HardwareDescriptor>>;
+using HardwareDescriptorsParser = FunctionalProgramming.Monad.Parsing.Parser<char, System.Collections.Generic.IEnumerable<FunctionalProgramming.Tests.Parsingtests.HardwareDescriptor>>;
 
 namespace FunctionalProgramming.Tests.Parsingtests
 {
@@ -167,7 +167,7 @@ namespace FunctionalProgramming.Tests.Parsingtests
 
         public override string ToString()
         {
-            return string.Format("HardwareDescriptor({0},{1},{2})", Id, Alias, Properties.GetOrElse(() => "{}"));
+            return $"HardwareDescriptor({Id},{Alias},{Properties.GetOrElse(() => "{}")})";
         }
     }
 }
