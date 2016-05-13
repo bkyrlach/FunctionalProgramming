@@ -10,6 +10,7 @@ using FunctionalProgramming.Monad.Outlaws;
 
 namespace FunctionalProgramming.Streaming
 {
+
     public class End : Exception
     {
         public static End Only = new End();
@@ -132,14 +133,14 @@ namespace FunctionalProgramming.Streaming
                     eval: (effect, next) => new Eval<IEither<T1, T2>>(effect, Wye(next, p2)),
                     await: (reql, recvl) => p2.Match<Process<IEither<T1, T2>>>(
                         halt: e => new Halt<IEither<T1, T2>>(e),
-                        emit: (h, t) => new Emit<IEither<T1, T2>>(h.AsRight<T1, T2>(), Wye(Await<T1>.Create(reql, (Func<IEither<Exception, object>, Process<T1>>)recvl), t)),
+                        emit: (h, t) => new Emit<IEither<T1, T2>>(h.AsRight<T1, T2>(), Wye(Await<T1>.Create(reql, recvl), t)),
                         cont: cw => new Cont<IEither<T1, T2>>(cw.Select(p => Wye(p1, p))),
                         eval: (effect, next) => new Eval<IEither<T1, T2>>(effect, Wye(p1, next)),
                         await: (reqr, recvr) => Await<IEither<T1, T2>>.Create(WhenEither(reql, reqr), x => x.Match(
                                 left: e => new Halt<IEither<T1, T2>>(e),
                                 right: either => either.Match(
-                                    left: l => HandleBranch<T1, T2>(l, recvl, recvr, true),
-                                    right: r => HandleBranch<T1, T2>(r, recvl, recvr, false))))));
+                                    left: l => HandleBranch(l, recvl, recvr, true),
+                                    right: r => HandleBranch(r, recvl, recvr, false))))));
             }
             else
             {
@@ -152,12 +153,12 @@ namespace FunctionalProgramming.Streaming
                         halt: e => new Halt<IEither<T1, T2>>(e),
                         emit: (h, t) => new Emit<IEither<T1, T2>>(h.AsLeft<T1, T2>(), Wye(t, p2)),
                         cont: cw => new Cont<IEither<T1, T2>>(cw.Select(p => Wye(p, p2))),
-                        eval: (effect, next) => new Eval<IEither<T1, T2>>(effect, Wye<T1, T2>(next, p2)),
+                        eval: (effect, next) => new Eval<IEither<T1, T2>>(effect, Wye(next, p2)),
                         await: (reql, recvl) => Await<IEither<T1, T2>>.Create(WhenEither(reql, reqr), x => x.Match(
                             left: e => new Halt<IEither<T1, T2>>(e),
                             right: either => either.Match(
-                                left: l => HandleBranch<T1, T2>(l, recvl, recvr, true),
-                                right: r => HandleBranch<T1, T2>(r, recvl, recvr, false))))));
+                                left: l => HandleBranch(l, recvl, recvr, true),
+                                right: r => HandleBranch(r, recvl, recvr, false))))));
             }
         }
 
@@ -281,7 +282,7 @@ namespace FunctionalProgramming.Streaming
             return m.Match(
                 halt: e => new Halt<T2>(e),
                 emit: (h, t) => Try(() => f(h)).Concat(() => t.SelectMany(f)),
-                await: (req, recv) => Await<T2>.Create(req, ((Func<IEither<Exception, object>, Process<T1>>)recv).AndThen(p => p.SelectMany(f))),
+                await: (req, recv) => Await<T2>.Create(req, recv.AndThen(p => p.SelectMany(f))),
                 cont: cw => new Cont<T2>(cw.Select(p => p.SelectMany(f))),
                 eval: (effect, next) => new Eval<T2>(effect, next.SelectMany(f)));
         }
@@ -347,7 +348,7 @@ namespace FunctionalProgramming.Streaming
             fallback = fallback ?? (() => new Halt1<IEither<T1, T2>, T3>(End.Only));
             return new Await1<IEither<T1, T2>, T3>(() => default(T1).AsLeft<T1, T2>(), either => either.Match(
                 left: ex => ex is End ? fallback() : new Halt1<IEither<T1, T2>, T3>(ex),
-                right: v => Process.Try(() => recv(v.Match(
+                right: v => Try(() => recv(v.Match(
                     left: BasicFunctions.Identity,
                     right: r => { throw new Exception("Unexpected right!");})))));
         }
@@ -386,6 +387,11 @@ namespace FunctionalProgramming.Streaming
         {
             return AwaitRight<T1, T2, T2>(r => EmitT(r, new Cont1<IEither<T1, T2>, T2>(PassRight<T1, T2>)));
         }
+
+        public static Process1<IEither<T1, T2>, T3> ZipWith<T1, T2, T3>(Func<T1, T2, T3> zipper)
+        {
+            return AwaitLeft<T1, T2, T3>(x => AwaitRight<T1, T2, T3>(y => EmitT<T1, T2, T3>(zipper(x, y)))).Repeat();
+        }
     }
 
     internal class ChunkReady : Exception
@@ -399,7 +405,7 @@ namespace FunctionalProgramming.Streaming
     {
         public TResult Match<TResult>(
             Func<Exception, TResult> halt,
-            Func<Func<object>, Func<IEither<Exception, Object>, Process<T>>, TResult> await,
+            Func<Func<object>, Func<IEither<Exception, object>, Process<T>>, TResult> await,
             Func<T, Process<T>, TResult> emit,
             Func<Func<Process<T>>, TResult> cont,
             Func<Action, Process<T>, TResult> eval)
@@ -491,7 +497,7 @@ namespace FunctionalProgramming.Streaming
 
         public Process<T2> Pipe<T2>(Process1<T, T2> p2)
         {
-            return p2.Match1(
+            return p2.Match(
                 halt: e => Kill<T2>().OnHalt(e2 => new Halt<T2>(e).Concat(() => new Halt<T2>(e2))),
                 emit: (h, t) => new Emit<T2>(h, Pipe(t)),
                 cont: cw => new Cont<T2>(cw.Select(Pipe)),
@@ -557,7 +563,7 @@ namespace FunctionalProgramming.Streaming
 
         public Process<T3> Tee<T2, T3>(Process<T2> p2, Process1<IEither<T, T2>, T3> tee)
         {
-            return tee.Match1(
+            return tee.Match(
                 halt: e => Kill<T3>().OnComplete(p2.Kill<T3>).OnComplete(() => new Halt<T3>(e)),
                 emit: (h, t) => new Emit<T3>(h, Tee(p2, t)),
                 cont: cw => new Cont<T3>(cw.Select(p => Tee(p2, p))),
@@ -668,7 +674,7 @@ namespace FunctionalProgramming.Streaming
     {
         public Process1<TI, TO> OnHalt(Func<Exception, Process1<TI, TO>> f)
         {
-            return Match1(
+            return Match(
                 halt: e => Process.Try(() => f(e)),
                 await: (req, recv) => new Await1<TI, TO>(req, recv.AndThen(p => p.OnHalt(f))),
                 emit: (h, t) => new Emit1<TI, TO>(h, t.OnHalt(f)),
@@ -676,7 +682,7 @@ namespace FunctionalProgramming.Streaming
                 eval: (effect, next) => new Eval1<TI, TO>(effect, next.OnHalt(f)));
         }
 
-        public TMatch Match1<TMatch>(
+        public TMatch Match<TMatch>(
             Func<Exception, TMatch> halt,
             Func<Func<TI>, Func<IEither<Exception, TI>, Process1<TI, TO>>, TMatch> await,
             Func<TO, Process1<TI, TO>, TMatch> emit,

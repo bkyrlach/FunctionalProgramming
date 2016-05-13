@@ -55,8 +55,8 @@ namespace FunctionalProgramming.Tests
         {
             var xs = new[] {1, 2, 3, 4, 5};
 
-            var result = xs.Select(Count).Sequence().RunIo(0).UnsafePerformIo();
-            Assert.AreEqual(5, result.Item1);           
+            var result = xs.Select(Count).Sequence().Out.Eval(0).UnsafePerformIo();
+            Assert.AreEqual(5, result);           
         }
     }
 }

@@ -2,37 +2,18 @@
 
 namespace FunctionalProgramming.Monad.Transformer
 {
-    public struct StateIo<TState, TValue>
+    public sealed class StateIo<TState, TValue>
     {
-        private readonly Func<TState, Io<Tuple<TState, TValue>>> _body;
+        public readonly State<TState, Io<TValue>> Out;
 
-        public StateIo(Func<TState, Io<Tuple<TState, TValue>>> body)
+        public StateIo(State<TState, Io<TValue>> self)
         {
-            _body = body;
-        }
-
-        public StateIo(State<TState, Io<TValue>> state) : this(s =>
-        {
-            var result = state.Run(s);
-            return result.Item2.Select(val => Tuple.Create(result.Item1, val));
-        })
-        {
-            
+            Out = self;
         }
 
         public StateIo(Io<TValue> io) : this(io.Insert<TState, Io<TValue>>())
         {
             
-        }
-
-        public Io<Tuple<TState, TValue>> RunIo(TState state)
-        {
-            return _body(state);
-        }
-
-        public Io<TValue> EvalIo(TState state)
-        {
-            return RunIo(state).Select(result => result.Item2);
         }
     }
 
@@ -60,25 +41,20 @@ namespace FunctionalProgramming.Monad.Transformer
 
         public static StateIo<TState, TResult> Select<TState, TValue, TResult>(this StateIo<TState, TValue> stateT, Func<TValue, TResult> f)
         {
-            return new StateIo<TState, TResult>(s =>
-            {
-                var s1 = stateT.RunIo(s);
-                return s1.Select(pair => Tuple.Create(pair.Item1, f(pair.Item2)));
-            });
+            return new StateIo<TState, TResult>(stateT.Out.Select(io => io.Select(f)));
         }
 
         public static StateIo<TState, TResult> SelectMany<TState, TValue, TResult>(this StateIo<TState, TValue> stateT, Func<TValue, StateIo<TState, TResult>> f)
         {
-            return new StateIo<TState, TResult>(s =>
+            return new State<TState, Io<TResult>>(state =>
             {
-                var s1 = stateT.RunIo(s);
-                return Io.Apply(() =>
-                {
-                    var pair = s1.UnsafePerformIo();
-                    var s2 = f(pair.Item2).RunIo(pair.Item1);
-                    return s2.UnsafePerformIo();
-                });
-            });
+                var result = stateT.Out.Run(state);
+                state = result.Item1;
+                var value = result.Item2.UnsafePerformIo();
+                var nextState = f(value);
+                var nextValue = nextState.Out.Run(state);
+                return nextValue;
+            }).ToStateIo();
         }
 
         public static StateIo<TState, TSelect> SelectMany<TState, TValue, TResult, TSelect>(this StateIo<TState, TValue> stateT, Func<TValue, StateIo<TState, TResult>> f, Func<TValue, TResult, TSelect> selector)
