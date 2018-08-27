@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Linq;
 using FunctionalProgramming.Monad;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace FunctionalProgramming.Tests.MonadTests
 {
-    [TestFixture]
+    [TestClass]
     public class MaybeTests
     {
         private static IMaybe<int> SafeDivide(int i)
@@ -15,14 +15,14 @@ namespace FunctionalProgramming.Tests.MonadTests
                 : Maybe.Nothing<int>();
         }
 
-        [Test]
+        [TestMethod]
         public void TestSelectJust()
         {
             var result = 5.ToMaybe().Select(n => n == 5).GetOrElse(() => false);
             Assert.IsTrue(result);
         }
             
-        [Test]
+        [TestMethod]
         public void TestSelectManyNothingResult()
         {
             var expected = Maybe.Nothing<int>();
@@ -33,7 +33,7 @@ namespace FunctionalProgramming.Tests.MonadTests
             Assert.AreEqual(expected, result);
         }
 
-        [Test]
+        [TestMethod]
         public void TestSelectManyJustResult()
         {
             var expected = 5.ToMaybe();
@@ -44,7 +44,7 @@ namespace FunctionalProgramming.Tests.MonadTests
             Assert.AreEqual(expected, result);
         }
 
-        [Test]
+        [TestMethod]
         public void TestEqualityJust()
         {
             var expected = 5.ToMaybe();
@@ -52,7 +52,7 @@ namespace FunctionalProgramming.Tests.MonadTests
             Assert.AreEqual(expected, result);
         }
 
-        [Test]
+        [TestMethod]
         public void TestInequalityJust()
         {
             var expected = 4.ToMaybe();
@@ -60,7 +60,7 @@ namespace FunctionalProgramming.Tests.MonadTests
             Assert.AreNotEqual(expected, result);
         }
 
-        [Test]
+        [TestMethod]
         public void TestJustNothingInequality()
         {
             var expected = 4.ToMaybe();
@@ -68,7 +68,7 @@ namespace FunctionalProgramming.Tests.MonadTests
             Assert.AreNotEqual(expected, result);
         }
 
-        [Test]
+        [TestMethod]
         public void TestKeepSome()
         {
             var expected = new[] {1, 2, 3, 4};

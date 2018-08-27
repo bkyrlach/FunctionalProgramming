@@ -2,14 +2,14 @@
 using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Transformer;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace FunctionalProgramming.Tests.TransformerTests
 {
-    [TestFixture]
+    [TestClass]
     public sealed class IoStateEnumerableTests
     {
-        [Test]
+        [TestMethod]
         public void BasicSequenceTest()
         {
             var xs = new[] {1, 2, 3, 4, 5};
@@ -24,7 +24,7 @@ namespace FunctionalProgramming.Tests.TransformerTests
                 from _3 in Io.Apply(() => Console.WriteLine(x)).ToIoStateEnumerable<Tuple<int, int>, Unit>()
                 select x + 1;
 
-            var result = program.Out().UnsafePerformIo().Run(Tuple.Create(0, 0));
+            var result = program.Out.UnsafePerformIo().Run(Tuple.Create(0, 0));
 
             Assert.AreEqual(expectedState, result.Item1);
             Assert.AreEqual(expectedResult, result.Item2);

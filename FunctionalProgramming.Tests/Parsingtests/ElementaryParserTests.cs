@@ -7,7 +7,7 @@ using FunctionalProgramming.Helpers;
 using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Parsing;
 using FunctionalProgramming.Monad.Transformer;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 using UnitParser = FunctionalProgramming.Monad.Parsing.Parser<char, FunctionalProgramming.Basics.Unit>;
 using CharParser = FunctionalProgramming.Monad.Parsing.Parser<char, char>;
@@ -18,10 +18,10 @@ using HardwareDescriptorsParser = FunctionalProgramming.Monad.Parsing.Parser<cha
 
 namespace FunctionalProgramming.Tests.Parsingtests
 {
-    [TestFixture]
+    [TestClass]
     public sealed class ElementaryParserTests
     {
-        [Test]
+        [TestMethod]
         public void TestSingleElement()
         {
             const char input = 'a';
@@ -32,7 +32,7 @@ namespace FunctionalProgramming.Tests.Parsingtests
                 right: c => c.ToString()));
         }
 
-        [Test]
+        [TestMethod]
         public void TestManyElements()
         {
             var sw = Stopwatch.StartNew();
@@ -54,7 +54,7 @@ namespace FunctionalProgramming.Tests.Parsingtests
             Console.WriteLine(sw2.ElapsedMilliseconds);
         }
 
-        [Test]
+        [TestMethod]
         public void TestOr()
         {
             var a = Parser.Elem('a');
@@ -90,7 +90,7 @@ namespace FunctionalProgramming.Tests.Parsingtests
             Assert.AreEqual("1", res4);
         }
 
-        [Test]
+        [TestMethod]
         public void TestSome()
         {
             var someAs = Parser.Elem('a').Many();
@@ -151,7 +151,8 @@ namespace FunctionalProgramming.Tests.Parsingtests
             return retval;
         }  
 
-        [TestCase("1,,")]
+        [DataTestMethod]
+        [DataRow("1,,")]
         public void TestCsvParsing(string csv)
         {
             csv = Enumerable.Range(1, 10000).Select(n => string.Format("{0},,", n)).Aggregate((res, s) => res + "\n" + s);

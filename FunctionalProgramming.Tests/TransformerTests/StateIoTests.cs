@@ -2,14 +2,14 @@
 using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Transformer;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace FunctionalProgramming.Tests.TransformerTests
 {
-    [TestFixture]
+    [TestClass]
     class StateIoTests
     {
-        [Test]
+        [TestMethod]
         public void TestIt()
         {
             var pgm =

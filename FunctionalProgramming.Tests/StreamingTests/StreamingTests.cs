@@ -5,15 +5,15 @@ using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad;
 using FunctionalProgramming.Streaming;
 using FunctionalProgramming.Tests.Util;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Process = FunctionalProgramming.Streaming.Process;
 
 namespace FunctionalProgramming.Tests.StreamingTests
 {
-    [TestFixture]
+    [TestClass]
     public sealed class StreamingTests
     {
-        [Test]
+        [TestMethod]
         public void TestProcess()
         {
             var expected = new[] {1, 2, 3, 4, 5};
@@ -22,7 +22,7 @@ namespace FunctionalProgramming.Tests.StreamingTests
             Assert.IsTrue(TestUtils.AreEqual(expected, result));
         }
 
-        [Test]
+        [TestMethod]
         public void TestConcat()
         {
             var p1 = Process.Emit(1);
@@ -31,7 +31,7 @@ namespace FunctionalProgramming.Tests.StreamingTests
             p3.RunLog().ToList().ForEach(Console.WriteLine);
         }
 
-        [Test]
+        [TestMethod]
         public void TestSink()
         {
             var p1 = Process.Apply(1, 2, 3, 4, 5);
@@ -41,7 +41,7 @@ namespace FunctionalProgramming.Tests.StreamingTests
             p4.Run();
         }
 
-        [Test]
+        [TestMethod]
         public void TestTee()
         {
             var p1 = Process.Apply(1, 2, 3, 4, 5).Select(n => n.ToString());
@@ -52,7 +52,7 @@ namespace FunctionalProgramming.Tests.StreamingTests
             var results = p3.Pipe(p4).Run();            
         }
 
-        [Test]
+        [TestMethod]
         public void TestSelectMany()
         {
             var p1 = Process.Apply(1);
@@ -73,7 +73,7 @@ namespace FunctionalProgramming.Tests.StreamingTests
                 right: n => new Emit<int>(n, DelayCount(n + 1))));
         }
 
-        [Test]
+        [TestMethod]
         public void TestWye()
         {
             var stopAfter30 = Process.Delay(3000);
@@ -84,7 +84,7 @@ namespace FunctionalProgramming.Tests.StreamingTests
             result.Run();
         }
 
-        [Test]
+        [TestMethod]
         public void TestRepeatUntil()
         {
             //var x = 0;

@@ -3,14 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Transformer;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace FunctionalProgramming.Tests.TransformerTests
 {
-    [TestFixture]
+    [TestClass]
     public sealed class StateEnumerableTests
     {
-        [TestCase(new[] {1, 2, 3}, new[] {2, 3, 4}, 3)]
+        [DataTestMethod]
+        [DataRow(new[] {1, 2, 3}, new[] {2, 3, 4}, 3)]
         public void TestSumState(IEnumerable<int> testSequence, IEnumerable<int> expectedResult, int expectedState)
         {
             var program =

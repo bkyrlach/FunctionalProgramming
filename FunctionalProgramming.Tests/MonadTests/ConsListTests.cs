@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using FunctionalProgramming.Monad;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace FunctionalProgramming.Tests.MonadTests
 {
-    [TestFixture]
+    [TestClass]
     public class ConsListTests
     {
         private static IConsList<T> MkList<T>(IEnumerable<T> ts)
@@ -15,16 +15,17 @@ namespace FunctionalProgramming.Tests.MonadTests
             return ts.Reverse().Aggregate(ConsList.Nil<T>(), (lst, t) => t.Cons(lst));
         }
 
-        [Test]
+        [TestMethod]
         public void TestSingleItem()
         {
             var xs = 1.LiftList();
             Console.WriteLine(xs);
         }
 
-        [TestCase(new int[] { }, 1)]
-        [TestCase(new int[] { 1, 2, 3 }, 2)]
-        [TestCase(new int[] { 1, 2, 3, 4, 5, 6 }, 3)]
+        [DataTestMethod]
+        [DataRow(new int[] { }, 1)]
+        [DataRow(new int[] { 1, 2, 3 }, 2)]
+        [DataRow(new int[] { 1, 2, 3, 4, 5, 6 }, 3)]
         public void TestAsEnumerable(int[] xs, int fake)
         {
             var expected = xs.AsEnumerable();
@@ -34,10 +35,11 @@ namespace FunctionalProgramming.Tests.MonadTests
             Assert.AreEqual(expected, result);
         }
 
-        [TestCase(new int[] { }, new int[] { }, 1)]
-        [TestCase(new int[] { }, new int[] { 1, 2, 3 }, 2)]
-        [TestCase(new int[] { 1, 2, 3 }, new int[] { }, 3)]
-        [TestCase(new int[] { 1, 2, 3 }, new int[] { 4, 5, 6 }, 4)]
+        [DataTestMethod]
+        [DataRow(new int[] { }, new int[] { }, 1)]
+        [DataRow(new int[] { }, new int[] { 1, 2, 3 }, 2)]
+        [DataRow(new int[] { 1, 2, 3 }, new int[] { }, 3)]
+        [DataRow(new int[] { 1, 2, 3 }, new int[] { 4, 5, 6 }, 4)]
         public void TestConcat(int[] fst, int[] snd, int fake)
         {
             var expected = fst.Concat(snd);
@@ -47,14 +49,15 @@ namespace FunctionalProgramming.Tests.MonadTests
             Assert.AreEqual(expected, result);
         }
 
-        [TestCase(new[] { 1, 2, 3 }, 1)]
+        [DataTestMethod]
+        [DataRow(new[] { 1, 2, 3 }, 1)]
         public void TestAsEnumerable(IEnumerable<int> expected, int fake)
         {
             var actual = 1.Cons(2.Cons(3.Cons(ConsList.Nil<int>()))).AsEnumerable();
             Assert.AreEqual(expected, actual);
         }
 
-        [Test]
+        [TestMethod]
         public void TestAsEnumerable()
         {
             var expected = Enumerable.Range(0, 10000);

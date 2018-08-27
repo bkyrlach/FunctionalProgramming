@@ -1,9 +1,9 @@
 ﻿using FunctionalProgramming.Monad.Outlaws;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace FunctionalProgramming.Tests.MonadTests
 {
-    [TestFixture]
+    [TestClass]
     public sealed class TaskTests
     {
 

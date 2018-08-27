@@ -1,14 +1,14 @@
 ﻿using FunctionalProgramming.Basics;
 using FunctionalProgramming.Helpers;
 using FunctionalProgramming.Monad;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace FunctionalProgramming.Tests.MonadTests
 {
-    [TestFixture]
+    [TestClass]
     public sealed class EitherTests
     {
-        [Test]
+        [TestMethod]
         public void TestOr()
         {
             var e1 = "boo".AsLeft<string, int>();
@@ -66,7 +66,8 @@ namespace FunctionalProgramming.Tests.MonadTests
             return b.HasValue ? b.Value.AsRight<string, bool>() : "Boolean value not present".AsLeft<string, bool>();
         }
             
-        [TestCase("a", 1, true, true)]
+        [DataTestMethod]
+        [DataRow("a", 1, true, true)]
         public void TestApplicative(string foo, int bar, bool? fooBar, bool expected)
         {
             var dto = ValidateString(foo)

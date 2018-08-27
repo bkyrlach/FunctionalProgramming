@@ -2,14 +2,14 @@
 using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Outlaws;
 using FunctionalProgramming.Monad.Transformer;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace FunctionalProgramming.Tests.TransformerTests
 {
-    [TestFixture]
+    [TestClass]
     class IoTryTests
     {
-        [Test]
+        [TestMethod]
         public void TestComposition()
         {
             var p1 = Io.Apply(() => Try.Pure(1)).ToIoTry();

@@ -1,14 +1,14 @@
 ﻿using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using BF = FunctionalProgramming.Basics.BasicFunctions;
 
 namespace FunctionalProgramming.Tests
 {
-    [TestFixture]
+    [TestClass]
     public sealed class BasicFunctionsTests
     {
-        [Test]
+        [TestMethod]
         public void TestEIf()
         {
             var test1 = BF.EIf(false, () => "abc", () => 3);
@@ -19,7 +19,7 @@ namespace FunctionalProgramming.Tests
             Assert.AreEqual("abc", test3.Match(left: n => n.ToString(), right: BF.Identity));
         }
 
-        [Test]
+        [TestMethod]
         public void TestTraverse()
         {
             var expected = new[] {1, 2, 3};

@@ -5,14 +5,14 @@ using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Outlaws;
 using FunctionalProgramming.Monad.Transformer;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace FunctionalProgramming.Tests.TransformerTests
 {
-    [TestFixture]
+    [TestClass]
     public sealed class IoEnumerableTryTests
     {
-        [Test]
+        [TestMethod]
         public void Test1()
         {
             var xs = Io.Apply(() => Enumerable.Range(0, 10000).Select(n => n%8).Select(n => Try.Attempt(() =>

@@ -1,14 +1,14 @@
 ﻿using System.Collections.Generic;
 using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace FunctionalProgramming.Tests
 {
-    [TestFixture]
+    [TestClass]
     public sealed class DictionaryExtensionsTests
     {
-        [Test]
+        [TestMethod]
         public void TestMissingKey()
         {
             var data = new Dictionary<string, string>

@@ -2,14 +2,15 @@
 using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Transformer;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace FunctionalProgramming.Tests.TransformerTests
 {
-    [TestFixture]
+    [TestClass]
     public sealed class IoEnumerableTests
     {
-        [TestCase(new[] { 1, 2, 3 }, new[] { 2, 3, 4 }, 3)]
+        [DataTestMethod]
+        [DataRow(new[] { 1, 2, 3 }, new[] { 2, 3, 4 }, 3)]
         public void TestEffectualLoop(IEnumerable<int> inputSequence, IEnumerable<int> expectedResult,
             int expectedEffectualResult)
         {

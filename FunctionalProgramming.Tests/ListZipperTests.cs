@@ -1,14 +1,14 @@
 ﻿using FunctionalProgramming.Basics;
 using FunctionalProgramming.Monad;
-using NUnit.Framework;
 using System;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace FunctionalProgramming.Tests
 {
-    [TestFixture]
+    [TestClass]
     public sealed class ListZipperTests
     {
-        [Test]
+        [TestMethod]
         public void TestEmptySet()
         {
             var expected = 1.LiftList();
@@ -17,7 +17,7 @@ namespace FunctionalProgramming.Tests
             Assert.AreEqual(expected,result);
         }
 
-        [Test]
+        [TestMethod]
         public void TestUnmodifiedList()
         {
             var expected = (new[] {1, 2, 3, 4, 5}).ToConsList();
@@ -26,7 +26,7 @@ namespace FunctionalProgramming.Tests
             Assert.AreEqual(expected,result);
         }
 
-        [Test]
+        [TestMethod]
         public void TestLast()
         {
             var initial = (new[] {1, 2, 3, 4, 5}).ToConsList();

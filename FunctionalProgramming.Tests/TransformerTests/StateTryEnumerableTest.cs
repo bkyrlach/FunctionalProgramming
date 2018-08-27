@@ -6,14 +6,14 @@ using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Outlaws;
 using FunctionalProgramming.Monad.Transformer;
 using FunctionalProgramming.Tests.Util;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace FunctionalProgramming.Tests.TransformerTests
 {
-    [TestFixture]
+    [TestClass]
     class StateTryEnumerableTest
     {
-        [Test]
+        [TestMethod]
         public void TestStateTryEnumerable()
         {
             var expected = new[] {2, 3, 4, 5, 6, 7};

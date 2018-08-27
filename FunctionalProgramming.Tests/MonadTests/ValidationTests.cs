@@ -5,11 +5,11 @@ using System.Linq.Expressions;
 using FunctionalProgramming.Basics;
 using FunctionalProgramming.Helpers;
 using FunctionalProgramming.Monad;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace FunctionalProgramming.Tests.MonadTests
 {
-    [TestFixture]
+    [TestClass]
     public sealed class ValidationTests
     {
         private class Person
@@ -35,9 +35,10 @@ namespace FunctionalProgramming.Tests.MonadTests
             public string Message { get; set; }
         }
 
-        [TestCase(null, "Kyrlach", 33, new [] {1})]
-        [TestCase("Ben", "Kyrlach", 33, new int [] {})]
-        [TestCase("Bo", "Jackson", -1, new [] {3, 2})]
+        [DataTestMethod]
+        [DataRow(null, "Kyrlach", 33, new [] {1})]
+        [DataRow("Ben", "Kyrlach", 33, new int [] {})]
+        [DataRow("Bo", "Jackson", -1, new [] {3, 2})]
         public void TestApplicative(string firstName, string lastName, int age, int[] expectedErrors)
         {
             var m = EnumerableMonoid<Failure>.Only;

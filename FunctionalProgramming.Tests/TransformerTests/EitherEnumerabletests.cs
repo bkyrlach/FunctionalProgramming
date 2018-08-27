@@ -4,15 +4,15 @@ using System.Linq;
 using FunctionalProgramming.Monad;
 using FunctionalProgramming.Monad.Transformer;
 using FunctionalProgramming.Tests.Util;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace FunctionalProgramming.Tests.TransformerTests
 {
-    [TestFixture]
+    [TestClass]
     public sealed class EitherEnumerabletests
     {
 
-        [Test]
+        [TestMethod]
         public void TestIt()
         {
             var initial = new[] {1, 2, 3};
@@ -25,7 +25,7 @@ namespace FunctionalProgramming.Tests.TransformerTests
                 right: actual => TestUtils.AreEqual(expected, actual)));
         }
 
-        [Test]
+        [TestMethod]
         public void Test2()
         {
             var initial = new[] {1, 2, 3};

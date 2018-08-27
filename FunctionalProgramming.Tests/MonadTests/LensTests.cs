@@ -1,6 +1,6 @@
 ﻿using System;
 using FunctionalProgramming.Monad;
-using NUnit.Framework;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace FunctionalProgramming.Tests.MonadTests
 {
@@ -48,7 +48,7 @@ namespace FunctionalProgramming.Tests.MonadTests
         }
     }
 
-    [TestFixture]
+    [TestClass]
     class LensTests
     {
         private static readonly Lens<Turtle, string> TurtleName = new Lens<Turtle, string>((t, s) => t.Copy(name: s), t => t.Name);
@@ -58,7 +58,7 @@ namespace FunctionalProgramming.Tests.MonadTests
         private static readonly Lens<Turtle, int> TurtleX = TurtlePos.AndThen(PosX);
         private static readonly Lens<Turtle, int> TurtleY = TurtlePos.AndThen(PosY);
 
-        [Test]
+        [TestMethod]
         void LensCompositionTet()
         {
             var moveTurtle = from x in TurtleX.ModS(x => x + 10)
@@ -75,7 +75,7 @@ namespace FunctionalProgramming.Tests.MonadTests
             Assert.AreEqual(result.Item2.Item2, 8);
         }
 
-        [Test]
+        [TestMethod]
         public void LensReadTest()
         {
             var nameAndPosition = from name in TurtleName.GetS()
